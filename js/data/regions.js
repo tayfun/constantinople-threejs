@@ -10,6 +10,7 @@ import { magnify } from './geography.js';
 export const REGIONS = [
   { id: 'constantinople', labelAt: magnify([-32, -2]), view: { target: magnify([-20, 6]), distance: 62 } },
   { id: 'pera', labelAt: magnify([-2, 28]), view: { target: magnify([-4, 18]), distance: 30 } },
+  { id: 'chrysopolis', labelAt: magnify([36, 22]), view: { target: magnify([27, 16.5]), distance: 28 } },
   { id: 'chalcedon', labelAt: magnify([47, -16]), view: { target: magnify([39, -21]), distance: 30 } },
   { id: 'golden-horn', labelAt: null, view: { target: magnify([-16, 21]), distance: 42 } },
 ];

@@ -61,6 +61,15 @@ export default {
         'Venice, Pisa and Amalfi kept their quarters on the opposite, city shore of the Horn — the Venetian quarter is marked there on the map.',
       ],
     },
+    chrysopolis: {
+      name: 'Chrysopolis',
+      subtitle: 'Üsküdar — the city of gold',
+      paragraphs: [
+        'Chrysopolis, "the city of gold", stood on the Asian shore at the mouth of the Bosphorus, a little north of Chalcedon, whose harbour and dependency it was in antiquity. Ferries to Byzantium crossed from here.',
+        'In 410 BC Alcibiades fortified it and set up a toll station that took a tenth of the value of every cargo sailing out of the Black Sea — one explanation of its golden name. On 18 September 324 Constantine defeated his rival Licinius here, the victory that made him sole emperor and opened the way to the founding of Constantinople.',
+        'In Byzantine times it was the capital\'s ferry landing in Asia and the starting point of the roads into Anatolia. Its later name, Skoutarion — Scutari, Üsküdar — is usually traced either to a palace there or to the scutarii, the emperors\' shield-bearing guardsmen.',
+      ],
+    },
     chalcedon: {
       name: 'Chalcedon',
       subtitle: 'Kadıköy — the city of the blind',
@@ -291,6 +300,22 @@ export default {
       ],
       today: 'Karaköy and the streets around the Galata Tower; fragments of the walls and the Podestà\'s palace survive.',
     },
+    chrysopolis: {
+      name: 'Chrysopolis',
+      subtitle: 'Χρυσόπολις · Üsküdar, "the city of gold"',
+      built: 'A harbour of Chalcedon by the 5th century BC; fortified by Alcibiades in 410 BC',
+      fate: 'Lives on as Üsküdar',
+      builder: 'Greek settlers from Chalcedon; fortified by the Athenians under Alcibiades',
+      purpose: 'Harbour, toll station and ferry landing for the crossing to Byzantium',
+      summary: 'Chrysopolis looked straight across the Bosphorus at the Acropolis of Byzantium. The model shows it in Byzantine times: the quay where the ferries from the capital put in, the walled toll post on the shore, the road setting out into Anatolia, a church on the hill, a palace in its gardens on the slope and, offshore, the islet of Damalis with its tower.',
+      facts: [
+        'In 400 BC the Ten Thousand, Xenophon\'s Greek mercenaries back from their march into Persia, camped here for seven days selling their plunder.',
+        'On 18 September 324 Constantine routed Licinius at Chrysopolis and became sole ruler of the Roman Empire; six years later he dedicated Constantinople on the far shore.',
+        'The Byzantines fortified the islet of Damalis offshore. The tower that stands there today, the Maiden\'s Tower, is a much later rebuilding.',
+        'In Ottoman times Üsküdar was the starting point of the caravan roads into Anatolia and of the yearly pilgrim caravan to Mecca.',
+      ],
+      today: 'Üsküdar, on Istanbul\'s Asian shore, where ferries still cross to Eminönü, Karaköy and Beşiktaş.',
+    },
     chalcedon: {
       name: 'Chalcedon',
       subtitle: 'Καλχηδών · Kadıköy, "the city of the blind"',
@@ -339,10 +364,6 @@ export default {
     propontis: {
       name: 'Propontis',
       sub: 'Sea of Marmara',
-    },
-    chrysopolis: {
-      name: 'Chrysopolis',
-      sub: 'Üsküdar',
     },
     mese: {
       name: 'The Mese',

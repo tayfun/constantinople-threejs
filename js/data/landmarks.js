@@ -11,6 +11,7 @@ import { createDromon } from '../models/dromon.js';
 import { createGalataTower } from '../models/galataTower.js';
 import { createGenoeseQuarter } from '../models/genoeseQuarter.js';
 import { createChalcedon } from '../models/chalcedon.js';
+import { createChrysopolis } from '../models/chrysopolis.js';
 import { createForumOfConstantine } from '../models/forumOfConstantine.js';
 import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL } from './geography.js';
 
@@ -120,6 +121,13 @@ export const LANDMARKS = [
     period: { from: 1267, to: 1453, ending: 'ended' },
     create: createGenoeseQuarter,
     map: { absolute: true },
+  },
+  {
+    id: 'chrysopolis',
+    region: 'chrysopolis',
+    period: { from: -500, fromApprox: true },
+    create: createChrysopolis,
+    map: { at: [26.3, 15.6], rotation: -42, scale: 3.6 },
   },
   {
     id: 'chalcedon',

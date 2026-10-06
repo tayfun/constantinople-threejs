@@ -61,6 +61,15 @@ export default {
         'Venedik, Pisa ve Amalfi ise mahallelerini Haliç\'in karşı yakasında, kent tarafında tutuyordu — Venedik mahallesi haritada orada gösterilmiştir.',
       ],
     },
+    chrysopolis: {
+      name: 'Khrysopolis',
+      subtitle: 'Üsküdar — altın kent',
+      paragraphs: [
+        'Khrysopolis, "altın kent", Boğaz\'ın ağzında, Asya kıyısında, Kalkedon\'un biraz kuzeyindeydi; antik çağda Kalkedon\'un limanı ve ona bağlı bir yerleşimdi. Byzantion\'a geçen kayıklar buradan kalkardı.',
+        'MÖ 410\'da Alkibiades burayı tahkim etti ve Karadeniz\'den çıkan her yükün değerinin onda birini alan bir gümrük kurdu — kentin altın adının açıklamalarından biri de budur. 18 Eylül 324\'te Konstantin rakibi Licinius\'u burada yendi; bu zafer onu tek imparator yaptı ve Konstantinopolis\'in kuruluşunun yolunu açtı.',
+        'Bizans döneminde burası başkentin Asya\'daki iskelesi ve Anadolu\'ya giden yolların başlangıcıydı. Sonraki adı Skoutarion — Scutari, Üsküdar — genellikle ya buradaki bir saraya ya da imparatorların kalkan taşıyan muhafızları scutarii\'ye bağlanır.',
+      ],
+    },
     chalcedon: {
       name: 'Kalkedon',
       subtitle: 'Kadıköy — körler ülkesi',
@@ -291,6 +300,22 @@ export default {
       ],
       today: 'Karaköy ve Galata Kulesi çevresindeki sokaklar; surların ve Podestà Sarayı\'nın kalıntıları ayakta.',
     },
+    chrysopolis: {
+      name: 'Khrysopolis',
+      subtitle: 'Χρυσόπολις · Üsküdar, "altın kent"',
+      built: 'MÖ 5. yüzyılda Kalkedon\'un limanıydı; MÖ 410\'da Alkibiades tarafından tahkim edildi',
+      fate: 'Üsküdar olarak yaşıyor',
+      builder: 'Kalkedonlu Yunan yerleşimciler; Alkibiades komutasındaki Atinalılarca tahkim edildi',
+      purpose: 'Liman, gümrük ve Byzantion\'a geçiş için iskele',
+      summary: 'Khrysopolis, Boğaz\'ın karşısından doğrudan Byzantion Akropolisi\'ne bakıyordu. Model kenti Bizans dönemindeki haliyle gösteriyor: başkentten gelen kayıkların yanaştığı rıhtım, kıyıdaki surlu gümrük karakolu, Anadolu\'ya uzanan yol, tepedeki kilise, yamaçta bahçeleri içinde bir saray ve açıkta, kulesiyle Damalis adacığı.',
+      facts: [
+        'MÖ 400\'de Ksenophon\'un Onbinler\'i, Pers seferinden dönen Yunan paralı askerleri, burada yedi gün kalıp ganimetlerini sattı.',
+        '18 Eylül 324\'te Konstantin Licinius\'u Khrysopolis\'te bozguna uğrattı ve Roma İmparatorluğu\'nun tek hâkimi oldu; altı yıl sonra karşı kıyıda Konstantinopolis\'i resmen açtı.',
+        'Bizanslılar açıktaki Damalis adacığını tahkim etti. Bugün orada duran Kız Kulesi çok daha sonraki bir yeniden yapımdır.',
+        'Osmanlı döneminde Üsküdar, Anadolu\'ya giden kervan yollarının ve Mekke\'ye giden yıllık hac kervanının başlangıç noktasıydı.',
+      ],
+      today: 'İstanbul\'un Anadolu yakasında Üsküdar; vapurlar bugün de buradan Eminönü\'ne, Karaköy\'e ve Beşiktaş\'a geçiyor.',
+    },
     chalcedon: {
       name: 'Kalkedon',
       subtitle: 'Καλχηδών · Kadıköy, "körler ülkesi"',
@@ -339,10 +364,6 @@ export default {
     propontis: {
       name: 'Propontis',
       sub: 'Marmara Denizi',
-    },
-    chrysopolis: {
-      name: 'Khrysopolis',
-      sub: 'Üsküdar',
     },
     mese: {
       name: 'Mese',

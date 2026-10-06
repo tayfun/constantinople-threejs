@@ -188,6 +188,5 @@ export const WATER_LABELS = [
 ];
 
 export const PLACE_LABELS = [
-  { id: 'chrysopolis', at: magnify([31, 18]) },
   { id: 'mese', at: magnify([-44, -10]) },
 ];
