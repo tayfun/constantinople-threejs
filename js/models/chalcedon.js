@@ -32,7 +32,8 @@ export function createChalcedon({ lod = 'detail' } = {}) {
 
   if (detail) {
     city.add(mesh(landGeometry(COAST, GROUND, 6), M.grass));
-    city.add(groundPlane(340, 300, M.water, 0, 0.6, 10));
+    // Sea only beyond the shore: the plane's landward edges meet the land's bounds (x 130, z ±110).
+    city.add(groundPlane(300, 220, M.water, -20, 0.6, 0));
     city.add(groundPlane(120, 110, M.dirt, 30, GROUND + 0.02, -35));
   } else {
     city.position.y = -GROUND; // stand directly on the map's land

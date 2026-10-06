@@ -33,7 +33,8 @@ export function createChrysopolis({ lod = 'detail' } = {}) {
 
   if (detail) {
     town.add(mesh(landGeometry(COAST, GROUND, 6), M.grass));
-    town.add(groundPlane(380, 300, M.water, -20, 0.6, 0));
+    // Sea only beyond the shore: the plane's landward edges meet the land's bounds (x 130, z ±110).
+    town.add(groundPlane(340, 220, M.water, -40, 0.6, 0));
   } else {
     town.position.y = -GROUND; // stand directly on the map's land
   }
