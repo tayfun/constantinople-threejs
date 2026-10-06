@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { createRandom, hashString } from '../../util/random.js';
-import { GREEK_INSCRIPTION, LATIN_INSCRIPTION, OBELISK_FACES, OBELISK_SCENE } from '../../data/obeliskInscriptions.js';
+import { GREEK_INSCRIPTION, LATIN_INSCRIPTION, OBELISK_FACES, OBELISK_SCENE, WALLED_OBELISK_INSCRIPTION } from '../../data/obeliskInscriptions.js';
 
 /**
- * Painted textures for the Obelisk of Theodosius at full detail: the four
- * hieroglyph columns of the granite shaft, the relief panels and the Latin
- * and Greek inscriptions of the marble pedestal, the arcaded block beneath it
- * and the porphyry stones at its corners. Everything is drawn once and shared.
+ * Painted textures for the two obelisks of the Hippodrome at full detail.
+ * For the Obelisk of Theodosius: the four hieroglyph columns of the granite
+ * shaft, the relief panels and the Latin and Greek inscriptions of the marble
+ * pedestal, the arcaded block beneath it and the porphyry stones at its
+ * corners. For the Walled Obelisk: its courses of pin-holed limestone and
+ * its inscribed marble base. Everything is drawn once and shared.
  *
  * The signs and letters are set in web fonts (Noto Sans Egyptian Hieroglyphs,
  * Cinzel and EB Garamond, loaded by index.html). Canvases that need them are
@@ -702,14 +704,117 @@ function paintArcade(ctx, w, h, rnd) {
   relief(ctx, rect(0, h * 0.9, w, 6), { depth: 2 });
 }
 
-// ---------- the set ----------
+// ---------- the Walled Obelisk ----------
+
+const LIMESTONE = [[214, 200, 174], [200, 186, 160], [224, 214, 192], [186, 178, 162], [206, 190, 172], [172, 168, 156]];
+const JOINT = [138, 128, 112];
+const HOLE = 'rgba(54, 46, 40, 0.92)';
+
+/** A square socket that once held the pin of a bronze plate, with a lit lower lip. */
+function pinHole(ctx, cx, cy, size) {
+  ctx.fillStyle = HOLE;
+  ctx.beginPath();
+  ctx.roundRect(cx - size / 2, cy - size / 2, size, size, size * 0.3);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+  ctx.fillRect(cx - size / 2, cy + size / 2 - 1.5, size, 1.5);
+}
+
+/** One roughly dressed limestone block standing a little proud of its joints, weathered and pin-holed. */
+function limestoneBlock(ctx, rnd, x, y, bw, bh) {
+  const shade = rnd.range(0.92, 1.06);
+  const tone = rnd.pick(LIMESTONE).map((c) => c * shade);
+  ctx.fillStyle = rgb(tone);
+  ctx.fillRect(x, y, bw, bh);
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = rgb(tone.map((c) => c * 0.84), rnd.range(0.12, 0.4));
+    ctx.beginPath();
+    ctx.ellipse(x + rnd.next() * bw, y + rnd.next() * bh, bw * rnd.range(0.08, 0.3), bh * rnd.range(0.1, 0.35), 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.fillRect(x, y, bw, 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.fillRect(x, y + bh - 2, bw, 2);
+  const holes = rnd.chance(0.35) ? 0 : rnd.int(1, 3);
+  for (let i = 0; i < holes; i++) pinHole(ctx, x + rnd.range(0.1, 0.9) * bw, y + rnd.range(0.25, 0.75) * bh, rnd.range(9, 16));
+}
+
+/** A face of the shaft: courses of uneven height, blocks of uneven length, sized to the face's width where they sit. */
+function paintLimestoneFace(ctx, w, h, rnd, { base, top, height }) {
+  fill(ctx, w, h, JOINT);
+  const pxPerMetre = h / height;
+  let y = h;
+  while (y > 0) {
+    const widthHere = base + (top - base) * (1 - y / h);
+    const metre = w / widthHere;
+    const yTop = Math.max(0, y - rnd.range(0.55, 0.95) * pxPerMetre);
+    let x = -rnd.range(0, 0.8) * metre;
+    while (x < w) {
+      const length = rnd.range(0.5, 1.7) * metre;
+      limestoneBlock(ctx, rnd, x + 2, yTop + 2, length - 4, y - yTop - 4);
+      x += length;
+    }
+    y = yTop;
+  }
+  speckle(ctx, w, h, rnd, { count: (w * h) / 120, color: [120, 110, 96], size: 1.6, alpha: 0.22 });
+  speckle(ctx, w, h, rnd, { count: (w * h) / 200, color: [240, 232, 216], size: 1.4, alpha: 0.25 });
+}
+
+/** The marble pedestal block: banded Proconnesian marble, pin-holed, and on one side the emperor's inscription. */
+function paintPedestalBlock(ctx, w, h, rnd, { inscription = null, fonts = true } = {}) {
+  marble(ctx, w, h, rnd);
+  for (let i = 0; i < 26; i++) {
+    ctx.fillStyle = `rgba(110, 118, 128, ${rnd.range(0.04, 0.12)})`;
+    ctx.fillRect(0, rnd.next() * h, w, rnd.range(2, 9));
+  }
+  const holeBottom = inscription ? h * 0.3 : h * 0.92;
+  const holes = inscription ? 22 : 64;
+  for (let i = 0; i < holes; i++) pinHole(ctx, rnd.range(0.03, 0.97) * w, rnd.range(0.06, 1) * holeBottom, rnd.range(16, 26));
+  if (!inscription || !fonts) return;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `100px ${GREEK_FONT}`;
+  const widest = Math.max(...inscription.map((text) => ctx.measureText(text).width));
+  const lineH = (h * 0.62) / inscription.length;
+  const size = Math.min((w * 0.9 * 100) / widest, lineH * 0.8);
+  ctx.font = `${size.toFixed(1)}px ${GREEK_FONT}`;
+  inscription.forEach((text, i) => {
+    const y = h * 0.36 + lineH * (i + 0.5);
+    ctx.fillStyle = LETTER_LIGHT;
+    ctx.fillText(text, w / 2 + 1.5, y + 1.5);
+    ctx.fillStyle = LETTER;
+    ctx.fillText(text, w / 2, y);
+  });
+}
+
+// ---------- the sets ----------
+
+const seeded = (name, paint) => (ctx, w, h, fonts) => paint(ctx, w, h, createRandom(hashString(name)), fonts);
+
+let walledArt = null;
+
+/** Every texture of the detailed Walled Obelisk, painted on first use and shared afterwards. `shaft` gives its base, top and height in metres. */
+export function walledObeliskArt(shaft) {
+  if (walledArt) return walledArt;
+  walledArt = {
+    faces: SIDES.map((side) => paintedTexture(512, 4096, seeded(`walled-${side}`, (ctx, w, h, rnd) => paintLimestoneFace(ctx, w, h, rnd, shaft)))),
+    cap: paintedTexture(256, 256, seeded('walled-cap', (ctx, w, h, rnd) => {
+      fill(ctx, w, h, [204, 190, 166]);
+      speckle(ctx, w, h, rnd, { count: 1500, color: [150, 138, 120], size: 2, alpha: 0.3 });
+    })),
+    pedestal: paintedTexture(1024, 428, seeded('walled-pedestal', (ctx, w, h, rnd) => paintPedestalBlock(ctx, w, h, rnd))),
+    inscribed: paintedTexture(1024, 428, seeded('walled-inscribed', (ctx, w, h, rnd, fonts) => paintPedestalBlock(ctx, w, h, rnd, { inscription: WALLED_OBELISK_INSCRIPTION, fonts })), { text: true }),
+  };
+  return walledArt;
+}
 
 let art = null;
 
-/** Every texture of the detailed obelisk, painted on first use and shared afterwards. */
+/** Every texture of the detailed Obelisk of Theodosius, painted on first use and shared afterwards. */
 export function obeliskArt() {
   if (art) return art;
-  const seeded = (name, paint) => (ctx, w, h, fonts) => paint(ctx, w, h, createRandom(hashString(name)), fonts);
   art = {
     faces: OBELISK_FACES.map((face) => paintedTexture(512, 4096, seeded(`face-${face.name}`, (ctx, w, h, rnd, fonts) => {
       granite(ctx, w, h, rnd);

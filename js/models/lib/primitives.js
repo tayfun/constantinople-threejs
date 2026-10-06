@@ -349,6 +349,60 @@ export function roundTree(height = 8, x = 0, y = 0, z = 0) {
   return group;
 }
 
+// ---------- obelisks ----------
+
+/**
+ * A four-sided tapering shaft with a pyramidal tip, for obelisks whose faces
+ * carry their own textures. Each face is cut into horizontal strips so its
+ * texture is not skewed by the taper. Material groups: 0 +x, 1 +z, 2 -x,
+ * 3 -z, 4 the tip. Every face's texture runs left to right as seen from
+ * outside, bottom to top. The shaft stands on the origin.
+ */
+export function obeliskGeometry({ base, top, height, tip, strips = 24 }) {
+  const faces = [
+    { normal: [1, 0, 0], right: [0, 0, -1] },
+    { normal: [0, 0, 1], right: [1, 0, 0] },
+    { normal: [-1, 0, 0], right: [0, 0, 1] },
+    { normal: [0, 0, -1], right: [-1, 0, 0] },
+  ];
+  const positions = [];
+  const uvs = [];
+  const geometry = new THREE.BufferGeometry();
+  const corner = ({ normal, right }, halfWidth, side, y) => [
+    normal[0] * halfWidth + right[0] * halfWidth * side,
+    y,
+    normal[2] * halfWidth + right[2] * halfWidth * side,
+  ];
+  const halfWidthAt = (v) => (base + (top - base) * v) / 2;
+
+  faces.forEach((face, index) => {
+    const start = positions.length / 3;
+    for (let j = 0; j < strips; j++) {
+      const v0 = j / strips;
+      const v1 = (j + 1) / strips;
+      const bl = corner(face, halfWidthAt(v0), -1, height * v0);
+      const br = corner(face, halfWidthAt(v0), 1, height * v0);
+      const tr = corner(face, halfWidthAt(v1), 1, height * v1);
+      const tl = corner(face, halfWidthAt(v1), -1, height * v1);
+      positions.push(...bl, ...br, ...tr, ...bl, ...tr, ...tl);
+      uvs.push(0, v0, 1, v0, 1, v1, 0, v0, 1, v1, 0, v1);
+    }
+    geometry.addGroup(start, strips * 6, index);
+  });
+
+  const start = positions.length / 3;
+  for (const face of faces) {
+    positions.push(...corner(face, top / 2, -1, height), ...corner(face, top / 2, 1, height), 0, height + tip, 0);
+    uvs.push(0, 0, 1, 0, 0.5, 1);
+  }
+  geometry.addGroup(start, faces.length * 3, faces.length);
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 // ---------- flags ----------
 
 /** A waving banner on a pole; the pole foot sits at the origin. */

@@ -80,6 +80,23 @@ export const LATIN_INSCRIPTION = [
   'IVDICE SVB PROCLO SVPERAS ELATVS AD AVRAS',
 ];
 
+/**
+ * On the marble base of the Walled Obelisk: six iambic trimeters of
+ * Constantine VII Porphyrogennetos, cut in capitals without word breaks, as
+ * on the stone. "This four-sided wonder of the heights, wasted by time, the
+ * emperor Constantine, whose son Romanos is the glory of the sceptre, now
+ * makes anew, finer than the old sight: the Colossus was a marvel in Rhodes,
+ * and this bronze is a marvel here."
+ */
+export const WALLED_OBELISK_INSCRIPTION = [
+  'ΤΟΤΕΤΡΑΠΛΕΥΡΟΝΘΑΥΜΑΤΩΝΜΕΤΑΡΣΙΩΝ',
+  'ΧΡΟΝΩΦΘΑΡΕΝΝΥΝΚΩΝΣΤΑΝΤΙΝΟΣΔΕΣΠΟΤΗΣ',
+  'ΟΥΡΩΜΑΝΟΣΠΑΙΣΔΟΞΑΤΗΣΣΚΗΠΤΟΥΧΙΑΣ',
+  'ΚΡΕΙΤΤΟΝΝΕΟΥΡΓΕΙΤΗΣΠΑΛΑΙΘΕΩΡΙΑΣ',
+  'ΟΓΑΡΚΟΛΟΣΣΟΣΘΑΜΒΟΣΗΝΕΝΤΗΡΟΔΩ',
+  'ΚΑΙΧΑΛΚΟΣΟΥΤΟΣΘΑΜΒΟΣΕΣΤΙΝΕΝΘΑΔΕ',
+];
+
 /** West side of the lower pedestal block: two Greek elegiac couplets. They say thirty-two days; the Latin says thirty. */
 export const GREEK_INSCRIPTION = [
   'ΚΙΟΝΑ ΤΕΤΡΑΠΛΕΥΡΟΝ ΑΕΙ ΧΘΟΝΙ ΚΕΙΜΕΝΟΝ ΑΧΘΟΣ',

@@ -162,7 +162,7 @@ export default {
       fate: 'Still standing, stripped of its bronze',
       builder: 'Unknown; restored by Constantine VII Porphyrogennetos',
       purpose: 'A monument closing the sphendone end of the spina, answering the Obelisk of Theodosius at the other',
-      summary: 'A 32 m obelisk built of roughly dressed limestone blocks at the sphendone end of the spina — hence its name. Nothing is known of its origin. Its inscription records that Constantine VII, father of Romanos II, renewed this "four-sided wonder of the world", worn down by time, and clad it in plates of gilded bronze, boasting that it now outshone the Colossus of Rhodes. The model shows it in that gilded state.',
+      summary: 'A 32 m obelisk built of roughly dressed limestone blocks at the sphendone end of the spina — hence its name. Nothing is known of its origin. Its inscription records that Constantine VII, father of Romanos II, renewed this "four-sided wonder of the world", worn down by time, and clad it in plates of gilded bronze, boasting that it now outshone the Colossus of Rhodes. The model shows it as it stands today: the bare core of limestone blocks, pocked with the holes that pinned the plates, on its inscribed marble base.',
       facts: [
         'The holes that pock its faces once held the pins that fixed the gilded bronze plates to the masonry core.',
         'The Fourth Crusaders tore the bronze off in 1204 and melted it down for coin.',

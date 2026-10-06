@@ -162,7 +162,7 @@ export default {
       fate: 'Hâlâ ayakta; tunç kaplaması söküldü',
       builder: 'Bilinmiyor; VII. Konstantinos Porphyrogennetos tarafından onarıldı',
       purpose: 'Spinanın sphendone ucunu kapatan, öteki uçtaki Theodosius Dikilitaşı\'na karşılık veren bir anıt',
-      summary: 'Spinanın sphendone ucunda, kabaca yontulmuş kireçtaşı bloklarından örülmüş 32 m\'lik bir dikilitaş — adı da buradan gelir. Kökeni hakkında hiçbir şey bilinmiyor. Yazıtı, II. Romanos\'un babası VII. Konstantinos\'un zamanla yıpranmış bu "dünyanın dört yüzlü harikası"nı yenilediğini ve yaldızlı tunç levhalarla kaplattığını kaydeder; artık Rodos Heykeli\'ni bile gölgede bıraktığıyla övünür. Model onu bu yaldızlı haliyle gösteriyor.',
+      summary: 'Spinanın sphendone ucunda, kabaca yontulmuş kireçtaşı bloklarından örülmüş 32 m\'lik bir dikilitaş — adı da buradan gelir. Kökeni hakkında hiçbir şey bilinmiyor. Yazıtı, II. Romanos\'un babası VII. Konstantinos\'un zamanla yıpranmış bu "dünyanın dört yüzlü harikası"nı yenilediğini ve yaldızlı tunç levhalarla kaplattığını kaydeder; artık Rodos Heykeli\'ni bile gölgede bıraktığıyla övünür. Model onu bugünkü haliyle gösteriyor: levhaları tutan çivilerin delikleriyle dolu çıplak kireçtaşı gövde, yazıtlı mermer kaidesinin üzerinde.',
       facts: [
         'Yüzlerini delik deşik eden oyuklar, bir zamanlar yaldızlı tunç levhaları taş gövdeye tutturan çivilerin yuvalarıdır.',
         'Dördüncü Haçlı Seferi\'nin askerleri 1204\'te tunç levhaları söküp eriterek sikke bastı.',

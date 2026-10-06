@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
-import { box, mesh } from './lib/primitives.js';
+import { box, mesh, obeliskGeometry } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
 import { obeliskArt } from './lib/obeliskArt.js';
 
@@ -60,7 +60,7 @@ export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
 
   // The tapering shaft and its pyramidion.
   if (detail) {
-    const carved = new THREE.Mesh(taperedShaft(shaft, pyramidion), [...stone.faces, stone.pyramidion]);
+    const carved = new THREE.Mesh(obeliskGeometry({ ...shaft, tip: pyramidion }), [...stone.faces, stone.pyramidion]);
     carved.position.y = y;
     carved.castShadow = carved.receiveShadow = true;
     monument.add(carved);
@@ -107,55 +107,4 @@ function sidedBox(width, height, y, sideMaterials) {
   block.position.y = y + height / 2;
   block.castShadow = block.receiveShadow = true;
   return block;
-}
-
-/**
- * The shaft as four tapering faces, each in horizontal strips so a face's
- * texture is not skewed by the taper, plus the four triangles of the
- * pyramidion. Material groups: 0 north, 1 east, 2 south, 3 west, 4 pyramidion.
- * Every face's texture runs left to right as seen from outside, bottom to top.
- */
-function taperedShaft({ base, top, height }, pyramidion, strips = 24) {
-  const faces = [
-    { normal: [1, 0, 0], right: [0, 0, -1] },
-    { normal: [0, 0, 1], right: [1, 0, 0] },
-    { normal: [-1, 0, 0], right: [0, 0, 1] },
-    { normal: [0, 0, -1], right: [-1, 0, 0] },
-  ];
-  const positions = [];
-  const uvs = [];
-  const geometry = new THREE.BufferGeometry();
-  const corner = ({ normal, right }, halfWidth, side, y) => [
-    normal[0] * halfWidth + right[0] * halfWidth * side,
-    y,
-    normal[2] * halfWidth + right[2] * halfWidth * side,
-  ];
-  const halfWidthAt = (v) => (base + (top - base) * v) / 2;
-
-  faces.forEach((face, index) => {
-    const start = positions.length / 3;
-    for (let j = 0; j < strips; j++) {
-      const v0 = j / strips;
-      const v1 = (j + 1) / strips;
-      const bl = corner(face, halfWidthAt(v0), -1, height * v0);
-      const br = corner(face, halfWidthAt(v0), 1, height * v0);
-      const tr = corner(face, halfWidthAt(v1), 1, height * v1);
-      const tl = corner(face, halfWidthAt(v1), -1, height * v1);
-      positions.push(...bl, ...br, ...tr, ...bl, ...tr, ...tl);
-      uvs.push(0, v0, 1, v0, 1, v1, 0, v0, 1, v1, 0, v1);
-    }
-    geometry.addGroup(start, strips * 6, index);
-  });
-
-  const start = positions.length / 3;
-  for (const face of faces) {
-    positions.push(...corner(face, top / 2, -1, height), ...corner(face, top / 2, 1, height), 0, height + pyramidion, 0);
-    uvs.push(0, 0, 1, 0, 0.5, 1);
-  }
-  geometry.addGroup(start, faces.length * 3, faces.length);
-
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
-  return geometry;
 }
