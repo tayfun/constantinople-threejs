@@ -17,6 +17,13 @@ python3 -m http.server 8000
 
 three.js 0.170 and the fonts load from CDNs, so you need to be online.
 
+## Timeline
+
+Each landmark records when it was built and, where it applies, when it was
+demolished or ceased to exist (`period` in `js/data/landmarks.js`). The slider
+at the bottom starts on "All eras"; moving it, or clicking one of the marked
+events (`js/data/timeline.js`), shows only the landmarks standing in that year.
+
 ## Languages
 
 English and Turkish. The page picks the first of the browser's preferred

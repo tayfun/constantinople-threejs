@@ -4,6 +4,7 @@ import { DetailView } from './views/detailView.js';
 import { InfoPanel } from './ui/infoPanel.js';
 import { Sidebar } from './ui/sidebar.js';
 import { SettingsMenu } from './ui/settings.js';
+import { Timeline } from './ui/timeline.js';
 import { onLanguageChange, translateDocument } from './i18n/index.js';
 import { updateWater } from './models/lib/water.js';
 import { wait } from './util/tween.js';
@@ -56,6 +57,12 @@ export class App {
     });
 
     this.settings = new SettingsMenu(root.querySelector('#settings'));
+    this.timeline = new Timeline(root.querySelector('#timeline'), {
+      onChange: (year) => {
+        this.mapView.setYear(year);
+        this.sidebar.setYear(year);
+      },
+    });
     onLanguageChange(() => this.applyLanguage());
 
     this.backButton = root.querySelector('#back-button');
@@ -162,6 +169,7 @@ export class App {
     this.panel.refresh();
     this.mapView.refreshLabels();
     this.settings.render();
+    this.timeline.render();
     this.updateInsets();
   }
 
@@ -182,6 +190,10 @@ export class App {
     }
     if (this.mode === 'map' && !narrow && !sidebar.classList.contains('is-collapsed')) {
       insets.left = sidebar.offsetWidth + 18;
+    }
+    const timeline = this.timeline?.element;
+    if (this.mode === 'map' && timeline && getComputedStyle(timeline).display !== 'none') {
+      insets.bottom = Math.max(insets.bottom ?? 0, timeline.offsetHeight + 24);
     }
     this.root.classList.toggle('has-panel', !panel.hidden);
     this.mapView.setInsets(insets);

@@ -1,5 +1,6 @@
 import { h } from './dom.js';
-import { landmarkText, regionText, ui } from '../i18n/index.js';
+import { formatYear, landmarkText, regionText, ui } from '../i18n/index.js';
+import { standsIn } from '../data/timeline.js';
 
 /** Collapsible list of regions and their landmarks. */
 export class Sidebar {
@@ -7,6 +8,7 @@ export class Sidebar {
     this.element = element;
     this.options = { regions, landmarks, onSelectRegion, onSelectLandmark, onHome, onToggle };
     this.activeId = null;
+    this.year = null;
     element.classList.toggle('is-collapsed', window.matchMedia('(max-width: 760px)').matches);
     this.render();
   }
@@ -40,6 +42,18 @@ export class Sidebar {
 
     element.replaceChildren(toggle, body);
     this.setActive(this.activeId);
+    this.setYear(this.year);
+  }
+
+  /** Dims the landmarks that did not exist in the chosen year (null: none dimmed). */
+  setYear(year) {
+    this.year = year;
+    for (const landmark of this.options.landmarks) {
+      const button = this.buttons.get(landmark.id);
+      const absent = !standsIn(landmark, year);
+      button.classList.toggle('is-absent', absent);
+      button.title = absent ? ui('notStanding', { year: formatYear(year) }) : '';
+    }
   }
 
   setActive(id) {

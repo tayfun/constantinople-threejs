@@ -1,5 +1,5 @@
 import { h } from './dom.js';
-import { landmarkText, regionText, ui } from '../i18n/index.js';
+import { formatPeriod, formatYear, landmarkText, regionText, ui } from '../i18n/index.js';
 
 /** The parchment side panel describing a landmark or a region. */
 export class InfoPanel {
@@ -13,12 +13,17 @@ export class InfoPanel {
   showLandmark(landmark, { animate = true } = {}) {
     this.showing = () => this.showLandmark(landmark, { animate: false });
     const info = landmarkText(landmark.id);
+    const { period } = landmark;
     this.render([
       h('p', { class: 'info-panel__region' }, regionText(landmark.region).name),
       h('h2', {}, info.name),
+      h('p', { class: 'info-panel__years' }, formatPeriod(period)),
       h('p', { class: 'info-panel__subtitle' }, info.subtitle),
       h('dl', { class: 'info-panel__stats' },
         h('dt', {}, ui('built')), h('dd', {}, info.built),
+        period.to === undefined
+          ? [h('dt', {}, ui('status')), h('dd', {}, info.fate)]
+          : [h('dt', {}, ui(period.ending)), h('dd', {}, `${formatYear(period.to, period.toApprox)} — ${info.fate}`)],
         h('dt', {}, ui('builder')), h('dd', {}, info.builder),
         h('dt', {}, ui('purpose')), h('dd', {}, info.purpose)),
       h('div', { class: 'info-panel__ornament' }),

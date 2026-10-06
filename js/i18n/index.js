@@ -64,6 +64,18 @@ export function ui(key, params = {}) {
 export const landmarkText = (id) => LOCALES[current].landmarks[id];
 export const regionText = (id) => LOCALES[current].regions[id];
 export const labelText = (id) => LOCALES[current].labels[id];
+export const eventText = (id) => LOCALES[current].events[id];
+
+/** A year for display: "537", "685 BC" / "MÖ 685", optionally marked approximate. */
+export function formatYear(year, approximate = false) {
+  const plain = year < 0 ? ui('yearBC', { year: -year }) : String(year);
+  return approximate ? ui('approximately', { year: plain }) : plain;
+}
+
+/** A landmark's lifespan, e.g. "537 – today" or "c. 203 – c. 1600". */
+export function formatPeriod({ from, fromApprox, to, toApprox }) {
+  return `${formatYear(from, fromApprox)} – ${to === undefined ? ui('present') : formatYear(to, toApprox)}`;
+}
 
 /** Applies the current language to static markup: data-i18n (text) and data-i18n-label (aria-label, and tooltip if it has one). */
 export function translateDocument(root = document) {

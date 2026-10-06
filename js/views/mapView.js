@@ -7,7 +7,8 @@ import { createShipping } from '../world/shipping.js';
 import { createRouteFollower } from '../world/motion.js';
 import { createLabel, createLabelRenderer, setLabelText } from '../world/labels.js';
 import { labelText, landmarkText, regionText } from '../i18n/index.js';
-import { tween } from '../util/tween.js';
+import { ease, tween } from '../util/tween.js';
+import { standsIn } from '../data/timeline.js';
 import { toWorld } from '../util/geo.js';
 import { applyViewInsets } from '../util/viewport.js';
 import { LAND_HEIGHT, METERS_TO_MAP, PLACE_LABELS, WATER_LABELS } from '../data/geography.js';
@@ -86,6 +87,7 @@ export class MapView {
     }
     this.scene.add(holder);
     holder.updateMatrixWorld(true);
+    holder.userData.baseScaleY = holder.scale.y;
 
     const box = new THREE.Box3().setFromObject(holder);
     const centre = box.getCenter(new THREE.Vector3());
@@ -161,7 +163,8 @@ export class MapView {
 
   pick() {
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const [hit] = this.raycaster.intersectObjects(this.entries.map((entry) => entry.holder), true);
+    const shown = this.entries.filter((entry) => entry.holder.visible).map((entry) => entry.holder);
+    const [hit] = this.raycaster.intersectObjects(shown, true);
     if (!hit) return null;
     for (let node = hit.object; node; node = node.parent) {
       if (node.userData.landmarkId) return this.entries.find((entry) => entry.holder === node);
@@ -175,6 +178,26 @@ export class MapView {
     this.hovered = entry;
     if (entry) highlight(entry, true);
     this.renderer.domElement.style.cursor = entry ? 'pointer' : '';
+  }
+
+  /** Shows only the landmarks that existed in `year` (null shows them all); newcomers rise from the ground. */
+  setYear(year) {
+    for (const entry of this.entries) {
+      const { holder, label } = entry;
+      const visible = standsIn(entry.landmark, year);
+      if (visible === holder.visible) continue;
+      const base = holder.userData.baseScaleY;
+      const rise = (entry.rise ?? 0) + 1; // a newer change cancels a running rise
+      entry.rise = rise;
+      holder.visible = label.visible = visible;
+      holder.scale.y = base;
+      if (visible) {
+        tween({ duration: 600, easing: ease.outBack, onUpdate: (t) => {
+          if (entry.rise === rise) holder.scale.y = base * Math.max(0.02, t);
+        } });
+      }
+    }
+    if (this.hovered && !this.hovered.holder.visible) this.setHovered(null);
   }
 
   // ---------- camera ----------
