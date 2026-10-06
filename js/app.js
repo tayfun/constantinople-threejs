@@ -57,7 +57,6 @@ export class App {
       landmarks: LANDMARKS,
       onSelectRegion: (id) => this.openRegion(id),
       onSelectLandmark: (id) => this.openLandmark(id),
-      onHome: () => this.showWholeCity(),
       onToggle: () => this.updateInsets(),
     });
 
@@ -118,6 +117,7 @@ export class App {
     this.busy = true;
     const landmark = landmarkById(id);
     this.sidebar.setActive(id);
+    this.timeline.stop(); // the years stop passing while a diorama is open
     if (this.mode === 'map') {
       this.hidePanel();
       await this.mapView.focusLandmark(id);
@@ -156,12 +156,6 @@ export class App {
     this.panel.showRegion(region, LANDMARKS.filter((landmark) => landmark.region === id));
     this.updateInsets();
     await this.mapView.focusRegion(region);
-  }
-
-  async showWholeCity() {
-    if (this.busy) return;
-    this.hidePanel();
-    await this.mapView.resetView();
   }
 
   setMode(mode) {

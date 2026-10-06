@@ -4,9 +4,9 @@ import { standsIn } from '../data/timeline.js';
 
 /** The city's title, heading a collapsible list of regions and their landmarks. */
 export class Sidebar {
-  constructor(element, { regions, landmarks, onSelectRegion, onSelectLandmark, onHome, onToggle = () => {} }) {
+  constructor(element, { regions, landmarks, onSelectRegion, onSelectLandmark, onToggle = () => {} }) {
     this.element = element;
-    this.options = { regions, landmarks, onSelectRegion, onSelectLandmark, onHome, onToggle };
+    this.options = { regions, landmarks, onSelectRegion, onSelectLandmark, onToggle };
     this.activeId = null;
     this.year = null;
     element.classList.toggle('is-collapsed', window.matchMedia('(max-width: 760px)').matches);
@@ -15,7 +15,7 @@ export class Sidebar {
 
   /** Builds the list in the current language, keeping the collapsed state and selection. */
   render() {
-    const { regions, landmarks, onSelectRegion, onSelectLandmark, onHome, onToggle } = this.options;
+    const { regions, landmarks, onSelectRegion, onSelectLandmark, onToggle } = this.options;
     const { element } = this;
     this.buttons = new Map();
 
@@ -41,8 +41,7 @@ export class Sidebar {
     h('p', { class: 'sidebar__sub' }, ui('titleSub')),
     toggle);
 
-    const home = h('button', { class: 'sidebar__home', type: 'button', onClick: onHome }, ui('wholeCity'));
-    const body = h('div', { class: 'sidebar__body' }, home, regions.map((region) => h('section', { class: 'sidebar__region' },
+    const body = h('div', { class: 'sidebar__body' }, regions.map((region) => h('section', { class: 'sidebar__region' },
       h('button', { class: 'sidebar__region-button', type: 'button', onClick: () => onSelectRegion(region.id) },
         regionText(region.id).name, h('span', { class: 'sidebar__region-sub' }, regionText(region.id).subtitle)),
       h('ul', {}, landmarks.filter((landmark) => landmark.region === region.id).map((landmark) => {

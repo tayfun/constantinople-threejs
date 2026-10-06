@@ -4,24 +4,39 @@ import { eventText, formatYear, ui } from '../i18n/index.js';
 
 const THUMB = 18; // px; must match the range thumb size in style.css
 const MIN_LABEL_GAP = 38; // px between year labels under the track
+const YEARS_PER_SECOND = 40; // playback speed: the whole span passes in about half a minute
 
 /**
- * The year slider with key events marked along it. It starts on "All eras"
- * (every landmark shown); moving the slider or picking an event selects a
- * single year, reported through onChange(year | null).
+ * The year slider with key events marked along it. It starts with every
+ * landmark shown ("all eras"); moving the slider, picking an event or
+ * pressing play selects a single year, reported through onChange(year | null).
+ * Play runs the years forward from the current one to the end; reset
+ * returns to all eras.
  */
 export class Timeline {
   constructor(element, { onChange }) {
     this.element = element;
     this.onChange = onChange;
     this.year = null;
+    this.playing = false;
+    this.frame = 0;
     new ResizeObserver(() => this.layoutLabels()).observe(element);
     this.render();
   }
 
   render() {
     const { start, end } = TIMELINE;
-    this.allButton = h('button', { class: 'timeline__all', type: 'button', onClick: () => this.select(null) }, ui('allEras'));
+    this.playButton = h('button', { class: 'timeline__button timeline__play', type: 'button', onClick: () => (this.playing ? this.stop() : this.play()) });
+    this.resetButton = h('button', {
+      class: 'timeline__button timeline__reset',
+      type: 'button',
+      'aria-label': ui('reset'),
+      title: ui('reset'),
+      onClick: () => {
+        this.stop();
+        this.select(null);
+      },
+    }, '⟲');
     this.readout = h('p', { class: 'timeline__readout', 'aria-live': 'polite' });
     this.range = h('input', {
       class: 'timeline__range',
@@ -30,7 +45,10 @@ export class Timeline {
       max: end,
       step: 1,
       'aria-label': ui('year'),
-      onInput: () => this.select(Number(this.range.value)),
+      onInput: () => {
+        this.stop();
+        this.select(Number(this.range.value));
+      },
     });
     this.marks = EVENTS.map((event) => {
       const position = (event.year - start) / (end - start);
@@ -40,14 +58,17 @@ export class Timeline {
         type: 'button',
         title: label,
         'aria-label': label,
-        onClick: () => this.select(event.year),
+        onClick: () => {
+          this.stop();
+          this.select(event.year);
+        },
       }, h('span', { class: 'timeline__tick', 'aria-hidden': 'true' }), h('span', { class: 'timeline__label' }, formatYear(event.year)));
       mark.style.left = `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${position})`;
       return { button: mark, position, event };
     });
 
     this.element.replaceChildren(
-      h('div', { class: 'timeline__head' }, this.allButton, this.readout),
+      h('div', { class: 'timeline__head' }, this.playButton, this.resetButton, this.readout),
       h('div', { class: 'timeline__track' }, this.range, h('div', { class: 'timeline__marks' }, this.marks.map(({ button }) => button))),
     );
     this.update();
@@ -61,10 +82,53 @@ export class Timeline {
     this.onChange(year);
   }
 
+  // ---------- playback ----------
+
+  /** Runs the years forward from the current year (or from the start when none, or the end, is chosen). */
+  play() {
+    if (this.playing) return;
+    const { start, end } = TIMELINE;
+    let year = this.year === null || this.year >= end ? start : this.year;
+    let last = performance.now();
+    this.playing = true;
+    this.select(Math.floor(year));
+    const step = (now) => {
+      if (!this.playing) return;
+      // A frame's timestamp can precede the moment play was pressed, so never step backwards.
+      year = Math.min(end, year + (Math.max(0, now - last) / 1000) * YEARS_PER_SECOND);
+      last = now;
+      this.select(Math.floor(year));
+      if (year >= end) {
+        this.stop();
+        return;
+      }
+      this.frame = requestAnimationFrame(step);
+    };
+    this.frame = requestAnimationFrame(step);
+    this.updatePlayButton();
+  }
+
+  stop() {
+    if (!this.playing) return;
+    this.playing = false;
+    cancelAnimationFrame(this.frame);
+    this.updatePlayButton();
+  }
+
+  updatePlayButton() {
+    const label = ui(this.playing ? 'pause' : 'play');
+    this.playButton.textContent = this.playing ? '❚❚' : '▶';
+    this.playButton.setAttribute('aria-label', label);
+    this.playButton.title = label;
+    this.playButton.setAttribute('aria-pressed', String(this.playing));
+    this.playButton.classList.toggle('is-playing', this.playing);
+  }
+
+  // ---------- display ----------
+
   update() {
     const all = this.year === null;
     this.element.classList.toggle('is-all', all);
-    this.allButton.setAttribute('aria-pressed', String(all));
     this.range.value = all ? TIMELINE.end : this.year;
 
     const event = all ? null : latestEvent(this.year);
@@ -74,6 +138,7 @@ export class Timeline {
     this.readout.replaceChildren(...(all ? [] : [h('strong', {}, formatYear(this.year)), ' ']), h('span', {}, caption));
     this.range.setAttribute('aria-valuetext', all ? ui('allEras') : `${formatYear(this.year)}${caption ? ` — ${caption}` : ''}`);
     for (const { button, event: marked } of this.marks) button.classList.toggle('is-current', marked === event);
+    this.updatePlayButton();
   }
 
   /** Shows year labels under the ticks only where they have room. */
