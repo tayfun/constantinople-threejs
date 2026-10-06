@@ -15,7 +15,7 @@ import { applyViewInsets } from '../util/viewport.js';
 import { LAND_HEIGHT, METERS_TO_MAP, PLACE_LABELS, WATER_LABELS } from '../data/geography.js';
 
 const HORIZON = 0xe9d7b6;
-const HOME = { position: new THREE.Vector3(-4, 78, 66), target: new THREE.Vector3(-4, 0, -1) };
+const HOME = { position: new THREE.Vector3(3, 94, 78), target: new THREE.Vector3(3, 0, 2) };
 
 /**
  * The overview map: terrain, landmarks at exaggerated scale, the city

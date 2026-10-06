@@ -9,7 +9,7 @@ import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
 import { createRandom } from '../util/random.js';
 import { createMerchantShip } from './merchantShip.js';
-import { GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP, squeeze } from '../data/geography.js';
+import { GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP, magnify } from '../data/geography.js';
 
 /**
  * Galata, the walled Genoese colony across the Golden Horn (1267–1453):
@@ -131,7 +131,7 @@ function createMapColony() {
   const buildings = new THREE.Group();
   addPodestaPalace(buildings, { x: 0, z: 0, detail: false });
   addDominicanChurch(buildings, { x: -95, z: -40, detail: false });
-  const [east, north] = squeeze([-2.6, 18.8]);
+  const [east, north] = magnify([-2.2, 16.6]);
   buildings.scale.setScalar(5 * METERS_TO_MAP);
   buildings.position.set(east, LAND_HEIGHT, -north);
   colony.add(buildings);

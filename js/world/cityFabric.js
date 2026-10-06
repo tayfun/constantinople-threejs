@@ -10,7 +10,7 @@ import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
   ARKLA_ISLET, ASIA, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, GALATA, GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT,
-  LAND_WALLS, MESE, MESE_NORTH, PENINSULA, PERA, SEA_WALLS, squeeze,
+  EUROPE, LAND_WALLS, MESE, MESE_NORTH, SEA_WALLS, magnify,
 } from '../data/geography.js';
 
 /**
@@ -35,7 +35,7 @@ export function createCityFabric({ ground, keepOut = [] }) {
         && away(p, MESE, 0.3) && away(p, MESE_NORTH, 0.3) && clear(p),
       orientation: alignedTo([MESE, MESE_NORTH, SEA_WALLS, LAND_WALLS]),
       // Densely built in the east; gardens and orchards fill much of the land inside the western walls.
-      builtChance: ([east]) => 0.35 + 0.58 * THREE.MathUtils.smoothstep(east, -52, -28),
+      builtChance: ([east]) => 0.35 + 0.58 * THREE.MathUtils.smoothstep(east, -44, -22),
     },
     {
       polygon: GALATA,
@@ -62,9 +62,9 @@ export function createCityFabric({ ground, keepOut = [] }) {
 
   const outsideTowns = (p) => [CITY, GALATA, CHRYSOPOLIS, CHALCEDON_TOWN].every((town) => !pointInPolygon(p, town) && away(p, town.concat([town[0]]), 0.3));
   merge(planCountryside(rnd, {
-    bounds: [-80, -30, 70, 70],
+    bounds: [-95, -45, 85, 90],
     open: (p, margin) => onLand(p, margin) && outsideTowns(p) && away(p, LAND_WALLS, 3.2) && clear(p),
-    cemeteries: [[-62.6, -6], [-62.2, 6], [-60.6, 14.5], [-1.5, 27]].map(squeeze),
+    cemeteries: [[-53.5, -6], [-53, 6], [-50.5, 15], [-4, 24]].map(magnify),
   }));
 
   for (const item of Object.values(layers).flat()) item.y = LAND_HEIGHT + ground.heightAt(item.point);
@@ -101,7 +101,7 @@ function alignedTo(lines) {
 }
 
 function onLand(point, margin) {
-  for (const land of [PENINSULA, PERA, ASIA]) {
+  for (const land of [EUROPE, ASIA]) {
     if (pointInPolygon(point, land)) return distanceToPolyline(point, land, true) > margin;
   }
   return false;

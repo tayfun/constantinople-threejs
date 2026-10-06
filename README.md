@@ -49,8 +49,10 @@ js/
   util/                  seeded random, 2D geometry, tweening, view insets
 ```
 
-Model space is metres. The map is pictorial rather than surveyed: around
-Hagia Sophia 1 unit is roughly 100 m, but the geography is squeezed ever more
-with distance (`squeeze()` in `js/data/geography.js`), and landmarks are drawn
-well above true scale (`map.scale` in `js/data/landmarks.js`), so they sit
-close together and read clearly from the overview.
+Model space is metres. The map uses 1 unit = 100 m. Its shores are
+simplified from the OpenStreetMap coastline (© OpenStreetMap contributors,
+ODbL), with modern landfill put back to the older shore. Landmarks are drawn
+well above true scale (`map.scale` in `js/data/landmarks.js`) so they read
+from the overview, and to make room for them the crowded heart of the city
+around Hagia Sophia is gently magnified (`magnify()` in
+`js/data/geography.js`), fading to true scale within a couple of kilometres.

@@ -7,7 +7,7 @@ import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
 import { createRandom } from '../util/random.js';
-import { LAND_HEIGHT, LAND_WALLS, squeeze } from '../data/geography.js';
+import { GOLDEN_GATE, LAND_HEIGHT, LAND_WALLS } from '../data/geography.js';
 
 /**
  * The Theodosian Land Walls (408–413, doubled after 447): inner wall, outer
@@ -123,9 +123,9 @@ function createMapCircuit() {
   golden.add(box(1.0, 1.7, 1.0, M.marble, 0, 0, 1.1));
   golden.add(box(0.8, 1.2, 1.4, M.marble, 0, 0, 0));
   golden.add(box(0.82, 0.12, 1.42, M.gold, 0, 1.2, 0));
-  // Just west of the wall's first stretch, turned to run along it.
-  const [east, north] = squeeze([-58.85, -14.5]);
-  const [[e0, n0], [e1, n1]] = LAND_WALLS;
+  // Set in the wall beside Yedikule, turned to run along it.
+  const [east, north] = GOLDEN_GATE;
+  const [[e0, n0], [e1, n1]] = LAND_WALLS.slice(2, 4);
   golden.position.set(east, y, -north);
   golden.rotation.y = Math.atan2(e0 - e1, n1 - n0);
   walls.add(golden);

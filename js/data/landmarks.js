@@ -18,7 +18,7 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL } from './geography.js'
  * Every clickable landmark: its model factory and where it sits on the map.
  * Names and descriptions live in the locale files (js/i18n/), keyed by id.
  *
- * map.at          [east, north] in map units, on the squeezed map (see geography.js)
+ * map.at          [east, north] in map units, on the magnified map (see geography.js)
  * map.rotation    degrees, anticlockwise seen from above
  * map.scale       exaggeration over true size, so buildings read at map scale
  * map.absolute    the model's map version is already built in map coordinates
@@ -35,28 +35,28 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 537 },
     create: createHagiaSophia,
-    map: { at: [4.5, 3.5], rotation: 0, scale: 7 },
+    map: { at: [3.6, 5.2], rotation: 0, scale: 7 },
   },
   {
     id: 'hippodrome',
     region: 'constantinople',
     period: { from: 203, fromApprox: true, to: 1600, toApprox: true, ending: 'demolished' },
     create: createHippodrome,
-    map: { at: [-7.6, -5.6], rotation: 35, scale: 3 },
+    map: { at: [-7.4, -2.6], rotation: 30, scale: 2.5 },
   },
   {
     id: 'great-palace',
     region: 'constantinople',
     period: { from: 330, to: 1453, toApprox: true, ending: 'demolished' },
     create: createGreatPalace,
-    map: { at: [4.3, -7.1], rotation: 18, scale: 3.6 },
+    map: { at: [2.66, -3.26], rotation: 48, scale: 3 },
   },
   {
     id: 'basilica-cistern',
     region: 'constantinople',
     period: { from: 532 },
     create: createBasilicaCistern,
-    map: { at: [-4, 4], rotation: 0, scale: 4.9 },
+    map: { at: [-4.8, 5.2], rotation: 0, scale: 4.9 },
   },
   {
     id: 'forum-of-constantine',
@@ -70,14 +70,14 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 368 },
     create: createAqueductOfValens,
-    map: { at: [-21.5, 5.5], rotation: 8, scale: 3.6 },
+    map: { at: [-22, 8.5], rotation: 8, scale: 3.6 },
   },
   {
     id: 'blachernae',
     region: 'constantinople',
     period: { from: 500, fromApprox: true },
     create: createBlachernae,
-    map: { at: [-29, 11.5], rotation: 0, scale: 4.2 },
+    map: { at: [-30.8, 27.6], rotation: -10, scale: 2.9 },
   },
   {
     id: 'theodosian-walls',
@@ -91,7 +91,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 1082, to: 1453, ending: 'ended' },
     create: createVenetianQuarter,
-    map: { at: [-11.1, 11.6], rotation: -20, scale: 4.9 },
+    map: { at: [-7.46, 10.4], rotation: -16, scale: 4.2 },
   },
   {
     id: 'horn-chain',
@@ -126,7 +126,7 @@ export const LANDMARKS = [
     region: 'chalcedon',
     period: { from: -685, fromApprox: true },
     create: createChalcedon,
-    map: { at: [26, -15], rotation: 0, scale: 4.2 },
+    map: { at: [39.5, -21], rotation: 0, scale: 4.2 },
   },
 ];
 

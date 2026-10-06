@@ -5,11 +5,11 @@ import { createWaterMaterial } from '../models/lib/water.js';
 import { mesh } from '../models/lib/primitives.js';
 import { pointInPolygon, samplePolyline } from '../util/geo.js';
 import {
-  ASIA, CITY, GALATA, LAND_HEIGHT, MESE, MESE_NORTH, PENINSULA, PERA,
+  ASIA, CITY, EUROPE, GALATA, LAND_HEIGHT, MESE, MESE_NORTH,
 } from '../data/geography.js';
 
 /**
- * The map's ground: the three land masses with sandy shores, open water,
+ * The map's ground: the two shores, Europe and Asia, with sandy beaches, open water,
  * the built-up area of each town with the city's seven hills, and the Mese,
  * Constantinople's main street, running over them.
  *
@@ -21,7 +21,7 @@ export function createTerrain(ground) {
   const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), createWaterMaterial({ scale: 0.45, deep: 0x1b6283, shallow: 0x3a97a9, sky: 0xa9d3de }));
   terrain.add(water);
 
-  for (const polygon of [PENINSULA, PERA, ASIA]) terrain.add(landMesh(polygon));
+  for (const polygon of [EUROPE, ASIA]) terrain.add(landMesh(polygon));
 
   const urban = new THREE.MeshStandardMaterial({
     map: cityGround(),
