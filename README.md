@@ -15,7 +15,12 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-three.js 0.170 and the fonts load from CDNs, so you need to be online.
+three.js 0.170 and the fonts load from CDNs, so you need to be online. The
+Obelisk of Theodosius sets its hieroglyphs in Noto Sans Egyptian Hieroglyphs
+and its pedestal inscriptions in Cinzel and EB Garamond; its texts
+(`js/data/obeliskInscriptions.js`) follow the reading published at
+[obelisk-390.vercel.app](https://obelisk-390.vercel.app), after Breasted and
+Habachi for the hieroglyphs and Kiilerich for the Latin and Greek.
 
 ## Timeline
 

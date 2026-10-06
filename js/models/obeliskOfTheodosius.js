@@ -2,40 +2,160 @@ import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import { box, mesh } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { obeliskArt } from './lib/obeliskArt.js';
 
 /**
  * The Obelisk of Theodosius: a granite obelisk of Thutmose III (c. 1450 BC)
- * from Karnak, re-erected in 390 AD on a marble base carved with the emperor
- * watching the races, raised on four bronze blocks. About 25 m tall.
+ * from Karnak, re-erected in 390 AD by Theodosius I on a marble pedestal
+ * carved with the emperor at the races, raised on four bronze blocks.
+ *
+ * Proportions in metres, measured from photographs. Bottom to top:
+ * the lower block with the chariot race (south), the raising of the obelisk
+ * (north) and the Latin (east) and Greek (west) inscriptions; the arcaded
+ * block with porphyry stones at its corners; the upper block with the
+ * imperial scenes under its cornice; the bronze cubes; the shaft, 18.5 m
+ * with its pyramidion, carved with one column of hieroglyphs on each face.
+ * North is +x (along the spina towards the starting gates), east is +z.
  */
-export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
-  const monument = new THREE.Group();
+export const OBELISK = {
+  lower: { width: 3.5, height: 1.15 },
+  arcade: { width: 2.5, height: 0.62 },
+  porphyry: 0.62,
+  upper: { width: 3.0, height: 2.15 },
+  cornice: 0.14,
+  cube: { width: 0.55, height: 0.5, inset: 0.95 },
+  shaft: { base: 2.5, top: 1.76, height: 17.2 },
+  pyramidion: 1.35,
+};
 
-  // Stepped plinth and the sculpted marble pedestal.
-  monument.add(box(6.4, 0.6, 6.4, M.marble, 0, 0, 0));
-  monument.add(box(5.6, 0.6, 5.6, M.marble, 0, 0.6, 0));
-  monument.add(box(4.6, 3, 4.6, M.marble, 0, 1.2, 0));
-  if (lod === 'detail') {
-    // Relief panels: the emperor's court in the kathisma above kneeling envoys.
-    for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-      const panel = box(3.6, 2.2, 0.16, M.stoneDark, Math.sin(angle) * 2.36, 1.6, Math.cos(angle) * 2.36);
-      panel.rotation.y = angle;
-      monument.add(panel);
-    }
-  }
-  monument.add(box(4.9, 0.4, 4.9, M.marble, 0, 4.2, 0));
+const CORNERS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
+  const detail = lod === 'detail';
+  const monument = new THREE.Group();
+  const { lower, arcade, porphyry, upper, cornice, cube, shaft, pyramidion } = OBELISK;
+  const stone = detail ? detailMaterials() : null;
+  let y = 0;
+
+  // The lower block, with its reliefs and inscriptions.
+  monument.add(detail ? sidedBox(lower.width, lower.height, y, stone.lower) : box(lower.width, lower.height, lower.width, M.marble, 0, y, 0));
+  y += lower.height;
+
+  // The arcaded block, with a porphyry stone at each corner of the pedestal above.
+  monument.add(detail ? sidedBox(arcade.width, arcade.height, y, stone.arcade) : box(arcade.width, arcade.height, arcade.width, M.marble, 0, y, 0));
+  const inset = upper.width / 2 - porphyry / 2;
+  for (const [sx, sz] of CORNERS) monument.add(box(porphyry, arcade.height, porphyry, detail ? stone.porphyry : M.stoneDark, sx * inset, y, sz * inset));
+  y += arcade.height;
+
+  // The upper block with the imperial scenes, and its projecting cornice.
+  const blockHeight = upper.height - cornice;
+  monument.add(detail ? sidedBox(upper.width, blockHeight, y, stone.upper) : box(upper.width, blockHeight, upper.width, M.marble, 0, y, 0));
+  y += blockHeight;
+  monument.add(box(upper.width + 0.16, cornice, upper.width + 0.16, M.marble, 0, y, 0));
+  y += cornice;
 
   // The four bronze cubes on which the shaft rests.
-  for (const [x, z] of [[1.2, 1.2], [1.2, -1.2], [-1.2, 1.2], [-1.2, -1.2]]) monument.add(box(0.7, 0.6, 0.7, M.bronze, x, 4.6, z));
+  for (const [sx, sz] of CORNERS) monument.add(box(cube.width, cube.height, cube.width, detail ? stone.bronze : M.bronze, sx * cube.inset, y, sz * cube.inset));
+  y += cube.height;
 
-  // Tapering square shaft carved with hieroglyphs, and its pyramidion.
-  const shaftHeight = 18.6;
-  const shaft = new THREE.CylinderGeometry(1.5 / Math.SQRT2, 2.2 / Math.SQRT2, shaftHeight, 4, 1)
-    .rotateY(Math.PI / 4)
-    .translate(0, shaftHeight / 2, 0);
-  monument.add(mesh(shaft, M.hieroglyphs, 0, 5.2, 0));
-  const pyramidion = new THREE.ConeGeometry(1.5 / Math.SQRT2, 1.6, 4).rotateY(Math.PI / 4).translate(0, 0.8, 0);
-  monument.add(mesh(pyramidion, M.granite, 0, 5.2 + shaftHeight, 0));
+  // The tapering shaft and its pyramidion.
+  if (detail) {
+    const carved = new THREE.Mesh(taperedShaft(shaft, pyramidion), [...stone.faces, stone.pyramidion]);
+    carved.position.y = y;
+    carved.castShadow = carved.receiveShadow = true;
+    monument.add(carved);
+  } else {
+    const toRadius = (side) => side / Math.SQRT2;
+    const plain = new THREE.CylinderGeometry(toRadius(shaft.top), toRadius(shaft.base), shaft.height, 4, 1).rotateY(Math.PI / 4).translate(0, shaft.height / 2, 0);
+    monument.add(mesh(plain, M.hieroglyphs, 0, y, 0));
+    const tip = new THREE.ConeGeometry(toRadius(shaft.top), pyramidion, 4).rotateY(Math.PI / 4).translate(0, pyramidion / 2, 0);
+    monument.add(mesh(tip, M.granite, 0, y + shaft.height, 0));
+  }
 
   return finalizeModel(monument);
+}
+
+// ---------- materials ----------
+
+let materials = null;
+
+/** Materials for the detailed obelisk, built once from the painted textures. Each painting doubles as a bump map, so the carving catches the light. */
+function detailMaterials() {
+  if (materials) return materials;
+  const art = obeliskArt();
+  const carvedMarble = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.012, roughness: 0.6 });
+  const carvedGranite = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.02, roughness: 0.52 });
+  const sided = (textures) => [carvedMarble(textures.north), carvedMarble(textures.south), M.marble, M.marble, carvedMarble(textures.east), carvedMarble(textures.west)];
+  const arcade = carvedMarble(art.arcade);
+  materials = {
+    lower: sided(art.lower),
+    upper: sided(art.upper),
+    arcade: [arcade, arcade, M.marble, M.marble, arcade, arcade],
+    porphyry: new THREE.MeshStandardMaterial({ map: art.porphyry, roughness: 0.82 }),
+    bronze: new THREE.MeshStandardMaterial({ color: 0x5c7566, metalness: 0.55, roughness: 0.55 }),
+    faces: art.faces.map(carvedGranite),
+    pyramidion: new THREE.MeshStandardMaterial({ map: art.pyramidion, roughness: 0.52 }),
+  };
+  return materials;
+}
+
+// ---------- geometry ----------
+
+/** A block whose four sides carry their own textures (materials in box order: +x north, -x south, top, bottom, +z east, -z west). */
+function sidedBox(width, height, y, sideMaterials) {
+  const block = new THREE.Mesh(new THREE.BoxGeometry(width, height, width), sideMaterials);
+  block.position.y = y + height / 2;
+  block.castShadow = block.receiveShadow = true;
+  return block;
+}
+
+/**
+ * The shaft as four tapering faces, each in horizontal strips so a face's
+ * texture is not skewed by the taper, plus the four triangles of the
+ * pyramidion. Material groups: 0 north, 1 east, 2 south, 3 west, 4 pyramidion.
+ * Every face's texture runs left to right as seen from outside, bottom to top.
+ */
+function taperedShaft({ base, top, height }, pyramidion, strips = 24) {
+  const faces = [
+    { normal: [1, 0, 0], right: [0, 0, -1] },
+    { normal: [0, 0, 1], right: [1, 0, 0] },
+    { normal: [-1, 0, 0], right: [0, 0, 1] },
+    { normal: [0, 0, -1], right: [-1, 0, 0] },
+  ];
+  const positions = [];
+  const uvs = [];
+  const geometry = new THREE.BufferGeometry();
+  const corner = ({ normal, right }, halfWidth, side, y) => [
+    normal[0] * halfWidth + right[0] * halfWidth * side,
+    y,
+    normal[2] * halfWidth + right[2] * halfWidth * side,
+  ];
+  const halfWidthAt = (v) => (base + (top - base) * v) / 2;
+
+  faces.forEach((face, index) => {
+    const start = positions.length / 3;
+    for (let j = 0; j < strips; j++) {
+      const v0 = j / strips;
+      const v1 = (j + 1) / strips;
+      const bl = corner(face, halfWidthAt(v0), -1, height * v0);
+      const br = corner(face, halfWidthAt(v0), 1, height * v0);
+      const tr = corner(face, halfWidthAt(v1), 1, height * v1);
+      const tl = corner(face, halfWidthAt(v1), -1, height * v1);
+      positions.push(...bl, ...br, ...tr, ...bl, ...tr, ...tl);
+      uvs.push(0, v0, 1, v0, 1, v1, 0, v0, 1, v1, 0, v1);
+    }
+    geometry.addGroup(start, strips * 6, index);
+  });
+
+  const start = positions.length / 3;
+  for (const face of faces) {
+    positions.push(...corner(face, top / 2, -1, height), ...corner(face, top / 2, 1, height), 0, height + pyramidion, 0);
+    uvs.push(0, 0, 1, 0, 0.5, 1);
+  }
+  geometry.addGroup(start, faces.length * 3, faces.length);
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
 }
