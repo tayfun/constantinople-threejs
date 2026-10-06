@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createLights, createSky } from '../world/environment.js';
 import { createTerrain } from '../world/terrain.js';
+import { createGround } from '../world/ground.js';
 import { createCityFabric } from '../world/cityFabric.js';
 import { createShipping } from '../world/shipping.js';
 import { createRouteFollower } from '../world/motion.js';
@@ -46,10 +47,17 @@ export class MapView {
 
     this.sky = createSky({ horizon: HORIZON });
     this.scene.add(this.sky, createLights({ extent: 95, mapSize: 4096, distance: 220 }).group);
-    this.scene.add(createTerrain());
-
+    // Landmarks first: their footprints become level terraces in the hilly ground.
     this.entries = landmarks.map((landmark) => this.placeLandmark(landmark));
-    this.scene.add(createCityFabric({ keepOut: this.entries.flatMap((entry) => entry.keepOut) }));
+    const terraced = this.entries.filter((entry) => entry.footprint);
+    this.ground = createGround({ footprints: terraced.map((entry) => entry.footprint) });
+    for (const { holder, footprint } of terraced) {
+      holder.position.y = LAND_HEIGHT + this.ground.heightAt(footprint.centre);
+      holder.updateMatrixWorld(true);
+    }
+
+    this.scene.add(createTerrain(this.ground));
+    this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut) }));
     this.scene.add(createShipping());
 
     this.labelRenderer = createLabelRenderer(container);
@@ -74,6 +82,7 @@ export class MapView {
     const holder = new THREE.Group();
     holder.userData.landmarkId = landmark.id;
     holder.add(model);
+    const footprint = new THREE.Box3().setFromObject(model); // in the holder's own frame, before placing it
 
     if (!map.absolute) {
       holder.scale.setScalar(map.scale * METERS_TO_MAP);
@@ -89,13 +98,13 @@ export class MapView {
     holder.updateMatrixWorld(true);
     holder.userData.baseScaleY = holder.scale.y;
 
-    const box = new THREE.Box3().setFromObject(holder);
-    const centre = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const keepOut = map.absolute || map.route
-      ? model.userData.keepOut ?? []
-      : [[centre.x, -centre.z, Math.max(size.x, size.z) * 0.55]];
-    return { landmark, holder, keepOut, label: null };
+    if (map.absolute || map.route) {
+      const keepOut = (model.userData.keepOut ?? []).map(([e, n, r]) => ([pe, pn]) => Math.hypot(pe - e, pn - n) < r);
+      return { landmark, holder, keepOut, footprint: null, label: null };
+    }
+    // The landmark's rotated footprint: levelled into a terrace, and kept free of houses and trees.
+    const distance = distanceOutside(holder, footprint);
+    return { landmark, holder, keepOut: [(point) => distance(point) < 0.25], footprint: { centre: map.at, distance }, label: null };
   }
 
   addLabels(regions, onSelectRegion) {
@@ -127,7 +136,7 @@ export class MapView {
     }
     for (const [list, kind, height] of [[WATER_LABELS, 'water', 0.3], [PLACE_LABELS, 'place', 1.8]]) {
       for (const { id, at } of list) {
-        add(this.scene, toWorld(at, height), () => ({ text: labelText(id).name, sub: labelText(id).sub }), { kind });
+        add(this.scene, toWorld(at, height + this.ground.heightAt(at)), () => ({ text: labelText(id).name, sub: labelText(id).sub }), { kind });
       }
     }
   }
@@ -303,6 +312,18 @@ export class MapView {
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
   }
+}
+
+/** Distance in map units from a point to a placed model's rotated footprint (0 inside it). */
+function distanceOutside(holder, footprint) {
+  const toLocal = holder.matrixWorld.clone().invert();
+  const local = new THREE.Vector3();
+  return ([east, north]) => {
+    local.set(east, holder.position.y, -north).applyMatrix4(toLocal);
+    const dx = Math.max(footprint.min.x - local.x, 0, local.x - footprint.max.x);
+    const dz = Math.max(footprint.min.z - local.z, 0, local.z - footprint.max.z);
+    return Math.hypot(dx, dz) * holder.scale.x;
+  };
 }
 
 // ---------- hover highlight ----------

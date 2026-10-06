@@ -261,12 +261,23 @@ export const mosaic = () =>
     }
   });
 
-/** City ground seen from far above: dusty earth with a hint of tiled roofs. */
+// Map-scale ground (1 unit = 100 m): broad, soft variation only; fine speckle reads as noise from above.
+
+/** Streets and open ground of the towns: plain, dusty earth. */
 export const cityGround = () =>
-  paintTexture('cityGround', { tile: 4 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [196, 176, 140]);
-    blotches(ctx, w, h, rnd, { count: 40, color: [176, 150, 112], radius: 28, alpha: 0.4 });
-    speckle(ctx, w, h, rnd, { count: 1400, color: [170, 96, 66], size: 5, alpha: 0.35 });
+  paintTexture('cityGround', { tile: 10 }, (ctx, w, h, rnd) => {
+    fill(ctx, w, h, [208, 192, 158]);
+    blotches(ctx, w, h, rnd, { count: 26, color: [194, 174, 138], radius: 46, alpha: 0.35 });
+    blotches(ctx, w, h, rnd, { count: 20, color: [220, 206, 174], radius: 40, alpha: 0.35 });
+  });
+
+/** Countryside meadow: painterly patches of green, olive and dry grass. */
+export const mapMeadow = () =>
+  paintTexture('mapMeadow', { tile: 36 }, (ctx, w, h, rnd) => {
+    fill(ctx, w, h, [122, 142, 82]);
+    blotches(ctx, w, h, rnd, { count: 22, color: [102, 124, 68], radius: 70, alpha: 0.35 });
+    blotches(ctx, w, h, rnd, { count: 18, color: [150, 160, 96], radius: 60, alpha: 0.3 });
+    blotches(ctx, w, h, rnd, { count: 10, color: [168, 158, 106], radius: 50, alpha: 0.22 });
   });
 
 // ---------- special-purpose (non-tiling) textures ----------

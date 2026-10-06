@@ -43,7 +43,7 @@ js/
   i18n/                  language detection/switching and the en/tr text
   models/                one file per landmark, each exporting create…({ lod: 'map' | 'detail' })
   models/lib/            shared textures, materials, primitives, hulls, figures, mesh merging
-  world/                 map terrain, city fabric, shipping, labels, lighting
+  world/                 map terrain, town and countryside planners, city fabric, shipping, labels, lighting
   views/                 MapView (overview) and DetailView (diorama stage)
   ui/                    sidebar, information panel and settings menu
   util/                  seeded random, 2D geometry, tweening, view insets

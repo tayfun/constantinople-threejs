@@ -83,6 +83,21 @@ export const MESE_NORTH = [[-25, 1.5], [-33, 6], [-44, 11], [-56.2, 15]];
 
 export const FORUM_OF_CONSTANTINE = [-14.5, -1.75];
 
+/**
+ * Constantinople's seven hills, like Rome's: centre, height and spread in map
+ * units. Heights are exaggerated (the real hills rise 40–80 m), like the
+ * landmarks, so that they read from the overview.
+ */
+export const SEVEN_HILLS = [
+  { at: [2, 2], height: 1.5, radius: 4.5 }, // I: the Acropolis — Hagia Sophia, the palace
+  { at: [-14, -1], height: 1.4, radius: 4 }, // II: Forum of Constantine
+  { at: [-21, 7], height: 1.7, radius: 4.5 }, // III: above the Golden Horn
+  { at: [-32, 9], height: 1.8, radius: 4.5 }, // IV: Holy Apostles
+  { at: [-40, 17], height: 1.5, radius: 4 }, // V: above the Horn
+  { at: [-49, 15], height: 1.9, radius: 5 }, // VI: towards Blachernae
+  { at: [-42, -7], height: 1.4, radius: 6 }, // VII: Xerolophos, the broad south-western hill
+];
+
 /** Ends of the great chain that could close the Golden Horn. */
 export const CHAIN_SOUTH = [6, 10.2];
 export const CHAIN_NORTH = [0.4, 16.1];
