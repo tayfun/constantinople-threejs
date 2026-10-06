@@ -1,0 +1,80 @@
+import * as THREE from 'three';
+import * as textures from './textures.js';
+import { createWaterMaterial } from './water.js';
+
+/** Shared material palette for every model. Created once, reused everywhere. */
+
+const standard = (params) => new THREE.MeshStandardMaterial({ roughness: 0.88, metalness: 0, ...params });
+
+export const materials = {
+  // masonry
+  banded: standard({ map: textures.bandedMasonry() }),
+  stone: standard({ map: textures.ashlar() }),
+  stoneDark: standard({ map: textures.ashlar(), color: 0x9b9182 }),
+  marble: standard({ map: textures.marble(), roughness: 0.45 }),
+  brick: standard({ map: textures.brick() }),
+  plaster: standard({ map: textures.plaster() }),
+  plasterOchre: standard({ map: textures.plaster(), color: 0xf0c49a }),
+  granite: standard({ map: textures.granite(), roughness: 0.5 }),
+  hieroglyphs: standard({ map: textures.hieroglyphs(), roughness: 0.5 }),
+  porphyry: standard({ color: 0x6e2438, roughness: 0.4 }),
+
+  // roofs and metal
+  roof: standard({ map: textures.roofTiles(), roughness: 0.75 }),
+  lead: standard({ map: textures.lead(), roughness: 0.5, metalness: 0.4 }),
+  gold: standard({ color: 0xe0b04a, metalness: 1, roughness: 0.28 }),
+  bronze: standard({ color: 0x86592f, metalness: 0.9, roughness: 0.42 }),
+  gildedBronze: standard({ map: textures.bronzePlates(), metalness: 0.75, roughness: 0.35 }),
+  iron: standard({ color: 0x38373b, metalness: 0.85, roughness: 0.5 }),
+
+  // timber, cloth, ships
+  wood: standard({ map: textures.wood() }),
+  hull: standard({ map: textures.wood(), color: 0xd0a682, side: THREE.DoubleSide }),
+  sail: standard({ map: textures.sailcloth(), side: THREE.DoubleSide, roughness: 1 }),
+  imperialPurple: standard({ color: 0x5c1f63, side: THREE.DoubleSide }),
+  rope: standard({ color: 0x8a7552 }),
+
+  // details
+  opening: standard({ color: 0x1b1612, roughness: 1 }),
+  fire: new THREE.MeshBasicMaterial({ color: 0xffb347 }),
+
+  // ground and planting
+  grass: standard({ map: textures.grass() }),
+  sand: standard({ map: textures.sand() }),
+  dirt: standard({ map: textures.dirt() }),
+  paving: standard({ map: textures.paving() }),
+  mosaic: standard({ map: textures.mosaic(), roughness: 0.6 }),
+  foliage: standard({ color: 0x2e4a2c }),
+  foliageLight: standard({ color: 0x5a7440 }),
+  trunk: standard({ color: 0x5b4331 }),
+
+  water: createWaterMaterial({ scale: 0.12 }),
+  waterSide: standard({ color: 0x1f4f63, roughness: 0.3 }),
+};
+
+const variants = new Map();
+
+/** A colour-tinted variant of a palette material, shared per (name, colour). */
+export function tinted(name, color) {
+  const key = `${name}:${color}`;
+  if (!variants.has(key)) {
+    const material = materials[name].clone();
+    material.color = new THREE.Color(color);
+    variants.set(key, material);
+  }
+  return variants.get(key);
+}
+
+/** Plain double-sided cloth of a given colour (awnings, banners, team colours). */
+export function cloth(color) {
+  const key = `cloth:${color}`;
+  if (!variants.has(key)) variants.set(key, standard({ color, side: THREE.DoubleSide, roughness: 0.95 }));
+  return variants.get(key);
+}
+
+/** A double-sided banner material painted with a heraldic design. */
+export function banner(kind) {
+  const key = `banner:${kind}`;
+  if (!variants.has(key)) variants.set(key, standard({ map: textures.flag(kind), side: THREE.DoubleSide, roughness: 0.95 }));
+  return variants.get(key);
+}
