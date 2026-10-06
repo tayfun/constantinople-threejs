@@ -10,7 +10,7 @@ import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
   ARKLA_ISLET, ASIA, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, GALATA, GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT,
-  LAND_WALLS, MESE, MESE_NORTH, PENINSULA, PERA, SEA_WALLS,
+  LAND_WALLS, MESE, MESE_NORTH, PENINSULA, PERA, SEA_WALLS, squeeze,
 } from '../data/geography.js';
 
 /**
@@ -42,7 +42,7 @@ export function createCityFabric({ ground, keepOut = [] }) {
       accept: (p) => pointInPolygon(p, GALATA) && away(p, GALATA_WALLS, 0.4) && away(p, GALATA_SHORE, 0.35) && clear(p),
       orientation: alignedTo([GALATA_SHORE, GALATA_WALLS]),
       districtSpacing: 4,
-      block: [1.3, 0.95],
+      block: [1.7, 1.25],
     },
     ...[CHRYSOPOLIS, CHALCEDON_TOWN].map((polygon) => ({
       polygon,
@@ -50,7 +50,7 @@ export function createCityFabric({ ground, keepOut = [] }) {
       orientation: alignedTo([ASIA]),
       builtChance: () => 0.75,
       districtSpacing: 4,
-      block: [1.3, 0.95],
+      block: [1.7, 1.25],
     })),
   ];
 
@@ -62,9 +62,9 @@ export function createCityFabric({ ground, keepOut = [] }) {
 
   const outsideTowns = (p) => [CITY, GALATA, CHRYSOPOLIS, CHALCEDON_TOWN].every((town) => !pointInPolygon(p, town) && away(p, town.concat([town[0]]), 0.3));
   merge(planCountryside(rnd, {
-    bounds: [-95, -32, 80, 75],
+    bounds: [-80, -30, 70, 70],
     open: (p, margin) => onLand(p, margin) && outsideTowns(p) && away(p, LAND_WALLS, 3.2) && clear(p),
-    cemeteries: [[-62.6, -6], [-62.2, 6], [-60.6, 14.5], [-1.5, 27]],
+    cemeteries: [[-62.6, -6], [-62.2, 6], [-60.6, 14.5], [-1.5, 27]].map(squeeze),
   }));
 
   for (const item of Object.values(layers).flat()) item.y = LAND_HEIGHT + ground.heightAt(item.point);
@@ -111,21 +111,21 @@ function onLand(point, margin) {
 
 const palette = (...hexes) => hexes.map((hex) => new THREE.Color(hex));
 const FOUNDATION = 0.06; // how far buildings reach below their ground point
-const WALL_TONES = palette(0xf1e8d6, 0xebdfc6, 0xf4eee2, 0xe4d4b6, 0xeadbc0);
-const TILE_TONES = palette(0xa96b52, 0x9f654e, 0xb1785d, 0x986352);
+const WALL_TONES = palette(0xfaf2e2, 0xf5e8cf, 0xfdf8ee, 0xf0dfc0, 0xf6e4c8);
+const TILE_TONES = palette(0xc4633f, 0xb9583a, 0xd0744c, 0xaf5238);
 const PLOT_TONES = {
-  built: palette(0xc9b48e),
-  churchyard: palette(0xd8ccb0),
-  garden: palette(0x8c9a5a, 0x869657),
-  orchard: palette(0x96a262),
-  field: palette(0xa9a868, 0xb0aa6d, 0x9fa363),
-  meadow: palette(0x8fa25c, 0x889c58),
-  fallow: palette(0xa99d70, 0xa29669),
+  built: palette(0xdcc59a),
+  churchyard: palette(0xe8dcc0),
+  garden: palette(0x8fb25a, 0x86aa55),
+  orchard: palette(0x9cba5e),
+  field: palette(0xc9c06a, 0xd4c374, 0xb8bd62),
+  meadow: palette(0x98bc5c, 0x8cb456),
+  fallow: palette(0xc4ad78, 0xbba270),
 };
 const TREE_TONES = {
-  round: palette(0x5d7a42, 0x678448, 0x53703a, 0x6f8a4d),
-  orchard: palette(0x7e9a55, 0x88a25b),
-  cypress: palette(0x2f4b31, 0x365637, 0x2b4530),
+  round: palette(0x5f9a40, 0x6ea648, 0x528c38, 0x78ad4e),
+  orchard: palette(0x84b250, 0x90ba58),
+  cypress: palette(0x2f5e34, 0x37693a, 0x2a5530),
 };
 
 /** A colour from a palette with a slight brightness jitter. */
@@ -247,8 +247,8 @@ const CHURCH_PARTS = [
   { name: 'drum', geometry: cylinderGeometry(1, 1, 1, 12), offset: [0, 0.6, 0], scale: [0.16, 0.13, 0.16] },
   { name: 'dome', geometry: domeGeometry(1, { segments: 12 }), offset: [0, 0.73, 0], scale: [0.165, 0.16, 0.165] },
 ];
-const CHURCH_TONES = palette(0xc98f6c, 0xd8b48c, 0xe7d8bc, 0xbf8564);
-const DOME_TONES = palette(0x8f989e, 0x99a1a6, 0xa96b52);
+const CHURCH_TONES = palette(0xd98f66, 0xe6b98a, 0xf2e2c2, 0xcf8560);
+const DOME_TONES = palette(0x8fa3ad, 0x9fb0b8, 0xc4633f);
 
 function createChurches(rnd, churches) {
   const masonry = new THREE.MeshStandardMaterial({ roughness: 0.85 });

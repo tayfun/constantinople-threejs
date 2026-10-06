@@ -15,7 +15,7 @@ import { applyViewInsets } from '../util/viewport.js';
 import { LAND_HEIGHT, METERS_TO_MAP, PLACE_LABELS, WATER_LABELS } from '../data/geography.js';
 
 const HORIZON = 0xe9d7b6;
-const HOME = { position: new THREE.Vector3(-4, 112, 98), target: new THREE.Vector3(-4, 0, -1) };
+const HOME = { position: new THREE.Vector3(-4, 78, 66), target: new THREE.Vector3(-4, 0, -1) };
 
 /**
  * The overview map: terrain, landmarks at exaggerated scale, the city
@@ -30,7 +30,7 @@ export class MapView {
     this.returnView = null;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(HORIZON, 140, 460);
+    this.scene.fog = new THREE.Fog(HORIZON, 100, 340);
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 3000);
     this.camera.position.copy(HOME.position);
 
@@ -46,7 +46,7 @@ export class MapView {
     this.controls.target.copy(HOME.target);
 
     this.sky = createSky({ horizon: HORIZON });
-    this.scene.add(this.sky, createLights({ extent: 95, mapSize: 4096, distance: 220 }).group);
+    this.scene.add(this.sky, createLights({ extent: 70, mapSize: 4096, distance: 180 }).group);
     // Landmarks first: their footprints become level terraces in the hilly ground.
     this.entries = landmarks.map((landmark) => this.placeLandmark(landmark));
     const terraced = this.entries.filter((entry) => entry.footprint);

@@ -18,14 +18,14 @@ export function planCountryside(rnd, { bounds: [e0, n0, e1, n1], open, cemeterie
   const plan = { houses: [], trees: [], plots: [], churches: [] };
 
   // Woods and scattered groves.
-  const spacing = 0.42;
+  const spacing = 0.55;
   for (let e = e0; e < e1; e += spacing) {
     for (let n = n0; n < n1; n += spacing) {
       const point = [e + rnd.range(-0.4, 0.4) * spacing, n + rnd.range(-0.4, 0.4) * spacing];
       const wild = wildness(point);
       const wooded = wild > 0.57 || (wild > 0.52 && rnd.chance(0.2));
       if (!wooded || !open(point, 0.8)) continue;
-      plan.trees.push({ point, kind: rnd.chance(0.15) ? 'cypress' : 'round', size: rnd.range(0.22, 0.36) });
+      plan.trees.push({ point, kind: rnd.chance(0.15) ? 'cypress' : 'round', size: rnd.range(0.32, 0.48) });
     }
   }
 
@@ -70,9 +70,9 @@ function addFarm(rnd, plan, centre, open) {
       plan.plots.push({ point, angle, length, width, kind: rnd.pick(['field', 'field', 'meadow', 'fallow']) });
       // Hedgerow along one edge of some fields.
       if (rnd.chance(0.3)) {
-        for (let t = -length / 2; t <= length / 2; t += 0.24) {
+        for (let t = -length / 2; t <= length / 2; t += 0.3) {
           const tree = at(u + t, v + width / 2 + gap / 2);
-          if (open(tree, 0.6) && rnd.chance(0.75)) plan.trees.push({ point: tree, kind: 'round', size: rnd.range(0.16, 0.24) });
+          if (open(tree, 0.6) && rnd.chance(0.75)) plan.trees.push({ point: tree, kind: 'round', size: rnd.range(0.22, 0.32) });
         }
       }
     }
@@ -89,7 +89,7 @@ function addFarm(rnd, plan, centre, open) {
       const point = [hamlet[0] + rnd.range(-0.55, 0.55), hamlet[1] + rnd.range(-0.55, 0.55)];
       if (!open(point, 0.7) || placed.some((other) => Math.hypot(point[0] - other[0], point[1] - other[1]) < 0.45)) continue;
       placed.push(point);
-      plan.houses.push({ point, angle: angle + rnd.pick([0, Math.PI / 2]), w: rnd.range(0.2, 0.3), d: rnd.range(0.16, 0.22), h: rnd.range(0.08, 0.13), flat: false });
+      plan.houses.push({ point, angle: angle + rnd.pick([0, Math.PI / 2]), w: rnd.range(0.28, 0.4), d: rnd.range(0.22, 0.3), h: rnd.range(0.12, 0.18), flat: false });
     }
   }
 }

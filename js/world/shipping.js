@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createMerchantShip } from '../models/merchantShip.js';
 import { createRouteFollower } from './motion.js';
 import { toWorld } from '../util/geo.js';
-import { BOSPHORUS_ROUTE, MARMARA_ROUTE, METERS_TO_MAP } from '../data/geography.js';
+import { BOSPHORUS_ROUTE, MARMARA_ROUTE, METERS_TO_MAP, squeeze } from '../data/geography.js';
 
 /** Merchant traffic on the Marmara and the Bosphorus, and ships moored off Galata. */
 
@@ -16,9 +16,9 @@ const SAILING = [
 ];
 
 const MOORED = [
-  { at: [-3.2, 16.4], heading: 0.3, banner: 'genoa' },
-  { at: [1.8, 15.8], heading: -0.4, banner: 'genoa' },
-  { at: [-14.5, 15.1], heading: 0.5, banner: 'venice' },
+  { at: squeeze([-3.2, 16.4]), heading: 0.3, banner: 'genoa' },
+  { at: squeeze([1.8, 15.8]), heading: -0.4, banner: 'genoa' },
+  { at: squeeze([-14.5, 15.1]), heading: 0.5, banner: 'venice' },
 ];
 
 export function createShipping() {

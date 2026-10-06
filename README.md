@@ -49,6 +49,8 @@ js/
   util/                  seeded random, 2D geometry, tweening, view insets
 ```
 
-Model space is metres. The map uses 1 unit = 100 m, and landmarks are drawn
-larger than true scale (`map.scale` in `js/data/landmarks.js`) so they can be
-read from the overview.
+Model space is metres. The map is pictorial rather than surveyed: around
+Hagia Sophia 1 unit is roughly 100 m, but the geography is squeezed ever more
+with distance (`squeeze()` in `js/data/geography.js`), and landmarks are drawn
+well above true scale (`map.scale` in `js/data/landmarks.js`), so they sit
+close together and read clearly from the overview.

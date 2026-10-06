@@ -261,23 +261,21 @@ export const mosaic = () =>
     }
   });
 
-// Map-scale ground (1 unit = 100 m): broad, soft variation only; fine speckle reads as noise from above.
+// Map-scale ground (1 unit = 100 m): near-flat colour with faint, broad variation, like a painted map.
 
 /** Streets and open ground of the towns: plain, dusty earth. */
 export const cityGround = () =>
   paintTexture('cityGround', { tile: 10 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [208, 192, 158]);
-    blotches(ctx, w, h, rnd, { count: 26, color: [194, 174, 138], radius: 46, alpha: 0.35 });
-    blotches(ctx, w, h, rnd, { count: 20, color: [220, 206, 174], radius: 40, alpha: 0.35 });
+    fill(ctx, w, h, [226, 210, 174]);
+    blotches(ctx, w, h, rnd, { count: 20, color: [214, 194, 152], radius: 60, alpha: 0.18 });
   });
 
-/** Countryside meadow: painterly patches of green, olive and dry grass. */
+/** Countryside meadow: fresh green with soft, broad patches. */
 export const mapMeadow = () =>
   paintTexture('mapMeadow', { tile: 36 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [122, 142, 82]);
-    blotches(ctx, w, h, rnd, { count: 22, color: [102, 124, 68], radius: 70, alpha: 0.35 });
-    blotches(ctx, w, h, rnd, { count: 18, color: [150, 160, 96], radius: 60, alpha: 0.3 });
-    blotches(ctx, w, h, rnd, { count: 10, color: [168, 158, 106], radius: 50, alpha: 0.22 });
+    fill(ctx, w, h, [134, 168, 84]);
+    blotches(ctx, w, h, rnd, { count: 16, color: [118, 154, 72], radius: 80, alpha: 0.22 });
+    blotches(ctx, w, h, rnd, { count: 10, color: [160, 178, 96], radius: 70, alpha: 0.18 });
   });
 
 // ---------- special-purpose (non-tiling) textures ----------

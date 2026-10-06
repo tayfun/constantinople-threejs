@@ -18,7 +18,7 @@ import {
 export function createTerrain(ground) {
   const terrain = new THREE.Group();
 
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), createWaterMaterial({ scale: 1.4 }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), createWaterMaterial({ scale: 0.45, deep: 0x1b6283, shallow: 0x3a97a9, sky: 0xa9d3de }));
   terrain.add(water);
 
   for (const polygon of [PENINSULA, PERA, ASIA]) terrain.add(landMesh(polygon));
@@ -33,7 +33,7 @@ export function createTerrain(ground) {
   for (const area of [CITY, GALATA]) terrain.add(overlay(area, urban, 0.01));
   terrain.add(hillsMesh(ground, urban));
 
-  const street = new THREE.MeshStandardMaterial({ color: 0xd9ccb0, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
+  const street = new THREE.MeshStandardMaterial({ color: 0xf2e6c8, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
   for (const line of [MESE, MESE_NORTH]) terrain.add(mesh(ribbonGeometry(line, 0.4, ground), street));
 
   return terrain;

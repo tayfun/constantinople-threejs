@@ -24,10 +24,10 @@ export function planTown(rnd, {
   orientation,
   builtChance = () => 0.9,
   districtSpacing = 8,
-  block = [1.7, 1.15],
-  street = 0.16,
-  height = [0.1, 0.17],
-  churchChance = 0.07,
+  block = [2.2, 1.5],
+  street = 0.26,
+  height = [0.17, 0.27],
+  churchChance = 0.08,
 }) {
   const plan = { houses: [], trees: [], plots: [], churches: [] };
   const districts = districtCentres(rnd, polygon, districtSpacing, orientation);
@@ -104,28 +104,28 @@ function planBlock(rnd, plan, { centre, angle, length, width, built, accept, pol
 
   if (kind === 'churchyard') {
     // A neighbourhood church; Byzantine churches face east whatever the street grid does.
-    plan.churches.push({ point: centre, angle: 0, size: Math.min(0.62, width * 0.8) });
+    plan.churches.push({ point: centre, angle: 0, size: Math.min(0.85, width * 0.75) });
     for (const side of [-1, 1]) {
       const point = offset(centre, side * length * 0.38, -width * 0.32, angle);
-      plan.trees.push({ point, kind: 'cypress', size: rnd.range(0.3, 0.38) });
+      plan.trees.push({ point, kind: 'cypress', size: rnd.range(0.4, 0.5) });
     }
   } else if (kind === 'built') {
     addPerimeterHouses(rnd, plan, { centre, angle, length, width, accept, height });
     for (let k = rnd.int(0, 2); k > 0; k--) {
       const point = offset(centre, rnd.range(-0.25, 0.25) * length, rnd.range(-0.15, 0.15) * width, angle);
-      if (accept(point)) plan.trees.push({ point, kind: rnd.chance(0.3) ? 'cypress' : 'round', size: rnd.range(0.16, 0.24) });
+      if (accept(point)) plan.trees.push({ point, kind: rnd.chance(0.3) ? 'cypress' : 'round', size: rnd.range(0.24, 0.34) });
     }
   } else if (kind === 'garden' && accept(centre)) {
     for (let k = rnd.int(3, 7); k > 0; k--) {
       const point = offset(centre, rnd.range(-0.42, 0.42) * length, rnd.range(-0.4, 0.4) * width, angle);
-      if (accept(point)) plan.trees.push({ point, kind: rnd.chance(0.25) ? 'cypress' : 'round', size: rnd.range(0.18, 0.3) });
+      if (accept(point)) plan.trees.push({ point, kind: rnd.chance(0.25) ? 'cypress' : 'round', size: rnd.range(0.26, 0.4) });
     }
   } else if (kind === 'orchard' && accept(centre)) {
-    const spacing = 0.2;
-    for (let u = -length / 2 + 0.15; u < length / 2 - 0.1; u += spacing) {
-      for (let v = -width / 2 + 0.15; v < width / 2 - 0.1; v += spacing) {
+    const spacing = 0.28;
+    for (let u = -length / 2 + 0.2; u < length / 2 - 0.14; u += spacing) {
+      for (let v = -width / 2 + 0.2; v < width / 2 - 0.14; v += spacing) {
         const point = offset(centre, u, v, angle);
-        if (accept(point)) plan.trees.push({ point, kind: 'orchard', size: rnd.range(0.1, 0.13) });
+        if (accept(point)) plan.trees.push({ point, kind: 'orchard', size: rnd.range(0.15, 0.19) });
       }
     }
   }
@@ -133,7 +133,7 @@ function planBlock(rnd, plan, { centre, angle, length, width, built, accept, pol
 
 /** Houses side by side along all four edges of a block, facing outwards onto the streets. */
 function addPerimeterHouses(rnd, plan, { centre, angle, length, width, accept, height }) {
-  const depth = rnd.range(0.2, 0.27);
+  const depth = rnd.range(0.3, 0.38);
   const sides = [];
   for (const s of [-1, 1]) {
     // Long sides run the full length; short sides fit between them.
@@ -143,14 +143,14 @@ function addPerimeterHouses(rnd, plan, { centre, angle, length, width, accept, h
   for (const { start, along, inward, span } of sides) {
     const direction = angle + along;
     let t = 0;
-    while (t < span - 0.12) {
-      const w = Math.min(rnd.range(0.2, 0.34), span - t);
+    while (t < span - 0.18) {
+      const w = Math.min(rnd.range(0.32, 0.5), span - t);
       const centreAlong = offset(start, t + w / 2, 0, direction);
       const point = offset(centreAlong, (inward[0] * depth) / 2, (inward[1] * depth) / 2, angle);
       if (!rnd.chance(0.05) && accept(point)) {
         plan.houses.push({ point, angle: direction, w, d: depth, h: rnd.range(...height), flat: rnd.chance(0.3) });
       }
-      t += w + 0.012;
+      t += w + 0.02;
     }
   }
 }
