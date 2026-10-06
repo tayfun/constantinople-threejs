@@ -7,15 +7,18 @@ diorama of it with its history.
 
 ## Run
 
-There is no build step, but ES modules can't load from `file://`, so serve
-the folder over HTTP:
+The site is bundled with [Vite](https://vitejs.dev), which ships three.js,
+the app and its styles as one minified file (about 190 KB compressed) and
+splits each language's text into its own file, fetched only when it is used.
 
 ```sh
-python3 -m http.server 8000
-# then open http://localhost:8000
+npm install
+npm run dev       # development server with live reload, http://localhost:5173
+npm run build     # production build in dist/, ready for any static host
+npm run preview   # serves dist/ locally to check the build
 ```
 
-three.js 0.170 and the fonts load from CDNs, so you need to be online. The
+The fonts load from Google Fonts, so you need to be online. The
 Obelisk of Theodosius sets its hieroglyphs in Noto Sans Egyptian Hieroglyphs
 and its pedestal inscriptions in Cinzel and EB Garamond; its texts
 (`js/data/obeliskInscriptions.js`) follow the reading published at
@@ -38,10 +41,23 @@ the bottom-right corner switches language, and the choice is remembered in
 by the ids used in `js/data/`. To add a language, copy one of those files,
 translate it, and register it in `js/i18n/index.js`.
 
+## Performance
+
+Rendering quality is picked once per visit from the device
+(`js/util/quality.js`). Touch devices, and machines reporting little memory
+or few cores, render at a pixel ratio of 1 with 2048-pixel shadow maps and
+plain PCF filtering; everything else gets a pixel ratio of up to 1.5 and
+4096-pixel soft shadows on the map. The sun never moves, so the shadow map
+is redrawn only when the scene changes: when the timeline shows or hides a
+landmark, when a diorama appears, or while one with moving parts (oars,
+flags, chariots) is on stage. Visitors whose system asks for reduced motion
+see a still scene (no sailing ships, water or turning dioramas) that is only
+redrawn when the camera or the scene changes.
+
 ## Layout
 
 ```
-index.html, css/style.css
+index.html, css/style.css, vite.config.js
 js/
   main.js, app.js        entry point; switches between map and detail modes
   data/                  geography (coastlines, walls, routes), regions, landmark placement

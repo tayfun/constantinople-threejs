@@ -4,6 +4,7 @@ import { createLights, createSky, fitShadow } from '../world/environment.js';
 import { materials as M } from '../models/lib/materials.js';
 import { ease, tween } from '../util/tween.js';
 import { applyViewInsets } from '../util/viewport.js';
+import { QUALITY } from '../util/quality.js';
 
 const BACKDROP = 0xe6d3ae;
 const STAGE_SIZE = 26; // every model is scaled so its footprint spans this many units
@@ -25,14 +26,16 @@ export class DetailView {
       enabled: false,
       enableDamping: true,
       dampingFactor: 0.08,
-      autoRotate: true,
+      autoRotate: !QUALITY.reducedMotion,
       autoRotateSpeed: 0.5,
       maxPolarAngle: 1.48,
     });
     this.controls.addEventListener('start', () => { this.controls.autoRotate = false; });
+    this.dirty = true; // something to redraw (only consulted with reduced motion)
+    this.shadowDirty = true; // the sun's shadow map must be redrawn
 
     this.sky = createSky({ top: 0x6b8fb4, horizon: BACKDROP });
-    const { group, sun } = createLights({ extent: 20, mapSize: 2048, distance: LIGHT_DISTANCE, intensity: 2.8 });
+    const { group, sun } = createLights({ extent: 20, mapSize: QUALITY.detailShadowSize, distance: LIGHT_DISTANCE, intensity: 2.8 });
     this.sun = sun;
     this.scene.add(this.sky, group);
 
@@ -80,11 +83,25 @@ export class DetailView {
     this.scene.fog.far = this.scene.fog.near + 170;
     this.controls.minDistance = radius * 0.25;
     this.controls.maxDistance = Math.max(radius * 4, distance * 1.6);
-    this.controls.autoRotate = true;
+    this.controls.autoRotate = !QUALITY.reducedMotion;
     this.controls.update();
+    this.invalidate();
 
+    if (QUALITY.reducedMotion) {
+      wrapper.scale.setScalar(1);
+      return;
+    }
     wrapper.scale.setScalar(0.8);
-    tween({ duration: 900, easing: ease.outBack, onUpdate: (t) => wrapper.scale.setScalar(0.8 + 0.2 * t) });
+    tween({ duration: 900, easing: ease.outBack, onUpdate: (t) => {
+      wrapper.scale.setScalar(0.8 + 0.2 * t);
+      this.invalidate();
+    } });
+  }
+
+  /** The diorama's shapes changed: redraw it, shadows included. */
+  invalidate() {
+    this.dirty = true;
+    this.shadowDirty = true;
   }
 
   build(landmark) {
@@ -106,6 +123,8 @@ export class DetailView {
     wrapper.traverse((object) => {
       if (object.userData.animate) animated.push(object.userData.animate);
     });
+    // With reduced motion the parts never move; pose each once at its starting position.
+    if (QUALITY.reducedMotion) for (const animate of animated) animate(0, 0);
     return {
       wrapper,
       animated,
@@ -126,26 +145,41 @@ export class DetailView {
 
   setActive(active) {
     this.controls.enabled = active;
+    this.dirty = true;
   }
 
   resize(width, height) {
     this.size = { width, height };
     applyViewInsets(this.camera, width, height, this.insets);
+    this.dirty = true;
   }
 
   /** Keeps the model centred in the screen area left free by the info panel. */
   setInsets(insets) {
     this.insets = insets;
     if (this.size) applyViewInsets(this.camera, this.size.width, this.size.height, insets);
+    this.dirty = true;
   }
 
+  /** Advances the diorama; returns whether anything on screen changed. */
   update(time, delta) {
-    this.controls.update(delta);
+    const moved = this.controls.update(delta);
     this.sky.position.copy(this.camera.position);
-    if (this.current) for (const animate of this.current.animated) animate(time, delta);
+    // Moving parts (oars, flags, chariots) cast moving shadows, so a diorama that has any keeps its shadows live.
+    if (this.current?.animated.length && !QUALITY.reducedMotion) {
+      for (const animate of this.current.animated) animate(time, delta);
+      this.invalidate();
+    }
+    const changed = moved || this.dirty;
+    this.dirty = false;
+    return changed;
   }
 
   render(renderer) {
+    if (this.shadowDirty) {
+      renderer.shadowMap.needsUpdate = true;
+      this.shadowDirty = false;
+    }
     renderer.render(this.scene, this.camera);
   }
 }

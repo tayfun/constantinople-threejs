@@ -225,7 +225,7 @@ html, body {
 }
 .info-panel__link:hover { background: var(--purple); color: var(--parchment); }
 
-/* ---------- Back button & hint ---------- */
+/* ---------- Back button ---------- */
 
 .back-button {
   position: absolute;
@@ -245,23 +245,6 @@ html, body {
 .back-button:hover { background: var(--purple); }
 .back-button[hidden] { display: none; }
 .is-detail .sidebar { opacity: 0; pointer-events: none; transform: translateX(-20px); }
-
-.hint {
-  position: absolute;
-  left: 50%;
-  bottom: 116px;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(28, 14, 30, 0.6);
-  color: var(--text-muted);
-  font-size: 14px;
-  pointer-events: none;
-  max-width: calc(100% - 180px);
-  text-align: center;
-}
-.has-panel .hint { display: none; }
 
 /* ---------- Timeline ---------- */
 
@@ -414,28 +397,71 @@ html, body {
 .settings__button[aria-expanded="true"] { transform: rotate(60deg); }
 .settings__button:focus-visible, .settings__option:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 
-.settings__menu {
-  position: absolute;
-  right: 0;
-  bottom: 52px;
-  min-width: 180px;
-  padding: 12px 14px 14px;
+/* The settings dialog: a native <dialog>, centred by the browser, over a dimmed map. */
+.settings__dialog {
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 22px 24px 24px;
   border-radius: var(--radius);
   border: 1px solid var(--panel-border);
   background: var(--panel);
-  backdrop-filter: blur(6px);
+  color: var(--text-light);
+  backdrop-filter: blur(8px);
   box-shadow: var(--shadow);
+  font-family: var(--font-body);
 }
-.settings__menu[hidden] { display: none; }
+.settings__dialog::backdrop { background: rgba(20, 8, 22, 0.55); }
+.settings__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.settings__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+.settings__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: none;
+  color: var(--text-light);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.settings__close:hover { background: var(--purple); }
+.settings__close:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.settings__section + .settings__section { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(241, 207, 107, 0.2); }
 .settings__heading {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-family: var(--font-display);
   font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold-bright);
 }
-.settings__options { display: grid; gap: 6px; }
+.settings__options { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings__controls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.settings__controls li { padding-left: 18px; position: relative; }
+.settings__controls li::before { content: "◆"; position: absolute; left: 0; top: 0.1em; font-size: 10px; color: var(--gold); }
 .settings__option {
   padding: 6px 12px;
   border-radius: 999px;
@@ -555,7 +581,5 @@ html, body {
   .has-panel .timeline { display: none; }
   .info-panel { top: auto; right: 10px; left: 10px; bottom: 10px; width: auto; max-height: 58%; padding: 20px; }
   .back-button { top: 10px; left: 10px; }
-  .hint { display: none; }
   .settings, .has-panel .settings { top: 10px; right: 10px; bottom: auto; }
-  .settings__menu { top: 52px; bottom: auto; }
 }

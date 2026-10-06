@@ -1,10 +1,11 @@
 import { App } from './app.js';
-import { translateDocument, ui } from './i18n/index.js';
+import { ready, translateDocument, ui } from './i18n/index.js';
 
 const root = document.getElementById('app');
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
 // Show the loading screen in the visitor's language before the heavy build starts.
+await ready;
 translateDocument();
 await nextFrame();
 await nextFrame();

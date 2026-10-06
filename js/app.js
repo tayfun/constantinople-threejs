@@ -8,10 +8,12 @@ import { Timeline } from './ui/timeline.js';
 import { onLanguageChange, translateDocument } from './i18n/index.js';
 import { updateWater } from './models/lib/water.js';
 import { wait } from './util/tween.js';
+import { QUALITY, pixelRatio } from './util/quality.js';
 import { LANDMARKS, landmarkById } from './data/landmarks.js';
 import { REGIONS } from './data/regions.js';
 
 const FADE_MS = 340;
+const IDLE_REDRAW_S = 0.25; // with reduced motion, a still scene is redrawn this often as a safety net
 const regionById = (id) => REGIONS.find((region) => region.id === id);
 
 /**
@@ -26,9 +28,12 @@ export class App {
 
     const viewport = root.querySelector('#viewport');
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(pixelRatio());
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = QUALITY.shadowType;
+    // The sun never moves, so the shadow map is redrawn only when a view asks for it
+    // (a landmark appearing on the timeline, a diorama with moving parts), not every frame.
+    this.renderer.shadowMap.autoUpdate = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     viewport.appendChild(this.renderer.domElement);
@@ -79,19 +84,25 @@ export class App {
     this.mapView.jumpHome();
   }
 
+  /**
+   * The frame loop. Normally every frame is drawn, since the water and the
+   * ships are always moving. With reduced motion they stand still, so a
+   * frame is drawn only when the camera or the scene changed, with an
+   * occasional redraw in case something slipped by unflagged.
+   */
   start() {
     const clock = new THREE.Clock();
     let firstFrame = true;
+    let lastDrawn = -Infinity;
     this.renderer.setAnimationLoop(() => {
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.elapsedTime;
-      updateWater(time);
-      if (this.mode === 'map') {
-        this.mapView.update(time, delta);
-        this.mapView.render();
-      } else {
-        this.detailView.update(time, delta);
-        this.detailView.render(this.renderer);
+      const view = this.mode === 'map' ? this.mapView : this.detailView;
+      if (!QUALITY.reducedMotion) updateWater(time);
+      const changed = view.update(time, delta);
+      if (!QUALITY.reducedMotion || changed || time - lastDrawn > IDLE_REDRAW_S) {
+        view.render(this.renderer);
+        lastDrawn = time;
       }
       if (firstFrame) {
         firstFrame = false;

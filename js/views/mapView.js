@@ -12,6 +12,7 @@ import { ease, tween } from '../util/tween.js';
 import { standsIn } from '../data/timeline.js';
 import { toWorld } from '../util/geo.js';
 import { applyViewInsets } from '../util/viewport.js';
+import { QUALITY } from '../util/quality.js';
 import { LAND_HEIGHT, METERS_TO_MAP, PLACE_LABELS, WATER_LABELS } from '../data/geography.js';
 
 const HORIZON = 0xe9d7b6;
@@ -28,6 +29,8 @@ export class MapView {
     this.active = true;
     this.hovered = null;
     this.returnView = null;
+    this.dirty = true; // something to redraw (only consulted with reduced motion)
+    this.shadowDirty = true; // the sun's shadow map must be redrawn
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(HORIZON, 100, 340);
@@ -46,7 +49,7 @@ export class MapView {
     this.controls.target.copy(HOME.target);
 
     this.sky = createSky({ horizon: HORIZON });
-    this.scene.add(this.sky, createLights({ extent: 70, mapSize: 4096, distance: 180 }).group);
+    this.scene.add(this.sky, createLights({ extent: 70, mapSize: QUALITY.mapShadowSize, distance: 180 }).group);
     // Landmarks first: their footprints become level terraces in the hilly ground.
     this.entries = landmarks.map((landmark) => this.placeLandmark(landmark));
     const grounded = this.entries.filter((entry) => entry.footprint);
@@ -69,6 +72,8 @@ export class MapView {
     this.scene.traverse((object) => {
       if (object.userData.animate) this.animated.push(object.userData.animate);
     });
+    // With reduced motion the ships never sail; put each at its starting place once.
+    if (QUALITY.reducedMotion) for (const animate of this.animated) animate(0, 0);
 
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -153,6 +158,7 @@ export class MapView {
       const { text, sub } = read();
       setLabelText(label, text, sub);
     }
+    this.dirty = true;
   }
 
   /** Labels of small landmarks (map.labelWithin) appear only once the camera is close enough to tell them apart. */
@@ -162,7 +168,9 @@ export class MapView {
       const within = landmark.map.labelWithin;
       if (!within || !holder.visible) continue;
       label.getWorldPosition(position);
-      label.visible = position.distanceTo(this.camera.position) < within;
+      const visible = position.distanceTo(this.camera.position) < within;
+      if (visible !== label.visible) this.dirty = true;
+      label.visible = visible;
     }
   }
 
@@ -204,6 +212,7 @@ export class MapView {
     this.hovered = entry;
     if (entry) highlight(entry, true);
     this.renderer.domElement.style.cursor = entry ? 'pointer' : '';
+    this.dirty = true;
   }
 
   /** Shows only the landmarks that existed in `year` (null shows them all); newcomers rise from the ground. */
@@ -217,13 +226,22 @@ export class MapView {
       entry.rise = rise;
       holder.visible = label.visible = visible;
       holder.scale.y = base;
-      if (visible) {
+      this.invalidate();
+      if (visible && !QUALITY.reducedMotion) {
         tween({ duration: 600, easing: ease.outBack, onUpdate: (t) => {
-          if (entry.rise === rise) holder.scale.y = base * Math.max(0.02, t);
+          if (entry.rise !== rise) return;
+          holder.scale.y = base * Math.max(0.02, t);
+          this.invalidate();
         } });
       }
     }
     if (this.hovered && !this.hovered.holder.visible) this.setHovered(null);
+  }
+
+  /** The scene's shapes changed: redraw it, shadows included. */
+  invalidate() {
+    this.dirty = true;
+    this.shadowDirty = true;
   }
 
   // ---------- camera ----------
@@ -237,6 +255,7 @@ export class MapView {
       onUpdate: (t) => {
         this.camera.position.lerpVectors(fromPosition, position, t);
         this.controls.target.lerpVectors(fromTarget, target, t);
+        this.dirty = true;
       },
     }).then(() => {
       this.controls.enabled = this.active;
@@ -300,6 +319,7 @@ export class MapView {
   setActive(active) {
     this.active = active;
     this.controls.enabled = active;
+    this.dirty = true;
     if (!active) this.setHovered(null);
   }
 
@@ -307,27 +327,37 @@ export class MapView {
     this.size = { width, height };
     applyViewInsets(this.camera, width, height, this.insets);
     this.labelRenderer.setSize(width, height);
+    this.dirty = true;
   }
 
   /** Keeps the view centred in the screen area left free by the UI panels. */
   setInsets(insets) {
     this.insets = insets;
     if (this.size) applyViewInsets(this.camera, this.size.width, this.size.height, insets);
+    this.dirty = true;
   }
 
+  /** Advances the scene; returns whether anything on screen changed. */
   update(time, delta) {
-    this.controls.update();
+    const moved = this.controls.update();
     this.sky.position.copy(this.camera.position);
-    for (const animate of this.animated) animate(time, delta);
+    if (!QUALITY.reducedMotion) for (const animate of this.animated) animate(time, delta);
     this.updateLabelVisibility();
     if (this.active && this.pointerDirty && this.controls.enabled) {
       this.pointerDirty = false;
       this.setHovered(this.pick());
     }
+    const changed = moved || this.dirty;
+    this.dirty = false;
+    return changed;
   }
 
-  render() {
-    this.renderer.render(this.scene, this.camera);
+  render(renderer = this.renderer) {
+    if (this.shadowDirty) {
+      renderer.shadowMap.needsUpdate = true;
+      this.shadowDirty = false;
+    }
+    renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
   }
 }

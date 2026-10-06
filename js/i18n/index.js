@@ -1,13 +1,19 @@
-import en from './en.js';
-import tr from './tr.js';
-
 /**
  * Language selection and text lookup. The language is the one the visitor
  * chose in the settings menu, or else the first supported language in the
  * browser's preferences, or else English.
+ *
+ * Each language's text lives in its own module and is fetched only when it
+ * is first needed, so a visitor downloads one language, not all of them.
+ * Await `ready` before reading any text; `setLanguage` resolves once the new
+ * language is in and its listeners have run.
  */
 
-const LOCALES = { en, tr };
+const LOADERS = {
+  en: () => import('./en.js'),
+  tr: () => import('./tr.js'),
+};
+const LOCALES = {}; // code → text, once loaded
 const STORAGE_KEY = 'constantinople.language';
 
 export const LANGUAGES = [
@@ -18,14 +24,22 @@ export const LANGUAGES = [
 const listeners = new Set();
 let current = initialLanguage();
 
+/** Resolves once the initial language's text has loaded. */
+export const ready = loadLanguage(current);
+
+async function loadLanguage(code) {
+  if (!LOCALES[code]) LOCALES[code] = (await LOADERS[code]()).default;
+  return LOCALES[code];
+}
+
 function initialLanguage() {
   const saved = readSaved();
-  if (saved && saved in LOCALES) return saved;
+  if (saved && saved in LOADERS) return saved;
   const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
   // Tolerate header-style entries ("de-DE,tr;q=0.5") as well as plain tags.
   for (const tag of preferred.flatMap((entry) => (entry ?? '').split(','))) {
     const code = tag.split(';')[0].trim().toLowerCase().split('-')[0];
-    if (code in LOCALES) return code;
+    if (code in LOADERS) return code;
   }
   return 'en';
 }
@@ -40,8 +54,13 @@ function readSaved() {
 
 export const getLanguage = () => current;
 
-export function setLanguage(code) {
-  if (!(code in LOCALES) || code === current) return;
+let requested = current;
+
+export async function setLanguage(code) {
+  if (!(code in LOADERS) || code === requested) return;
+  requested = code;
+  await loadLanguage(code);
+  if (requested !== code) return; // the visitor chose again while this one was loading
   current = code;
   try {
     localStorage.setItem(STORAGE_KEY, code);
