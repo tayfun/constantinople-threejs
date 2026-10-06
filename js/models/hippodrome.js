@@ -23,6 +23,20 @@ const ARENA = 38; // half-width of the track
 const OUTER = 62; // half-width to the outer façade
 const META_X = [-114, 134]; // turning posts at each end of the spina
 
+/** Height of the spina's top above the arena, where the monuments stand. */
+export const SPINA_TOP = 1.6;
+
+/**
+ * Where each monument stands along the spina (local x, metres). On the map
+ * they are landmarks in their own right, placed here by js/data/landmarks.js;
+ * the detail model builds them in.
+ */
+export const SPINA_MONUMENTS = {
+  'obelisk-of-theodosius': { x: 72, create: createObeliskOfTheodosius },
+  'serpent-column': { x: 22, create: createSerpentColumn },
+  'walled-obelisk': { x: -62, create: createWalledObelisk },
+};
+
 export function createHippodrome({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const stadium = new THREE.Group();
@@ -117,25 +131,24 @@ function addFacade(stadium, detail) {
 /** The central barrier with its turning posts and monuments. */
 function addSpina(stadium, lod) {
   const [start, end] = META_X;
-  stadium.add(box(end - start - 8, 1.6, 7, M.marble, (start + end) / 2, 0, 0));
+  stadium.add(box(end - start - 8, SPINA_TOP, 7, M.marble, (start + end) / 2, 0, 0));
   for (const x of META_X) {
-    stadium.add(cylinder(3.8, 3.8, 1.6, M.marble, x, 0, 0, 20));
-    for (const z of [-2, 0, 2]) stadium.add(cone(0.8, 6, M.gold, x, 1.6, z, 10));
+    stadium.add(cylinder(3.8, 3.8, SPINA_TOP, M.marble, x, 0, 0, 20));
+    for (const z of [-2, 0, 2]) stadium.add(cone(0.8, 6, M.gold, x, SPINA_TOP, z, 10));
   }
 
-  const monuments = [
-    [createObeliskOfTheodosius({ lod }), 72],
-    [createSerpentColumn({ lod }), 22],
-    [createWalledObelisk({ lod }), -62],
-  ];
-  for (const [monument, x] of monuments) {
-    monument.position.set(x, 1.6, 0);
-    stadium.add(monument);
+  // On the map the monuments are separate, clickable landmarks standing on this spina.
+  if (lod === 'detail') {
+    for (const { x, create } of Object.values(SPINA_MONUMENTS)) {
+      const monument = create({ lod });
+      monument.position.set(x, SPINA_TOP, 0);
+      stadium.add(monument);
+    }
   }
 
   // Columns crowned with bronze statues of charioteers and emperors.
   for (const x of [-95, -25, 45, 105]) {
-    stadium.add(cylinder(0.65, 0.75, 9, M.marble, x, 1.6, 0, 10));
+    stadium.add(cylinder(0.65, 0.75, 9, M.marble, x, SPINA_TOP, 0, 10));
     stadium.add(cylinder(0.35, 0.5, 2.2, M.bronze, x, 10.6, 0, 8));
     stadium.add(cylinder(0.3, 0.3, 0.6, M.bronze, x, 12.8, 0, 8));
   }

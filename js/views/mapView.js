@@ -49,10 +49,12 @@ export class MapView {
     this.scene.add(this.sky, createLights({ extent: 70, mapSize: 4096, distance: 180 }).group);
     // Landmarks first: their footprints become level terraces in the hilly ground.
     this.entries = landmarks.map((landmark) => this.placeLandmark(landmark));
-    const terraced = this.entries.filter((entry) => entry.footprint);
+    const grounded = this.entries.filter((entry) => entry.footprint);
+    // Landmarks standing on another (map.on) ride on their host's terrace rather than levelling one of their own.
+    const terraced = grounded.filter((entry) => !entry.landmark.map.on);
     this.ground = createGround({ footprints: terraced.map((entry) => entry.footprint) });
-    for (const { holder, footprint } of terraced) {
-      holder.position.y = LAND_HEIGHT + this.ground.heightAt(footprint.centre);
+    for (const { landmark, holder, footprint } of grounded) {
+      holder.position.y = LAND_HEIGHT + this.ground.heightAt(footprint.centre) + (landmark.map.lift ?? 0);
       holder.updateMatrixWorld(true);
     }
 
@@ -103,8 +105,10 @@ export class MapView {
       return { landmark, holder, keepOut, footprint: null, label: null };
     }
     // The landmark's rotated footprint: levelled into a terrace, and kept free of houses and trees.
+    // One standing on another landmark lies inside its host's footprint, which already does both.
     const distance = distanceOutside(holder, footprint);
-    return { landmark, holder, keepOut: [(point) => distance(point) < 0.25], footprint: { centre: map.at, distance }, label: null };
+    const keepOut = map.on ? [] : [(point) => distance(point) < 0.25];
+    return { landmark, holder, keepOut, footprint: { centre: map.at, distance }, label: null };
   }
 
   addLabels(regions, onSelectRegion) {
@@ -124,11 +128,13 @@ export class MapView {
       const top = box.getCenter(new THREE.Vector3()).setY(box.max.y + 0.15);
       entry.label = add(holder, holder.worldToLocal(top), () => ({ text: landmarkText(landmark.id).name }), {
         kind: 'landmark',
+        minor: Boolean(landmark.map.on),
         anchorBottom: true,
         onClick: () => this.onSelectLandmark(landmark.id),
         onHover: (on) => this.setHovered(on ? entry : null),
       });
     }
+    this.updateLabelVisibility();
 
     for (const region of regions.filter((r) => r.labelAt)) {
       const read = () => ({ text: regionText(region.id).name, sub: regionText(region.id).subtitle });
@@ -146,6 +152,17 @@ export class MapView {
     for (const { label, read } of this.labels) {
       const { text, sub } = read();
       setLabelText(label, text, sub);
+    }
+  }
+
+  /** Labels of small landmarks (map.labelWithin) appear only once the camera is close enough to tell them apart. */
+  updateLabelVisibility() {
+    const position = new THREE.Vector3();
+    for (const { landmark, holder, label } of this.entries) {
+      const within = landmark.map.labelWithin;
+      if (!within || !holder.visible) continue;
+      label.getWorldPosition(position);
+      label.visible = position.distanceTo(this.camera.position) < within;
     }
   }
 
@@ -302,6 +319,7 @@ export class MapView {
     this.controls.update();
     this.sky.position.copy(this.camera.position);
     for (const animate of this.animated) animate(time, delta);
+    this.updateLabelVisibility();
     if (this.active && this.pointerDirty && this.controls.enabled) {
       this.pointerDirty = false;
       this.setHovered(this.pick());

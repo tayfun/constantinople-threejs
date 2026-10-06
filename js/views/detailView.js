@@ -56,18 +56,28 @@ export class DetailView {
     this.stage.add(wrapper);
 
     this.plinth.scale.set(radius * 1.04, 1, radius * 1.04);
-    fitShadow(this.sun, radius * 1.15, LIGHT_DISTANCE);
+    // The sun stands back far enough, and its shadow frustum opens wide enough, to take in a tall obelisk as well as a wide diorama.
+    const lightDistance = Math.max(LIGHT_DISTANCE, height * 1.2);
+    this.sun.position.setLength(lightDistance);
+    fitShadow(this.sun, Math.max(radius * 1.15, height * 0.6), lightDistance);
 
     // Seen from above, the footprint is foreshortened, so the camera can sit a little inside the bounding sphere.
-    const distance = (Math.hypot(radius, height / 2) / Math.sin(this.visibleHalfFov())) * 0.88;
+    // Slender models (an obelisk, a column) are instead looked at from their middle, so their tops stay in frame.
+    const slender = THREE.MathUtils.clamp(height / (radius * 2) - 1, 0, 1); // 0 when squat, 1 when twice as tall as wide
+    const lerp = (squat, tall) => THREE.MathUtils.lerp(squat, tall, slender);
+    const distance = (Math.hypot(radius, height / 2) / Math.sin(this.visibleHalfFov())) * lerp(0.88, 1.04);
     const azimuth = 0.75;
     const elevation = 0.5;
+    const targetY = height * lerp(0.3, 0.5);
     this.camera.position.set(
       Math.sin(azimuth) * Math.cos(elevation) * distance,
-      Math.sin(elevation) * distance + height * 0.2,
+      targetY + Math.sin(elevation) * distance + height * lerp(-0.1, 0),
       Math.cos(azimuth) * Math.cos(elevation) * distance,
     );
-    this.controls.target.set(0, height * 0.3, 0);
+    this.controls.target.set(0, targetY, 0);
+    // The fog that fades the floor into the backdrop must start beyond the model, however far the camera stands.
+    this.scene.fog.near = Math.max(90, distance * 1.3);
+    this.scene.fog.far = this.scene.fog.near + 170;
     this.controls.minDistance = radius * 0.25;
     this.controls.maxDistance = Math.max(radius * 4, distance * 1.6);
     this.controls.autoRotate = true;

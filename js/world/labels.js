@@ -11,11 +11,12 @@ export function createLabelRenderer(container) {
 
 /**
  * kind: 'landmark' | 'region' | 'water' | 'place'. Interactive labels get
- * button semantics so they can be reached from the keyboard.
+ * button semantics so they can be reached from the keyboard. `minor` draws a
+ * smaller label, for monuments that stand within a larger landmark.
  */
-export function createLabel({ text, sub, kind, onClick, onHover, anchorBottom = false }) {
+export function createLabel({ text, sub, kind, onClick, onHover, anchorBottom = false, minor = false }) {
   const element = document.createElement('div');
-  element.className = `map-label map-label--${kind}`;
+  element.className = `map-label map-label--${kind}${minor ? ' map-label--minor' : ''}`;
   if (onClick) {
     element.setAttribute('role', 'button');
     element.tabIndex = 0;

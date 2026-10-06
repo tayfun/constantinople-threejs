@@ -480,6 +480,9 @@ html, body {
   background: rgba(241, 207, 107, 0.7);
 }
 .map-label--landmark.is-hover { background: var(--purple); color: var(--gold-bright); transform: translateY(-16px) scale(1.06); }
+.map-label--minor { padding: 1px 7px 2px; font-size: 11.5px; transform: translateY(-10px); }
+.map-label--minor::after { bottom: -5px; height: 5px; }
+.map-label--minor.is-hover { transform: translateY(-12px) scale(1.06); }
 
 .map-label--region {
   font-family: var(--font-display);
