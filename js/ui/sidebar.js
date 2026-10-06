@@ -2,7 +2,7 @@ import { h } from './dom.js';
 import { formatYear, landmarkText, regionText, ui } from '../i18n/index.js';
 import { standsIn } from '../data/timeline.js';
 
-/** Collapsible list of regions and their landmarks. */
+/** The city's title, heading a collapsible list of regions and their landmarks. */
 export class Sidebar {
   constructor(element, { regions, landmarks, onSelectRegion, onSelectLandmark, onHome, onToggle = () => {} }) {
     this.element = element;
@@ -19,16 +19,27 @@ export class Sidebar {
     const { element } = this;
     this.buttons = new Map();
 
+    // The title doubles as the list's header: clicking anywhere on it folds the list away.
+    // The chevron button carries the accessible name and state for keyboard and screen-reader users.
     const toggle = h('button', {
       class: 'sidebar__toggle',
       type: 'button',
+      'aria-label': ui('landmarks'),
+      title: ui('landmarks'),
       'aria-expanded': String(!element.classList.contains('is-collapsed')),
+    }, h('span', { class: 'sidebar__chevron', 'aria-hidden': 'true' }, '▾'));
+    const title = h('header', {
+      class: 'sidebar__title',
       onClick: () => {
         const isCollapsed = element.classList.toggle('is-collapsed');
         toggle.setAttribute('aria-expanded', String(!isCollapsed));
         onToggle();
       },
-    }, ui('landmarks'), h('span', { class: 'sidebar__chevron', 'aria-hidden': 'true' }, '▾'));
+    },
+    h('p', { class: 'sidebar__greek', lang: 'grc' }, 'Κωνσταντινούπολις'),
+    h('h1', { class: 'sidebar__name' }, ui('title')),
+    h('p', { class: 'sidebar__sub' }, ui('titleSub')),
+    toggle);
 
     const home = h('button', { class: 'sidebar__home', type: 'button', onClick: onHome }, ui('wholeCity'));
     const body = h('div', { class: 'sidebar__body' }, home, regions.map((region) => h('section', { class: 'sidebar__region' },
@@ -40,7 +51,7 @@ export class Sidebar {
         return h('li', {}, button);
       })))));
 
-    element.replaceChildren(toggle, body);
+    element.replaceChildren(title, body);
     this.setActive(this.activeId);
     this.setYear(this.year);
   }
