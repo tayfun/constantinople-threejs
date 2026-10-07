@@ -27,6 +27,7 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from '
  * map.on          id of the landmark this one stands on: it shares that landmark's
  *                 terrace and clearing instead of levelling the ground itself
  * map.lift        map units above the ground (e.g. onto the Hippodrome's spina)
+ * map.clearance   map units kept free of houses and trees around the footprint (default 0.25)
  * map.labelWithin the label appears only when the camera is this close, in map
  *                 units, so small monuments don't crowd their host's label
  *
@@ -115,7 +116,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 368 },
     create: createAqueductOfValens,
-    map: { at: [-20.5, 9.1], rotation: -25, scale: 3.6 },
+    map: { at: [-21, 9.5], rotation: -25, scale: 4.2, clearance: 0.9 },
   },
   {
     id: 'blachernae',

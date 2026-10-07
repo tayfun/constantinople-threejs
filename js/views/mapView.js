@@ -116,7 +116,8 @@ export class MapView {
     // The landmark's rotated footprint: levelled into a terrace, and kept free of houses and trees.
     // One standing on another landmark lies inside its host's footprint, which already does both.
     const distance = distanceOutside(holder, footprint);
-    const keepOut = map.on ? [] : [(point) => distance(point) < 0.25];
+    const clearance = map.clearance ?? 0.25;
+    const keepOut = map.on ? [] : [(point) => distance(point) < clearance];
     return { landmark, holder, keepOut, footprint: { centre: map.at, distance }, label: null };
   }
 
