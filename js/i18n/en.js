@@ -34,6 +34,8 @@ export default {
     language: 'Language',
     controls: 'Controls',
     sources: 'Sources',
+    debug: 'Debug',
+    debugShow: 'Show FPS and camera details',
     controlRotate: 'Drag to rotate the view',
     controlPan: 'Drag with the right mouse button to pan',
     controlZoom: 'Scroll to zoom',

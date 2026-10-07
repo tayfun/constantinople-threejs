@@ -499,6 +499,26 @@ html, body {
 .settings__option[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--purple-deep); }
 .settings__option[aria-pressed="true"]::before { content: "✓ "; }
 
+/* ---------- Debug readout (switched on in the settings menu) ---------- */
+
+.debug-overlay {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 4;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(20, 8, 22, 0.78);
+  color: #d8f5c8;
+  font: 11.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+  pointer-events: none;
+  transition: right 0.3s ease;
+}
+.debug-overlay[hidden] { display: none; }
+.has-panel .debug-overlay { right: calc(min(420px, 100% - 36px) + 30px); }
+
 /* ---------- Sources page (from the settings menu) ---------- */
 
 .sources__open::after { content: " →"; }
@@ -645,4 +665,5 @@ html, body {
   .info-panel { top: auto; right: 10px; left: 10px; bottom: 10px; width: auto; max-height: 58%; padding: 20px; }
   .back-button { top: 10px; left: 10px; }
   .settings, .has-panel .settings { top: 10px; right: 10px; bottom: auto; }
+  .debug-overlay, .has-panel .debug-overlay { top: 60px; right: 10px; font-size: 10px; }
 }

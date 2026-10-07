@@ -17,7 +17,7 @@ import { QUALITY } from '../util/quality.js';
 import { LAND_HEIGHT, METERS_TO_MAP } from '../data/geography.js';
 
 const HORIZON = 0xe9d7b6;
-const HOME = { position: new THREE.Vector3(3, 94, 78), target: new THREE.Vector3(3, 0, 2) };
+const HOME = { position: new THREE.Vector3(0, 14.50, 18.75), target: new THREE.Vector3(3, 0, 2) };
 
 /**
  * The overview map: terrain, landmarks at exaggerated scale, the city

@@ -4,6 +4,7 @@ import { DetailView } from './views/detailView.js';
 import { InfoPanel } from './ui/infoPanel.js';
 import { Sidebar } from './ui/sidebar.js';
 import { SettingsMenu } from './ui/settings.js';
+import { DebugOverlay } from './ui/debugOverlay.js';
 import { Timeline } from './ui/timeline.js';
 import { landmarkText, onLanguageChange, translateDocument, ui } from './i18n/index.js';
 import { updateWater } from './models/lib/water.js';
@@ -60,7 +61,8 @@ export class App {
       onToggle: () => this.updateInsets(),
     });
 
-    this.settings = new SettingsMenu(root.querySelector('#settings'));
+    this.debug = new DebugOverlay(root);
+    this.settings = new SettingsMenu(root.querySelector('#settings'), { debug: this.debug });
     this.timeline = new Timeline(root.querySelector('#timeline'), {
       onChange: (year) => {
         this.mapView.setYear(year);
@@ -101,10 +103,12 @@ export class App {
       const view = this.mode === 'map' ? this.mapView : this.detailView;
       if (!QUALITY.reducedMotion) updateWater(time);
       const changed = view.update(time, delta);
-      if (!QUALITY.reducedMotion || changed || time - lastDrawn > IDLE_REDRAW_S) {
+      const drawn = !QUALITY.reducedMotion || changed || time - lastDrawn > IDLE_REDRAW_S;
+      if (drawn) {
         view.render(this.renderer);
         lastDrawn = time;
       }
+      this.debug.frame({ mode: this.mode, view, renderer: this.renderer, drawn });
       if (firstFrame) {
         firstFrame = false;
         this.root.querySelector('#loading').classList.add('is-done');

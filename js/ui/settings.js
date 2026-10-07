@@ -6,13 +6,15 @@ const CONTROL_KEYS = ['controlRotate', 'controlPan', 'controlZoom', 'controlSele
 
 /**
  * The gear button and the settings dialog it opens: the language choice,
- * a reminder of how to steer the map and a link to the sources page.
+ * a reminder of how to steer the map, a link to the sources page and the
+ * switch for the developers' debug readout.
  * A native <dialog> gives the modal its backdrop, focus trapping and
  * Escape handling.
  */
 export class SettingsMenu {
-  constructor(element) {
+  constructor(element, { debug }) {
     this.element = element;
+    this.debug = debug;
     this.button = element.querySelector('.settings__button');
     this.dialog = h('dialog', { class: 'settings__dialog', 'aria-labelledby': 'settings-title' });
     element.append(this.dialog);
@@ -57,6 +59,17 @@ export class SettingsMenu {
       h('section', { class: 'settings__section' },
         h('h3', { class: 'settings__heading' }, ui('sources')),
         h('button', { class: 'settings__option sources__open', type: 'button', onClick: (event) => this.sources.open(event.currentTarget) }, sourcesText().title)),
+      h('section', { class: 'settings__section' },
+        h('h3', { class: 'settings__heading' }, ui('debug')),
+        h('button', {
+          class: 'settings__option',
+          type: 'button',
+          'aria-pressed': String(this.debug.enabled),
+          onClick: (event) => {
+            this.debug.setEnabled(!this.debug.enabled);
+            event.currentTarget.setAttribute('aria-pressed', String(this.debug.enabled));
+          },
+        }, ui('debugShow'))),
     );
     this.sources.render();
     if (hadFocus) options.find((option) => option.getAttribute('aria-pressed') === 'true')?.focus();
