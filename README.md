@@ -47,14 +47,23 @@ translate it, and register it in `js/i18n/index.js`.
 
 Rendering quality is picked once per visit from the device
 (`js/util/quality.js`). Touch devices, and machines reporting little memory
-or few cores, render at a pixel ratio of 1 with 2048-pixel shadow maps and
-plain PCF filtering; everything else gets a pixel ratio of up to 1.5 and
-4096-pixel soft shadows on the map. The sun never moves, so the shadow map
+or few cores, render at a pixel ratio of 1 with 2048-pixel shadow maps;
+everything else gets a pixel ratio of up to 1.5 and 4096-pixel shadow maps
+on the map. The sun never moves, so the shadow map
 is redrawn only when the scene changes: when the timeline shows or hides a
 landmark, when a diorama appears, or while one with moving parts (oars,
 flags, chariots) is on stage. Visitors whose system asks for reduced motion
 see a still scene (no sailing ships, water or turning dioramas) that is only
 redrawn when the camera or the scene changes.
+
+## Mobile Bugs
+
+- three.js's default `PCFShadowMap` resets the GPU of the Pixel 10's PowerVR
+  DXT within about 35 frames (three.js's own shadow example included), so
+  both quality tiers use `PCFSoftShadowMap`.
+- The obelisks' bump-mapped carving under live shadows (the Hippodrome's
+  racing chariots) resets the same GPU within seconds, so the low tier
+  leaves out the bump maps (`bumpMaps` in `js/util/quality.js`).
 
 ## Layout
 
