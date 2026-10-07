@@ -265,7 +265,7 @@ html, body {
   --thumb: 18px;
   position: absolute;
   left: 320px; /* clear of the sidebar (284px wide at 18px) */
-  right: 78px;
+  right: 178px; /* clear of the three corner buttons */
   bottom: 14px;
   max-width: 780px;
   margin: 0 auto;
@@ -277,7 +277,7 @@ html, body {
   backdrop-filter: blur(6px);
   transition: opacity 0.3s, right 0.3s ease;
 }
-.has-panel .timeline { right: calc(min(420px, 100% - 36px) + 88px); }
+.has-panel .timeline { right: calc(min(420px, 100% - 36px) + 190px); }
 .is-detail .timeline { opacity: 0; pointer-events: none; }
 
 .timeline__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -392,7 +392,7 @@ html, body {
 
 /* ---------- Settings and music ---------- */
 
-/* The corner holding the music and settings buttons, and the music window above them. */
+/* The corner holding the timeline, music and settings buttons, and the music window above them. */
 .settings {
   position: absolute;
   right: 18px;
@@ -405,7 +405,7 @@ html, body {
 /* Step aside so the open information panel does not cover it. */
 .has-panel .settings { right: calc(min(420px, 100% - 36px) + 30px); }
 
-.settings__button, .music__button {
+.settings__button, .music__button, .timeline__toggle {
   display: grid;
   place-items: center;
   width: 42px;
@@ -418,10 +418,12 @@ html, body {
   cursor: pointer;
   transition: transform 0.3s ease, background 0.15s;
 }
-.settings__button:hover, .music__button:hover { background: var(--purple-bright); }
+.settings__button:hover, .music__button:hover, .timeline__toggle:hover { background: var(--purple-bright); }
 .settings__button[aria-expanded="true"] { transform: rotate(60deg); }
-.music__button[aria-expanded="true"] { background: var(--purple-bright); }
-.settings__button:focus-visible, .settings__option:focus-visible, .music__button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.music__button[aria-expanded="true"], .timeline__toggle[aria-expanded="true"] { background: var(--purple-bright); }
+.settings__button:focus-visible, .settings__option:focus-visible, .music__button:focus-visible, .timeline__toggle:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+/* The timeline belongs to the map, so its button goes away inside a landmark. */
+.is-detail .timeline__toggle { display: none; }
 
 /* The music window: a small panel that stays open while the map is used, so the player keeps playing when it is hidden. */
 .music {

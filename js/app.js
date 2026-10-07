@@ -66,10 +66,12 @@ export class App {
     this.settings = new SettingsMenu(root.querySelector('#settings'), { debug: this.debug });
     this.music = new MusicPlayer(root.querySelector('#settings'));
     this.timeline = new Timeline(root.querySelector('#timeline'), {
+      toggle: root.querySelector('.timeline__toggle'),
       onChange: (year) => {
         this.mapView.setYear(year);
         this.sidebar.setYear(year);
       },
+      onToggle: () => this.updateInsets(),
     });
     onLanguageChange(() => this.applyLanguage());
 

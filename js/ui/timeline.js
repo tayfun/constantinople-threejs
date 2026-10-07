@@ -11,12 +11,15 @@ const YEARS_PER_SECOND = 40; // playback speed: the whole span passes in about h
  * landmark shown ("all eras"); moving the slider, picking an event or
  * pressing play selects a single year, reported through onChange(year | null).
  * Play runs the years forward from the current one to the end; reset
- * returns to all eras.
+ * returns to all eras. It stays hidden until its toggle button opens it.
  */
 export class Timeline {
-  constructor(element, { onChange }) {
+  constructor(element, { toggle, onChange, onToggle }) {
     this.element = element;
+    this.toggle = toggle;
     this.onChange = onChange;
+    this.onToggle = onToggle;
+    toggle.addEventListener('click', () => this.setOpen(element.hidden));
     this.year = null;
     this.playing = false;
     this.frame = 0;
@@ -73,6 +76,12 @@ export class Timeline {
     );
     this.update();
     requestAnimationFrame(() => this.layoutLabels());
+  }
+
+  setOpen(open) {
+    this.element.hidden = !open;
+    this.toggle.setAttribute('aria-expanded', String(open));
+    this.onToggle();
   }
 
   select(year) {
