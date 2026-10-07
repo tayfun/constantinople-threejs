@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/browser": "^11.5.0",
     "three": "0.170.0"
   },
   "devDependencies": {
+    "@sentry/vite-plugin": "^5.4.1",
     "vite": "^6"
   }
 }

@@ -1,3 +1,4 @@
+import './sentry.js'; // first, so it is running before the app's modules load
 import { App } from './app.js';
 import { ready, translateDocument, ui } from './i18n/index.js';
 
