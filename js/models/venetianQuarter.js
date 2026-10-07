@@ -6,6 +6,7 @@ import {
 } from './lib/primitives.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 import { createMerchantShip } from './merchantShip.js';
 
@@ -34,6 +35,8 @@ export function createVenetianQuarter({ lod = 'detail' } = {}) {
     openings: [{ x: -40, width: 5, bottom: 0, spring: 5 }, { x: 30, width: 5, bottom: 0, spring: 5 }],
   }), M.banded, 0, 0, -30));
   quarter.add(mesh(crenellationGeometry(200), M.banded, 0, 10, -31.2));
+  labelAt(quarter, 'drungariosGate', -40, 11, -30);
+  labelAt(quarter, 'portaPeramatis', 30, 11, -30);
   for (const x of [-85, -47, -33, 23, 37, 95]) {
     quarter.add(box(8, 14, 8, M.banded, x, 0, -30));
     for (const side of [-1, 1]) quarter.add(mesh(crenellationGeometry(8, { merlon: 0.8, gap: 0.6, height: 1 }), M.banded, x, 14, -30 + side * 3.65));
@@ -51,9 +54,10 @@ export function createVenetianQuarter({ lod = 'detail' } = {}) {
     }
   }
 
-  addFondaco(quarter, detail);
+  labelAt(quarter, 'scalae', -10, 1.5, -64);
+  labelled(quarter, 'fondaco', () => addFondaco(quarter, detail));
   addChurch(quarter, detail);
-  addEmbolos(quarter, detail);
+  labelled(quarter, 'embolos', () => addEmbolos(quarter, detail));
   if (detail) addMarket(quarter);
 
   if (detail) {
@@ -135,6 +139,8 @@ function addChurch(quarter, detail) {
   quarter.add(hipRoof(16.4, 16.4, 1.2, M.roof, x, 9, z, 0));
   quarter.add(cylinder(3.6, 3.6, 3.4, M.brick, x, 11, z, 16));
   quarter.add(dome(3.6, M.lead, x, 14.4, z));
+  labelAt(quarter, 'sanMarco', x, 19, z);
+  labelAt(quarter, 'threeApses', x + 12.6, 8.5, z);
   // Three apses on the east (+x) side.
   for (const [dz, r] of [[0, 2.6], [-5.5, 1.5], [5.5, 1.5]]) {
     quarter.add(cylinder(r, r, r > 2 ? 8 : 6, M.brick, x + 10, 0, z + dz, 10, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }));
@@ -171,6 +177,7 @@ function addChurch(quarter, detail) {
   quarter.add(pyramid(5.6, 5.6, 7, M.roof, tx, 28.6, tz));
   quarter.add(cylinder(0.08, 0.08, 1.6, M.gold, tx, 35.4, tz, 6));
   quarter.add(dome(0.45, M.gold, tx, 36.5, tz, { segments: 8 }));
+  labelAt(quarter, 'campanile', tx, 37.5, tz);
   // The belfry's twin lights on each face; the slits of the storeys below only in the diorama.
   const standOff = detail ? 2.73 : 2.8;
   for (let i = 0; i < 4; i++) {

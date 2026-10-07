@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import { archGeometry, box, crenellationGeometry, cylinder, cylinderGeometry, flag, groundPlane, mesh } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt } from './lib/parts.js';
 import { CHAIN_NORTH, CHAIN_SOUTH, LAND_HEIGHT, METERS_TO_MAP } from '../data/geography.js';
 
 /**
@@ -34,6 +35,11 @@ function createSpan() {
   scene.add(groundPlane(280, 150, M.water, 0, 0, 0));
   addKastellion(scene, -96, true);
   addEugeniosTower(scene, 92, true);
+  // The fort's label sits low on its walls, clear of the chain tower's label above.
+  labelAt(scene, 'kastellion', -108, 10, 8);
+  labelAt(scene, 'windlassTower', -75, 31.5, -2);
+  labelAt(scene, 'eugeniosTower', 92, 25, 0);
+  labelAt(scene, 'chain', 8, 3, 0);
   finalizeModel(scene);
 
   for (const [x, y, z] of [[-86, 29, 0], [92, 26, 0]]) {

@@ -8,6 +8,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 import { createMerchantShip } from './merchantShip.js';
 import { GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP, magnify } from '../data/geography.js';
@@ -58,6 +59,7 @@ function createColony() {
     colony.add(mesh(crenellationGeometry(9, { merlon: 0.8, gap: 0.6, height: 1 }), M.stone, x, TERRACE + 17, -68 - 4.15));
   }
   addKeep(colony, 0, TERRACE, -65);
+  labelAt(colony, 'galataTower', 0, TERRACE + 60, -65);
 
   // Quay, harbour water and cargo.
   colony.add(box(210, 1.8, 13, M.stone, 0, -1.2, 47.5));
@@ -70,8 +72,10 @@ function createColony() {
   }
   for (const x of [-20, 40]) colony.add(cylinder(0.3, 0.3, 2, M.wood, x, 0.6, 52, 6)); // mooring posts
 
-  addPodestaPalace(colony, { x: -35, z: 6, detail: true });
+  labelled(colony, 'palazzoDelComune', () => addPodestaPalace(colony, { x: -35, z: 6, detail: true }));
   addDominicanChurch(colony, { x: 46, z: 2, detail: true });
+  labelAt(colony, 'sanDomenico', 46, 21, 10);
+  labelAt(colony, 'sanDomenicoBelfry', 57, 38, -17);
 
   // The merchants' loggia inside the harbour gate.
   for (const z of [17, 29]) {
@@ -80,10 +84,13 @@ function createColony() {
     colony.add(columns);
   }
   colony.add(hipRoof(27, 15, 3.5, M.roof, 10, 7, 23));
+  labelAt(colony, 'loggia', 10, 11, 23);
 
   // Tall, narrow Ligurian houses: three or four storeys under tiled gables.
   const avoid = [[-35, 6, 26], [46, 2, 30], [10, 23, 18], [10, 36, 8], [0, -65, 16], [-10, -25, 8]];
-  scatterHouses(colony, rnd, { count: 14, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 8, d: 7, h: 13 } });
+  labelled(colony, 'ligurianHouses', () => {
+    scatterHouses(colony, rnd, { count: 14, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 8, d: 7, h: 13 } });
+  }, { near: [85, 20] });
   scatterHouses(colony, rnd, { count: 10, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 10, d: 7, h: 10 } });
   scatterHouses(colony, rnd, { count: 12, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 8, d: 7, h: 12 } });
   scatterHouses(colony, rnd, { count: 8, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 9, d: 7, h: 9 } });

@@ -6,6 +6,7 @@ import {
 } from './lib/primitives.js';
 import { createHull } from './lib/hull.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt, labelled } from './lib/parts.js';
 
 /**
  * The Great Palace: not one building but a walled agglomeration of halls,
@@ -57,18 +58,19 @@ export function createGreatPalace({ lod = 'detail' } = {}) {
   }
 
   addGardens(palace, detail);
-  addChalke(palace, detail);
+  labelled(palace, 'chalke', () => addChalke(palace, detail));
   addScholae(palace, detail);
-  addNineteenCouches(palace, detail);
+  labelled(palace, 'nineteenCouches', () => addNineteenCouches(palace, detail));
   addDaphne(palace, detail);
-  addMagnaura(palace, detail);
-  addChrysotriklinos(palace, detail);
-  addTriconch(palace, detail);
-  addPeristyle(palace, detail);
-  addPharosChurch(palace, detail);
-  addNea(palace, detail);
-  addLighthouse(palace);
+  labelled(palace, 'magnaura', () => addMagnaura(palace, detail));
+  labelled(palace, 'chrysotriklinos', () => addChrysotriklinos(palace, detail));
+  labelled(palace, 'triconch', () => addTriconch(palace, detail));
+  labelled(palace, 'peristyle', () => addPeristyle(palace, detail));
+  labelled(palace, 'pharosChurch', () => addPharosChurch(palace, detail));
+  labelled(palace, 'nea', () => addNea(palace, detail));
+  labelled(palace, 'pharosLighthouse', () => addLighthouse(palace));
   addBoukoleon(palace, detail);
+  labelAt(palace, 'tzykanisterion', 92, LOWER + 1, 66);
 
   const trees = detail
     ? [[-118, UPPER, -26], [-108, UPPER, -18], [-98, UPPER, -28], [118, UPPER, -60], [110, UPPER, -86], [122, UPPER, -70],
@@ -200,6 +202,7 @@ function addChalke(palace, detail) {
 
 /** Barracks of the Scholae and Excubitors, the guard halls behind the Chalke. */
 function addScholae(palace, detail) {
+  labelAt(palace, 'scholae', -6, UPPER + 11.5, -92);
   for (const [x, z, w] of [[-6, -92, 46], [36, -62, 16]]) {
     palace.add(box(w, 8, 12, M.stone, x, UPPER, z));
     palace.add(hipRoof(w, 12, 3.5, M.roof, x, UPPER + 8, z));
@@ -234,6 +237,7 @@ function addDaphne(palace, detail) {
   palace.add(box(70, 14, 18, M.stone, x, UPPER, z));
   palace.add(box(71, 0.8, 19, M.marble, x, UPPER + 7, z)); // string course between the storeys
   palace.add(hipRoof(70, 18, 5, M.roof, x, UPPER + 14, z));
+  labelAt(palace, 'daphne', x, UPPER + 19, z);
   // The Octagon with its dome, and the gallery to the Kathisma.
   const ox = x - 45;
   palace.add(cylinder(8, 8, 12, M.stone, ox, UPPER, z, 8));
@@ -466,7 +470,8 @@ function addLighthouse(palace) {
  * The Boukoleon: the sea palace built into the Marmara wall above its own
  * harbour. The surviving façade shows a storey of great marble-framed
  * windows above the wall, a balcony on marble consoles, the water gate and
- * the marble stair down to the quay, flanked by stone lions.
+ * the marble stair down to the marble quay, flanked by stone lions. The
+ * lions are drawn larger than life, or they would vanish on the stage.
  */
 function addBoukoleon(palace, detail) {
   const [x, length] = [-40, 70];
@@ -477,6 +482,7 @@ function addBoukoleon(palace, detail) {
   palace.add(box(length, upperTop - LOWER, 22, M.stone, x, LOWER, 75));
   palace.add(box(length + 1, 0.8, 23, M.marble, x, upperTop - 0.8, 75));
   palace.add(hipRoof(length, 22, 5, M.roof, x, upperTop, 75));
+  labelAt(palace, 'boukoleon', x, upperTop + 5, 75);
   palace.add(box(16, upperTop + 4 - LOWER, 18, M.stone, x + length / 2 - 2, LOWER, 76));
   palace.add(box(17, 0.6, 19, M.lead, x + length / 2 - 2, upperTop + 4, 76));
 
@@ -519,32 +525,46 @@ function addBoukoleon(palace, detail) {
   for (const towerX of [-120, -80, 10, 50, 90]) palace.add(box(9, LOWER + 11, 9, M.banded, towerX, 0, SEA_WALL_Z + 1));
 
   if (detail) {
-    // Harbour: quay, moles, water, the marble stair down from the water gate between its two lions,
+    // Harbour: the marble quay, moles, water, the marble stair down from the water gate between its two lions,
     // and the lion-and-bull statue that named the place.
     palace.add(groundPlane(320, 90, M.water, 0, 0, SEA_WALL_Z + 47));
-    palace.add(box(100, 1.3, 9, M.stone, x, -0.3, SEA_WALL_Z + 6.5));
+    palace.add(box(100, 1.3, 11, M.marble, x, -0.3, SEA_WALL_Z + 7.5));
     for (const moleX of [x - 52, x + 52]) palace.add(box(5, 1.5, 40, M.stone, moleX, -0.3, SEA_WALL_Z + 21));
     palace.add(box(5, 1.5, 7, M.stone, x - 52, 1.2, SEA_WALL_Z + 38)); // the mole's beacon base
     const flight = stairs(6, 8, 0.5, 0.8, M.marble);
     flight.position.set(x + 12, 1, SEA_WALL_Z + 8.6);
     flight.rotation.y = Math.PI;
     palace.add(flight);
-    for (const side of [-1, 1]) palace.add(lion(x + 12 + side * 4.5, 1, SEA_WALL_Z + 7.5, side));
+    for (const side of [-1, 1]) palace.add(lion(x + 12 + side * 6, 1, SEA_WALL_Z + 8, side));
+    labelAt(palace, 'boukoleonLions', x + 12, 6, SEA_WALL_Z + 9);
     palace.add(box(4, 3, 4, M.marble, x - 18, 1, SEA_WALL_Z + 7));
     const beasts = [box(3, 1.4, 1, M.marble, x - 18.8, 4, SEA_WALL_Z + 7), box(2.4, 1.8, 1.1, M.marble, x - 17, 4, SEA_WALL_Z + 7)];
     beasts[1].rotation.z = 0.5;
     palace.add(...beasts);
+    labelAt(palace, 'lionAndBull', x - 18, 6.5, SEA_WALL_Z + 7);
   }
 }
 
-/** A stylised seated marble lion facing the sea (+z). */
+/**
+ * A stylised marble lion on its plinth, couchant with its head raised,
+ * facing the sea (+z): body and haunches, a maned chest, head and muzzle,
+ * forelegs stretched out before it and the tail along the flank away from
+ * the stair (`side`).
+ */
 function lion(x, y, z, side) {
   const group = new THREE.Group();
-  group.add(box(2, 0.6, 3, M.marble, 0, 0, 0));
-  group.add(box(1.2, 1.3, 2.2, M.marble, 0, 0.6, -0.2));
-  group.add(box(1.4, 1.1, 1, M.marble, 0, 1.4, 0.8));
-  group.add(box(0.9, 0.7, 0.7, M.marble, 0, 1.6, 1.45));
-  group.add(box(0.5, 0.9, 1, M.marble, side * 0.4, 0.6, 1));
+  group.add(box(3.4, 1, 7, M.marble, 0, 0, 0)); // plinth
+  group.add(box(2.2, 1.8, 4, M.marble, 0, 1, -1)); // body
+  group.add(mesh(new THREE.SphereGeometry(1.2, 12, 8).scale(1, 0.85, 1.1), M.marble, 0, 2.1, -2.6)); // haunches
+  group.add(mesh(new THREE.SphereGeometry(1.45, 14, 10).scale(1, 1.1, 0.9), M.marble, 0, 3.1, 1.2)); // mane
+  group.add(box(1.5, 1.5, 1.5, M.marble, 0, 2.7, 2.1)); // head
+  group.add(box(0.95, 0.8, 0.9, M.marble, 0, 2.7, 3.1)); // muzzle
+  for (const dx of [-0.6, 0.6]) {
+    group.add(box(0.6, 1.5, 0.7, M.marble, dx, 1, 1.9)); // foreleg
+    group.add(box(0.75, 0.35, 1.5, M.marble, dx, 1, 2.6)); // paw
+  }
+  group.add(box(0.3, 0.3, 3.2, M.marble, -side * 1.25, 1.1, -1.2)); // tail along the flank
+  group.add(mesh(new THREE.SphereGeometry(0.35, 8, 6), M.marble, -side * 1.25, 1.3, 0.5)); // its tuft
   group.position.set(x, y, z);
   return group;
 }

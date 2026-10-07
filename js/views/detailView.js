@@ -6,18 +6,20 @@ import { ease, tween } from '../util/tween.js';
 import { applyViewInsets } from '../util/viewport.js';
 import { QUALITY } from '../util/quality.js';
 import { setGlow } from '../util/glow.js';
-import { landmarkText } from '../i18n/index.js';
+import { landmarkText, partText } from '../i18n/index.js';
 
 const BACKDROP = 0xe6d3ae;
 const STAGE_SIZE = 26; // every model is scaled so its footprint spans this many units
 const LIGHT_DISTANCE = 80;
+const LABEL_GAP = 4; // px kept clear between part labels; a label that would crowd a nearer one is hidden
 
 /**
  * The close-up stage: one landmark at a time, built at full detail, set on
  * a round plinth and slowly turning. Models are built on first visit and
  * cached afterwards. Parts of a model tagged with userData.landmarkId (the
  * monuments on the Hippodrome's spina) can be hovered and clicked to open
- * their own diorama.
+ * their own diorama. Named parts (anchors with userData.part) carry plain
+ * labels that follow them as the model turns.
  *
  * container: the element the canvas sits in, for the hover tooltip.
  */
@@ -65,6 +67,10 @@ export class DetailView {
     this.tooltip.className = 'detail-tooltip';
     this.tooltip.hidden = true;
     container.appendChild(this.tooltip);
+    this.labelLayer = document.createElement('div');
+    this.labelLayer.className = 'part-labels';
+    this.labelLayer.hidden = true;
+    container.appendChild(this.labelLayer);
     this.listen(renderer.domElement);
   }
 
@@ -150,6 +156,8 @@ export class DetailView {
     this.cache.set(landmark.id, this.current);
     const { wrapper, radius, height } = this.current;
     this.stage.add(wrapper);
+    this.labelLayer.replaceChildren(...this.current.labels.map(({ element }) => element));
+    this.refreshLabels();
 
     this.plinth.scale.set(radius * 1.04, 1, radius * 1.04);
     // The sun stands back far enough, and its shadow frustum opens wide enough, to take in a tall obelisk as well as a wide diorama.
@@ -214,9 +222,15 @@ export class DetailView {
 
     const animated = [];
     const pickables = [];
+    const labels = [];
     wrapper.traverse((object) => {
       if (object.userData.animate) animated.push(object.userData.animate);
       if (object.userData.landmarkId) pickables.push(object);
+      if (object.userData.part) {
+        const element = document.createElement('div');
+        element.className = 'part-label';
+        labels.push({ anchor: object, element, key: object.userData.part });
+      }
     });
     // With reduced motion the parts never move; pose each once at its starting position.
     if (QUALITY.reducedMotion) for (const animate of animated) animate(0, 0);
@@ -224,6 +238,7 @@ export class DetailView {
       wrapper,
       animated,
       pickables,
+      labels,
       radius: horizontalRadius(model, centre) * scale,
       height: size.y * scale,
     };
@@ -239,8 +254,53 @@ export class DetailView {
     return Math.atan((tanHalf * Math.min(freeHeight, freeWidth)) / height);
   }
 
+  /** Writes the part labels in the current language; their sizes are measured again when next placed. */
+  refreshLabels() {
+    for (const label of this.current?.labels ?? []) {
+      label.element.textContent = partText(label.key);
+      label.width = 0;
+    }
+    this.dirty = true;
+  }
+
+  /**
+   * Pins each part label above its anchor. Nearer labels are placed first,
+   * and one that would overlap a label already placed is hidden, so a
+   * cluster of parts never turns into a heap of text.
+   */
+  placeLabels() {
+    const labels = this.current?.labels ?? [];
+    if (!labels.length || !this.size) return;
+    const { width, height } = this.size;
+    const point = new THREE.Vector3();
+    for (const label of labels) {
+      label.anchor.getWorldPosition(point).project(this.camera);
+      label.depth = point.z;
+      label.x = ((point.x + 1) / 2) * width;
+      label.y = ((1 - point.y) / 2) * height;
+    }
+    const placed = [];
+    for (const label of [...labels].sort((a, b) => a.depth - b.depth)) {
+      const { element } = label;
+      if (label.depth > 1 || label.x < 0 || label.x > width || label.y < 0 || label.y > height) {
+        element.hidden = true;
+        continue;
+      }
+      element.hidden = false;
+      if (!label.width) [label.width, label.height] = [element.offsetWidth, element.offsetHeight];
+      const rect = { left: label.x - label.width / 2, right: label.x + label.width / 2, top: label.y - label.height, bottom: label.y };
+      const crowded = placed.some((other) => rect.left < other.right + LABEL_GAP && rect.right > other.left - LABEL_GAP
+        && rect.top < other.bottom + LABEL_GAP && rect.bottom > other.top - LABEL_GAP);
+      element.hidden = crowded;
+      if (crowded) continue;
+      placed.push(rect);
+      element.style.transform = `translate(${label.x}px, ${label.y}px) translate(-50%, -100%)`;
+    }
+  }
+
   setActive(active) {
     this.active = active;
+    this.labelLayer.hidden = !active;
     this.controls.enabled = active;
     if (!active) this.setHovered(null);
     this.dirty = true;
@@ -284,6 +344,7 @@ export class DetailView {
       this.shadowDirty = false;
     }
     renderer.render(this.scene, this.camera);
+    if (this.active) this.placeLabels();
   }
 }
 

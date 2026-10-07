@@ -211,6 +211,7 @@ export class App {
     this.sidebar.render();
     this.panel.refresh();
     this.mapView.refreshLabels();
+    this.detailView.refreshLabels();
     this.settings.render();
     this.timeline.render();
     this.updateInsets();

@@ -5,6 +5,7 @@ import {
   faceToward, gableRoof, groundPlane, hipRoof, mesh, regularOpenings, roundTree, windowRow,
 } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 
 /**
@@ -57,8 +58,9 @@ export function createBlachernae({ lod = 'detail' } = {}) {
 
   addWalls(quarter, detail, masonry);
   addPalace(quarter, detail, masonry);
-  addTekfurSaray(quarter, detail, masonry);
-  addChurch(quarter, detail);
+  labelAt(quarter, 'blachernaePalace', -45, TERRACE + 22, 22);
+  labelled(quarter, 'tekfurSaray', () => addTekfurSaray(quarter, detail, masonry));
+  labelled(quarter, 'stMaryBlachernae', () => addChurch(quarter, detail));
 
   if (detail) {
     for (const [x, z] of [[-100, 86], [-20, 70], [2, 84], [-112, 30], [8, 10], [-60, 84]]) quarter.add(cypress(12, x, TERRACE, z));
@@ -93,11 +95,15 @@ function addWalls(quarter, detail, masonry) {
       }
     }
   }
+  labelAt(quarter, 'manuelWall', WALL_X, 23, 24);
   // The square tower at the wall's southern end.
   quarter.add(box(12, 26, 12, masonry, WALL_X, 0, 96));
   quarter.add(squareBattlements(12, WALL_X, 26, 96, masonry));
 
   // The twin towers of Isaac Angelos (south) and Anemas (north), fronted by a great buttress.
+  // Anemas's label sits halfway up its tower, so the two neighbours' labels stack rather than collide.
+  labelAt(quarter, 'isaacTower', WALL_X + 2, 35, -56);
+  labelAt(quarter, 'anemasTower', WALL_X + 2, 16, -70);
   for (const [z, height, residential] of [[-56, 34, true], [-70, 30, false]]) {
     quarter.add(box(14, height, 14, masonry, WALL_X + 2, 0, z));
     quarter.add(box(14.6, 0.5, 14.6, M.stone, WALL_X + 2, height - 0.5, z));

@@ -5,6 +5,7 @@ import {
   groundPlane, hipRoof, mesh, placeOnCircle,
 } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 
 /**
@@ -78,6 +79,8 @@ export function createBasilicaCistern({ lod = 'detail' } = {}) {
   addStoa(cistern, detail);
   addColumns(cistern, { columnsAlong, columnsAcross, columnX, columnZ, detail });
   if (detail) addLamps(cistern, columnX, columnZ);
+  labelAt(cistern, 'medusaHeads', (columnX(0) + columnX(1)) / 2, FLOOR + MEDUSA_SIZE + 0.5, columnZ(0));
+  labelAt(cistern, 'hensEye', columnX(10), FLOOR + COLUMN_HEIGHT - 2, columnZ(5));
 
   finalizeModel(cistern); // merges everything but the instanced columns
   return cistern;
@@ -252,6 +255,9 @@ function addStoa(cistern, detail) {
   cistern.add(groundPlane(stoaLength - 14, 4, M.paving, stoaX, GROUND + lift(0.08, detail), 0));
   cistern.add(groundPlane(4, 44, M.paving, stoaX, GROUND + lift(0.08, detail), 0));
 
+  labelAt(cistern, 'stoaBasilica', stoaX, GROUND + 10, -31);
+  labelAt(cistern, 'library', east + 8, GROUND + 19, 0);
+  labelAt(cistern, 'octagon', east + 8, GROUND + 18, -42);
   // The Library of Constantinople: a two-storeyed hall closing the square on the east, towards the Milion.
   cistern.add(box(16, 14, 60, M.stone, east + 8, GROUND, 0));
   cistern.add(box(17, 0.8, 61, M.marble, east + 8, GROUND + 7, 0));

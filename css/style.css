@@ -34,6 +34,8 @@ html, body {
 #app { position: fixed; inset: 0; }
 
 #viewport, #viewport canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* A stacking context of its own, so the labels and tooltip drawn over the scene always stay below the panels. */
+#viewport { z-index: 0; }
 
 /* ---------- Sidebar ---------- */
 
@@ -634,6 +636,34 @@ html, body {
   pointer-events: none;
 }
 .detail-tooltip[hidden] { display: none; }
+
+/* Names of the parts of the diorama: plain captions that follow the model, not buttons. */
+.part-labels { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.part-labels[hidden] { display: none; }
+.part-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin-top: -8px;
+  padding: 1px 7px 2px;
+  border-radius: 4px;
+  background: rgba(42, 16, 48, 0.72);
+  color: var(--parchment);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  user-select: none;
+}
+.part-label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 1px;
+  height: 6px;
+  background: rgba(42, 16, 48, 0.72);
+}
+.part-label[hidden] { display: none; }
 
 .map-label--minor { padding: 1px 7px 2px; font-size: 11.5px; transform: translateY(-10px); }
 .map-label--minor::after { bottom: -5px; height: 5px; }

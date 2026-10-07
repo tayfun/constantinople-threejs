@@ -5,6 +5,7 @@ import {
 } from './lib/primitives.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
+import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 
 /**
@@ -139,7 +140,8 @@ function addColumn(forum, detail) {
   }
   forum.add(cylinder(1.9, 1.3, 1.6, M.marble, 0, y, 0, sides)); // capital
   forum.add(box(3.8, 0.6, 3.8, M.marble, 0, y + 1.6, 0)); // abacus
-  forum.add(createStatue(detail, y + 2.2));
+  labelAt(forum, 'constantineColumn', 0, 10, 0);
+  labelled(forum, 'heliosStatue', () => forum.add(createStatue(detail, y + 2.2)));
 }
 
 /** Egyptian imperial porphyry: deep purple-red stone flecked with pale feldspar. */
