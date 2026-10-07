@@ -390,19 +390,22 @@ html, body {
   color: var(--gold);
 }
 
-/* ---------- Settings ---------- */
+/* ---------- Settings and music ---------- */
 
+/* The corner holding the music and settings buttons, and the music window above them. */
 .settings {
   position: absolute;
   right: 18px;
   bottom: 18px;
   z-index: 5;
+  display: flex;
+  gap: 10px;
   transition: right 0.3s ease;
 }
 /* Step aside so the open information panel does not cover it. */
 .has-panel .settings { right: calc(min(420px, 100% - 36px) + 30px); }
 
-.settings__button {
+.settings__button, .music__button {
   display: grid;
   place-items: center;
   width: 42px;
@@ -415,9 +418,55 @@ html, body {
   cursor: pointer;
   transition: transform 0.3s ease, background 0.15s;
 }
-.settings__button:hover { background: var(--purple-bright); }
+.settings__button:hover, .music__button:hover { background: var(--purple-bright); }
 .settings__button[aria-expanded="true"] { transform: rotate(60deg); }
-.settings__button:focus-visible, .settings__option:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.music__button[aria-expanded="true"] { background: var(--purple-bright); }
+.settings__button:focus-visible, .settings__option:focus-visible, .music__button:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+
+/* The music window: a small panel that stays open while the map is used, so the player keeps playing when it is hidden. */
+.music {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+  width: min(340px, calc(100vw - 36px));
+  padding: 12px 14px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text-light);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+.music__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.music__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+.music__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: none;
+  color: var(--text-light);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.music__close:hover { background: var(--purple-bright); }
+.music__close:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.music__player iframe { display: block; border: 0; border-radius: 12px; }
 
 /* The settings dialog: a native <dialog>, centred by the browser, over a dimmed map. */
 .settings__dialog {
@@ -665,5 +714,6 @@ html, body {
   .info-panel { top: auto; right: 10px; left: 10px; bottom: 10px; width: auto; max-height: 58%; padding: 20px; }
   .back-button { top: 10px; left: 10px; }
   .settings, .has-panel .settings { top: 10px; right: 10px; bottom: auto; }
+  .music { top: 54px; bottom: auto; width: min(340px, calc(100vw - 20px)); }
   .debug-overlay, .has-panel .debug-overlay { top: 60px; right: 10px; font-size: 10px; }
 }

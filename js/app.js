@@ -5,6 +5,7 @@ import { InfoPanel } from './ui/infoPanel.js';
 import { Sidebar } from './ui/sidebar.js';
 import { SettingsMenu } from './ui/settings.js';
 import { DebugOverlay } from './ui/debugOverlay.js';
+import { MusicPlayer } from './ui/music.js';
 import { Timeline } from './ui/timeline.js';
 import { landmarkText, onLanguageChange, translateDocument, ui } from './i18n/index.js';
 import { updateWater } from './models/lib/water.js';
@@ -63,6 +64,7 @@ export class App {
 
     this.debug = new DebugOverlay(root);
     this.settings = new SettingsMenu(root.querySelector('#settings'), { debug: this.debug });
+    this.music = new MusicPlayer(root.querySelector('#settings'));
     this.timeline = new Timeline(root.querySelector('#timeline'), {
       onChange: (year) => {
         this.mapView.setYear(year);

@@ -36,6 +36,7 @@ export default {
     sources: 'Kaynaklar',
     debug: 'Hata ayıklama',
     debugShow: 'FPS ve kamera bilgilerini göster',
+    music: 'Müzik',
     controlRotate: 'Görünümü döndürmek için sürükleyin',
     controlPan: 'Kaydırmak için farenin sağ tuşuyla sürükleyin',
     controlZoom: 'Yakınlaştırmak için tekerleği çevirin',
