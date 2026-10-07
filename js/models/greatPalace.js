@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M, cloth } from './lib/materials.js';
 import {
   archedWallGeometry, box, colonnade, crenellationGeometry, cylinder, cypress, dome, faceToward, gableRoof,
-  groundPlane, hipRoof, mesh, placeOnCircle, archGeometry, regularOpenings, roundTree, stairs, windowRow,
+  groundPlane, hipRoof, mesh, placeOnCircle, archGeometry, regularOpenings, roundTree, stairs, windowRow, flag,
 } from './lib/primitives.js';
 import { createHull } from './lib/hull.js';
 import { finalizeModel } from './lib/merge.js';
@@ -17,6 +17,8 @@ const UPPER = 20; // terrace levels above the sea
 const MIDDLE = 11;
 const LOWER = 5;
 const SEA_WALL_Z = 88;
+
+const IMPERIAL = 0x5c1f63; // Tyrian purple, worn and flown only by the emperor
 
 export function createGreatPalace({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
@@ -64,6 +66,13 @@ function addChalke(palace, detail) {
   palace.add(cylinder(7.5, 7.5, 3, M.marble, x, UPPER + 14, z, 20));
   palace.add(dome(7.5, M.gildedBronze, x, UPPER + 17, z, { heightScale: 0.75 }));
   palace.add(box(5, 8, 0.4, M.bronze, x, UPPER, z - 9.1));
+  // Purple hangings over the bronze doors, and the imperial standards flanking the porch.
+  palace.add(box(10, 3.5, 0.5, cloth(IMPERIAL), x, UPPER + 8.5, z - 9.3));
+  for (const side of [-1, 1]) {
+    const standard = flag('imperial', detail ? { width: 4, height: 2.6, pole: 14 } : { width: 7, height: 4.5, pole: 18 });
+    standard.position.set(x + side * 16, UPPER, z - 13);
+    palace.add(standard);
+  }
   if (detail) {
     const porch = colonnade({ length: 22, count: 6, height: 10, radius: 0.5 });
     porch.position.set(x, UPPER, z - 12);
@@ -77,11 +86,12 @@ function addDaphne(palace, detail) {
   const [x, z] = [-10, -62];
   palace.add(box(70, 13, 18, M.stone, x, UPPER, z));
   palace.add(hipRoof(70, 18, 5, M.roof, x, UPPER + 13, z));
+  // A purple awning shades the southern portico, where the court gathered to watch the sea.
+  palace.add(box(70, 0.5, 6, cloth(IMPERIAL), x, UPPER + 8.2, z + 12));
   if (detail) {
     const portico = colonnade({ length: 66, count: 14, height: 8, radius: 0.4 });
     portico.position.set(x, UPPER, z + 13);
     palace.add(portico);
-    palace.add(box(70, 0.5, 5, M.roof, x, UPPER + 8, z + 11.5));
     const windows = windowRow({ count: 14, spacing: 4.8, width: 1.6, height: 2.8, y: 9.2 });
     windows.position.set(x, UPPER, z + 9.05);
     palace.add(windows);
@@ -223,7 +233,7 @@ function addImperialBarge(palace) {
   const { geometry, deck } = createHull({ length: 16, beam: 4, depth: 1.4, bowRise: 1.2, sternRise: 1.6, segments: 24, ribs: 8 });
   barge.add(mesh(geometry, M.hull, 0, 0.9, 0));
   barge.add(mesh(deck, M.wood, 0, 0.7, 0));
-  barge.add(box(5, 2, 3, cloth(0x5c1f63), -3, 0.7, 0));
+  barge.add(box(5, 2, 3, cloth(IMPERIAL), -3, 0.7, 0));
   barge.add(gableRoof(5, 3, 1, M.gold, -3, 2.7, 0, 0.2));
   barge.position.set(-40, 0, SEA_WALL_Z + 24);
   barge.rotation.y = 0.2;

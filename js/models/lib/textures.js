@@ -355,6 +355,12 @@ export const flag = (kind) =>
         ctx.fillRect(w * 0.32, h * 0.65, 4, 14);
         ctx.fillRect(w * 0.54, h * 0.65, 4, 14);
         break;
+      case 'imperial': // the emperor's own: a gold cross on Tyrian purple
+        fill(ctx, w, h, [92, 31, 99]);
+        ctx.fillStyle = '#efc458';
+        ctx.fillRect(w * 0.45, 0, w * 0.1, h);
+        ctx.fillRect(0, h * 0.42, w, h * 0.16);
+        break;
       default: // Byzantine imperial: gold cross with four firesteels on red
         fill(ctx, w, h, [150, 24, 36]);
         ctx.fillStyle = '#efc458';

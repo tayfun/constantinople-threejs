@@ -161,6 +161,8 @@ function addKathisma(stadium, detail) {
   stadium.add(hipRoof(32, 16, 5, M.lead, x, 22, 68));
   stadium.add(box(28, 1, 7, M.marble, x, 13, 56.5));
   stadium.add(box(28, 0.3, 7.5, cloth(0x5c1f63), x, 20, 56.5));
+  // Purple hangings fall from the canopy's front edge, marking the emperor's box from across the arena.
+  stadium.add(box(28, 3.5, 0.3, cloth(0x5c1f63), x, 16.5, 52.9));
   if (detail) {
     const columns = colonnade({ length: 26, count: 6, height: 7, radius: 0.35, capitalMaterial: M.gold });
     columns.position.set(x, 14, 53.4);
