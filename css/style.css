@@ -277,7 +277,8 @@ html, body {
   backdrop-filter: blur(6px);
   transition: opacity 0.3s, right 0.3s ease;
 }
-.has-panel .timeline { right: calc(min(420px, 100% - 36px) + 190px); }
+/* With the information panel open the corner buttons are hidden, so the slider runs up to the panel. */
+.has-panel .timeline { right: calc(min(420px, 100% - 36px) + 30px); }
 .is-detail .timeline { opacity: 0; pointer-events: none; }
 
 .timeline__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -400,10 +401,9 @@ html, body {
   z-index: 5;
   display: flex;
   gap: 10px;
-  transition: right 0.3s ease;
 }
-/* Step aside so the open information panel does not cover it. */
-.has-panel .settings { right: calc(min(420px, 100% - 36px) + 30px); }
+/* Hidden while the information panel is open; the music plays on. */
+.has-panel .settings { display: none; }
 
 .settings__button, .music__button, .timeline__toggle {
   display: grid;
@@ -715,7 +715,7 @@ html, body {
   .has-panel .timeline { display: none; }
   .info-panel { top: auto; right: 10px; left: 10px; bottom: 10px; width: auto; max-height: 58%; padding: 20px; }
   .back-button { top: 10px; left: 10px; }
-  .settings, .has-panel .settings { top: 10px; right: 10px; bottom: auto; }
+  .settings { top: 10px; right: 10px; bottom: auto; }
   .music { top: 54px; bottom: auto; width: min(340px, calc(100vw - 20px)); }
   .debug-overlay, .has-panel .debug-overlay { top: 60px; right: 10px; font-size: 10px; }
 }
