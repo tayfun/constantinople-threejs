@@ -60,6 +60,10 @@ export class MapView {
       holder.position.y = LAND_HEIGHT + this.ground.heightAt(footprint.centre) + (landmark.map.lift ?? 0);
       holder.updateMatrixWorld(true);
     }
+    // Models built in map coordinates that climb the ground (userData.onGround) finish themselves now that it is known.
+    const climbing = [];
+    for (const { holder } of this.entries) holder.traverse((object) => { if (object.userData.onGround) climbing.push(object); });
+    for (const object of climbing) object.userData.onGround(this.ground);
 
     this.scene.add(createTerrain(this.ground));
     this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut) }));

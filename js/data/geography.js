@@ -84,6 +84,26 @@ export const GALATA = [...GALATA_WALLS, ...GALATA_SHORE.slice(1, -1)];
 
 export const GALATA_TOWER = magnify([-5.1, 18.9]);
 
+/**
+ * The hill of Galata and the Pera ridge behind it, climbing from the Horn
+ * towards Taksim: the tower stands 35 m above the water and the ridge reaches
+ * 75 m. Heights are exaggerated like the city's seven hills.
+ */
+export const PERA_HILLS = [
+  { at: [-4.8, 18.6], height: 1.0, radius: 3 }, // the crest of Galata, under the tower
+  { at: [-3.5, 23.5], height: 1.5, radius: 4 }, // Tünel and Galatasaray
+  { at: [1, 29.5], height: 1.8, radius: 5.5 }, // Taksim
+].map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) }));
+
+/** The shore under the ridge, Golden Horn → Galata's point → the Bosphorus; the hills fade to the water. */
+export const PERA_SHORE = line([
+  [-20.6, 28], [-16.2, 28.1], [-12.9, 24.6], [-10.8, 22.6], [-11.9, 21.6], [-10.9, 18.1], [-9.9, 17], [-8.6, 15.3],
+  [-5.1, 14.7], [-2.9, 14.7], [1.2, 17.6], [7, 21.7], [10, 26.7], [11.4, 29.3], [13.9, 32.1],
+]);
+
+/** The land the ridge rises over: Galata and Pera between the two shores, closed well beyond the hills. */
+export const PERA = [...PERA_SHORE, ...line([[16, 36], [12, 44], [0, 48], [-14, 42], [-22, 34]])];
+
 // ---------- the European shore ----------
 
 /** Sea of Marmara shore outside the walls, far west → the land walls. */

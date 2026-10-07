@@ -18,7 +18,7 @@ import { GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP, magnify } from 
  * full of cogs. The Golden Horn lies to the south (+z).
  *
  * Detail: a slice of the colony. Map: the wall circuit in map units with
- * the main buildings at their places (absolute).
+ * the main buildings at their places (absolute), climbing the hill of Galata.
  */
 export function createGenoeseQuarter({ lod = 'detail' } = {}) {
   return lod === 'detail' ? createColony() : createMapColony();
@@ -125,17 +125,26 @@ function addDominicanChurch(group, { x, z, detail }) {
 
 function createMapColony() {
   const colony = new THREE.Group();
-  colony.add(mesh(wallAlongGeometry(GALATA_WALLS, { height: 0.55, thickness: 0.2, y: LAND_HEIGHT, towerSpacing: 1.7, towerWidth: 0.42, towerHeight: 0.85 }), mapStone));
-  colony.add(mesh(wallAlongGeometry(GALATA_SHORE, { height: 0.35, thickness: 0.14, y: LAND_HEIGHT, offset: -0.35 }), mapStone));
-
-  const buildings = new THREE.Group();
-  addPodestaPalace(buildings, { x: 0, z: 0, detail: false });
-  addDominicanChurch(buildings, { x: -95, z: -40, detail: false });
   const [east, north] = magnify([-2.2, 16.6]);
-  buildings.scale.setScalar(5 * METERS_TO_MAP);
-  buildings.position.set(east, LAND_HEIGHT, -north);
-  colony.add(buildings);
+  const palace = [east, north];
+  const church = [east - 4.75, north + 2];
   // Keep the map's scattered houses clear of the palace and the church.
-  colony.userData.keepOut = [[east, north, 1.4], [east - 4.75, north + 2, 1.5]];
-  return finalizeModel(colony);
+  colony.userData.keepOut = [[...palace, 1.4], [...church, 1.5]];
+
+  // Galata climbs its hill, so the colony is built once the ground is known (mapView.js calls this).
+  colony.userData.onGround = (ground) => {
+    colony.add(mesh(wallAlongGeometry(GALATA_WALLS, { height: 0.55, thickness: 0.2, y: LAND_HEIGHT, towerSpacing: 1.7, towerWidth: 0.42, towerHeight: 0.85, ground }), mapStone));
+    colony.add(mesh(wallAlongGeometry(GALATA_SHORE, { height: 0.35, thickness: 0.14, y: LAND_HEIGHT, offset: -0.35, ground }), mapStone));
+    const stand = (build, [e, n]) => {
+      const building = new THREE.Group();
+      build(building, { x: 0, z: 0, detail: false });
+      building.scale.setScalar(5 * METERS_TO_MAP);
+      building.position.set(e, LAND_HEIGHT + ground.heightAt([e, n]), -n);
+      colony.add(building);
+    };
+    stand(addPodestaPalace, palace);
+    stand(addDominicanChurch, church);
+    finalizeModel(colony);
+  };
+  return colony;
 }

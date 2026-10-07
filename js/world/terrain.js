@@ -5,12 +5,13 @@ import { createWaterMaterial } from '../models/lib/water.js';
 import { mesh } from '../models/lib/primitives.js';
 import { pointInPolygon, samplePolyline } from '../util/geo.js';
 import {
-  ASIA, CITY, EUROPE, GALATA, LAND_HEIGHT, MESE, MESE_NORTH,
+  ASIA, CITY, EUROPE, GALATA, LAND_HEIGHT, MESE, MESE_NORTH, PERA,
 } from '../data/geography.js';
 
 /**
  * The map's ground: the two shores, Europe and Asia, with sandy beaches, open water,
- * the built-up area of each town with the city's seven hills, and the Mese,
+ * the built-up area of each town, the city's seven hills and the ridge of
+ * Galata and Pera, and the Mese,
  * Constantinople's main street, running over them.
  *
  * ground: heights from ground.js.
@@ -31,7 +32,8 @@ export function createTerrain(ground) {
     polygonOffsetUnits: -2,
   });
   for (const area of [CITY, GALATA]) terrain.add(overlay(area, urban, 0.01));
-  terrain.add(hillsMesh(ground, urban));
+  terrain.add(hillsMesh(ground, urban, { within: CITY }), hillsMesh(ground, urban, { within: GALATA }));
+  terrain.add(hillsMesh(ground, meadow, { within: PERA, except: GALATA }));
 
   const street = new THREE.MeshStandardMaterial({ color: 0xf2e6c8, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
   for (const line of [MESE, MESE_NORTH]) terrain.add(mesh(ribbonGeometry(line, 0.4, ground), street));
@@ -40,17 +42,21 @@ export function createTerrain(ground) {
 }
 
 /**
- * The hills as a fine grid over the city, keeping only the triangles that
+ * The hills as a fine grid over an area, keeping only the triangles that
  * rise above the flat ground; where they fade to nothing they meet the flat
- * city overlay seamlessly.
+ * land seamlessly. The grid is anchored to multiples of its spacing, so the
+ * meshes of neighbouring areas share their vertices along the boundary.
+ *
+ * within: polygon to cover; except: polygon left out (covered by another mesh)
  */
-function hillsMesh(ground, material) {
+function hillsMesh(ground, material, { within, except = null }) {
   const spacing = 0.35;
-  const xs = CITY.map(([e]) => e);
-  const ys = CITY.map(([, n]) => n);
-  const [e0, e1, n0, n1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const columns = Math.ceil((e1 - e0) / spacing) + 1;
-  const rows = Math.ceil((n1 - n0) / spacing) + 1;
+  const snap = (value, up) => (up ? Math.ceil(value / spacing) : Math.floor(value / spacing)) * spacing;
+  const xs = within.map(([e]) => e);
+  const ys = within.map(([, n]) => n);
+  const [e0, e1, n0, n1] = [snap(Math.min(...xs)), snap(Math.max(...xs), true), snap(Math.min(...ys)), snap(Math.max(...ys), true)];
+  const columns = Math.round((e1 - e0) / spacing) + 1;
+  const rows = Math.round((n1 - n0) / spacing) + 1;
 
   const positions = [];
   const uvs = [];
@@ -71,7 +77,7 @@ function hillsMesh(ground, material) {
   const keep = (a, b, c) => {
     if (Math.max(heights[a], heights[b], heights[c]) < 0.004) return false;
     const centre = [(positions[a * 3] + positions[b * 3] + positions[c * 3]) / 3, -(positions[a * 3 + 2] + positions[b * 3 + 2] + positions[c * 3 + 2]) / 3];
-    return pointInPolygon(centre, CITY);
+    return pointInPolygon(centre, within) && !(except && pointInPolygon(centre, except));
   };
   for (let j = 0; j < rows - 1; j++) {
     for (let i = 0; i < columns - 1; i++) {
@@ -88,7 +94,7 @@ function hillsMesh(ground, material) {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   const hills = new THREE.Mesh(geometry, material.clone());
-  hills.material.polygonOffsetFactor = hills.material.polygonOffsetUnits = -4;
+  Object.assign(hills.material, { polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
   hills.receiveShadow = true;
   return hills;
 }
