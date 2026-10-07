@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import {
-  archGeometry, box, cone, crenelRingGeometry, crenellationGeometry, cylinder, flag, mesh, placeOnCircle,
+  archGeometry, box, cone, crenellationGeometry, cylinder, gableRoof, mesh, placeOnCircle,
 } from './lib/primitives.js';
 import { createHouse } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
@@ -9,65 +9,36 @@ import { finalizeModel } from './lib/merge.js';
 /**
  * The Galata Tower — Turris Sancte Crucis, the "Tower of the Holy Cross",
  * later Christea Turris — raised by the Genoese in 1348 as the keep at the
- * apex of their walled colony, as it looked before the Ottoman rebuildings:
- * a round limestone keep 16.45 m across on walls 3.75 m thick, nine storeys
- * to the machicolated parapet, and the conical cap Buondelmonti drew in
- * 1422 topping out at 62.6 m. The colony walls step down the hill of Galata
- * from it to either side (the Golden Horn lies to the +z side).
+ * apex of their walled colony, shown as it stands today, the form everyone
+ * knows: a round shaft of rough-cut rubble 16.45 m across, lit by a few small
+ * arched windows, under a moulded cornice; above it the arcaded storey of
+ * tall round-arched bays in pale ashlar, the corbelled viewing balcony with
+ * its iron railing, a short set-back top storey, and the steep lead cone
+ * with its dormers and gilded finial, 62.59 m high without the finial and
+ * about 67 m with it. The arcaded top is Ottoman work, and the cone was
+ * rebuilt in 1965–67 after a century without one (Buondelmonti drew the
+ * Genoese tower in the 1420s with battlements and a plain cone).
+ * The colony walls step down the hill of Galata from it to either side (the
+ * Golden Horn lies to the +z side).
  *
- * Measured values from the surviving tower (Wikipedia, Structurae); the
- * Genoese-period form from thebyzantinelegacy.com/galata-tower.
+ * Measured values from the surviving tower (Wikipedia, Structurae);
+ * proportions of the upper storeys from Sébah's photograph (1880s) and
+ * recent photographs.
  */
 
-const BASE_RADIUS = 8.25; // 16.45 m external diameter
-const TOP_RADIUS = 7.75;
-const SHAFT = 46; // to the machicolations
-const PARAPET_TOP = 51.6; // the walkway at 51.65 m today
-const TIP = 62.6;
+const BASE_RADIUS = 8.22; // 16.45 m external diameter
+const SHAFT_TOP = 32; // the moulded cornice
+const SHAFT_TOP_RADIUS = 7.7;
+const ARCADE_TOP = 39.4;
+const BALCONY = 40.5; // the viewing deck
+const EAVES = 44.4;
+const APEX = 62.59;
+const FINIAL_TIP = 66.9;
 
 export function createGalataTower({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const tower = new THREE.Group();
-  const radiusAt = (y) => BASE_RADIUS + (TOP_RADIUS - BASE_RADIUS) * (y / SHAFT);
-  const segments = detail ? 36 : 28;
-
-  // Battered socle, the shaft and its string courses.
-  tower.add(cylinder(BASE_RADIUS + 0.1, BASE_RADIUS + 1.4, 4, M.stoneDark, 0, 0, 0, segments));
-  tower.add(cylinder(TOP_RADIUS, BASE_RADIUS, SHAFT, M.stone, 0, 0, 0, segments));
-  for (const y of [11, 23, 35]) tower.add(cylinder(radiusAt(y) + 0.25, radiusAt(y) + 0.25, 0.5, M.stoneDark, 0, y, 0, segments));
-
-  // Machicolation: corbels in two steps carrying the overhanging parapet, then the battlements.
-  const corbels = detail ? 36 : 24;
-  for (let i = 0; i < corbels; i++) {
-    const angle = (i / corbels) * Math.PI * 2;
-    tower.add(placeOnCircle(box(0.8, 1.2, 1.4, M.stoneDark), angle, TOP_RADIUS + 0.4, SHAFT - 1.2));
-    tower.add(placeOnCircle(box(0.9, 1.1, 2, M.stoneDark), angle, TOP_RADIUS + 0.7, SHAFT));
-  }
-  tower.add(cylinder(TOP_RADIUS + 1.5, TOP_RADIUS + 1.5, PARAPET_TOP - SHAFT - 1.1, M.stone, 0, SHAFT + 1.1, 0, segments));
-  tower.add(mesh(crenelRingGeometry(TOP_RADIUS + 1.15, { count: detail ? 24 : 18, merlon: 1.1, height: 1.5, thickness: 0.7 }), M.stone, 0, PARAPET_TOP, 0));
-
-  // The conical cap, sitting inside the parapet, with a short drum under it.
-  tower.add(cylinder(TOP_RADIUS + 0.2, TOP_RADIUS + 0.2, 1.8, M.stone, 0, PARAPET_TOP - 0.2, 0, segments));
-  tower.add(cone(TOP_RADIUS + 0.9, TIP - PARAPET_TOP - 1.6, M.lead, 0, PARAPET_TOP + 1.6, 0, segments));
-  tower.add(cylinder(0.3, 0.45, 1.2, M.lead, 0, TIP - 0.4, 0, 8));
-
-  // The door with the cross of the Holy Cross above it, arrow slits on the lower
-  // storeys and a ring of small windows lighting the guards' top floor.
-  const front = Math.PI / 2;
-  tower.add(placeOnCircle(mesh(archGeometry(2.2, 4), M.opening), front, BASE_RADIUS + 1.42, 0.2));
-  tower.add(placeOnCircle(box(2.6, 2.4, 0.2, M.marble), front, BASE_RADIUS + 0.05, 5.2));
-  tower.add(placeOnCircle(box(0.4, 1.7, 0.25, M.stoneDark), front, BASE_RADIUS + 0.12, 5.55));
-  tower.add(placeOnCircle(box(1.2, 0.4, 0.25, M.stoneDark), front, BASE_RADIUS + 0.12, 6.3));
-  const slit = archGeometry(0.55, 2.2);
-  const window = archGeometry(1.3, 2.6);
-  const rows = detail
-    ? [[8, 4, slit, 0.5], [15, 5, slit, 0.2], [20, 4, slit, 0], [27, 6, slit, 0.5], [32, 5, slit, 0.1], [39, 6, slit, 0.3], [42.5, 12, window, 0.25]]
-    : [[14, 4, slit, 0.5], [27, 5, slit, 0.2], [39, 6, slit, 0.3], [42.5, 12, window, 0.25]];
-  for (const [y, count, geometry, offset] of rows) {
-    for (let i = 0; i < count; i++) {
-      tower.add(placeOnCircle(mesh(geometry, M.opening), ((i + offset) / count) * Math.PI * 2, radiusAt(y) + 0.06, y));
-    }
-  }
+  addGalataKeep(tower, { detail });
 
   // The colony walls leave the keep to either side and step down the hill. The map
   // has no hill under the keep, so there the same stretch runs level in two steps.
@@ -94,11 +65,89 @@ export function createGalataTower({ lod = 'detail' } = {}) {
 
   if (detail) addHill(tower);
 
-  finalizeModel(tower);
-  const banner = flag('genoa', { width: 4, height: 2.6, pole: 7 });
-  banner.position.y = TIP - 0.2;
-  tower.add(banner);
-  return tower;
+  return finalizeModel(tower);
+}
+
+/**
+ * The tower itself, standing at the origin of `group`; shared with the
+ * Genoese colony's diorama. `detail: false` keeps the silhouette and leaves
+ * out the small windows, dormers and the railing's posts.
+ */
+export function addGalataKeep(group, { detail = true } = {}) {
+  const segments = detail ? 40 : 24;
+  const radiusAt = (y) => BASE_RADIUS + (SHAFT_TOP_RADIUS - BASE_RADIUS) * (y / SHAFT_TOP);
+
+  // The rubble shaft, tapering a little, and the moulded cornice that crowns it.
+  group.add(cylinder(SHAFT_TOP_RADIUS, BASE_RADIUS, SHAFT_TOP, M.rubble, 0, 0, 0, segments));
+  for (const [y, h, out] of [[SHAFT_TOP - 0.6, 0.5, 0.25], [SHAFT_TOP - 0.1, 0.45, 0.55], [SHAFT_TOP + 0.35, 0.55, 0.85]]) {
+    group.add(cylinder(SHAFT_TOP_RADIUS + out, SHAFT_TOP_RADIUS + out, h, M.stone, 0, y, 0, segments));
+  }
+
+  // The door, and the shaft's few small arched windows: a ring of little lights under the
+  // cornice, larger windows below them, and a handful scattered down the shaft.
+  const front = Math.PI / 2;
+  group.add(placeOnCircle(mesh(archGeometry(2.2, 3.6), M.opening), front, BASE_RADIUS + 0.03, 0.2));
+  group.add(placeOnCircle(mesh(archGeometry(3.2, 4.4), M.stone), front, BASE_RADIUS + 0.01, 0));
+  const rows = detail
+    ? [[28.6, 8, 0.7, 1.3, 0.1], [24.2, 4, 1.2, 2, 0.25], [18.5, 3, 0.8, 1.6, 0.6], [11, 3, 0.7, 1.4, 0.1]]
+    : [[28.6, 8, 0.9, 1.5, 0.1], [24.2, 4, 1.4, 2.2, 0.25]];
+  for (const [y, count, width, height, offset] of rows) {
+    const window = archGeometry(width, height);
+    for (let i = 0; i < count; i++) {
+      group.add(placeOnCircle(mesh(window, M.opening), ((i + offset) / count) * Math.PI * 2, radiusAt(y) + 0.04, y));
+    }
+  }
+
+  // The arcaded storey: piers carrying round arches, a tall arched window in each bay.
+  const arcadeBase = SHAFT_TOP + 0.9;
+  const bays = 12;
+  group.add(cylinder(7.3, 7.3, ARCADE_TOP - arcadeBase, M.stone, 0, arcadeBase, 0, segments));
+  for (let i = 0; i < bays; i++) {
+    const pier = (i / bays) * Math.PI * 2;
+    group.add(placeOnCircle(box(1.3, ARCADE_TOP - arcadeBase, 1.1, M.stone), pier, 7.6, arcadeBase));
+    const bay = pier + Math.PI / bays;
+    group.add(placeOnCircle(mesh(archGeometry(3.0, 5.4), M.stoneDark), bay, 7.32, arcadeBase + 0.3)); // the deep arch
+    group.add(placeOnCircle(mesh(archGeometry(1.6, 3.4), M.opening), bay, 7.35, arcadeBase + 0.9)); // the window in it
+  }
+  group.add(cylinder(8.0, 8.0, 0.7, M.stone, 0, ARCADE_TOP - 0.7, 0, segments)); // band over the arches
+
+  // The balcony: a flaring corbel course, the deck, and an iron railing.
+  group.add(cylinder(9.2, 8.0, BALCONY - 0.3 - ARCADE_TOP, M.stone, 0, ARCADE_TOP, 0, segments));
+  group.add(cylinder(9.2, 9.2, 0.3, M.stone, 0, BALCONY - 0.3, 0, segments));
+  const rail = mesh(new THREE.TorusGeometry(9.05, 0.07, 4, segments * 2).rotateX(Math.PI / 2), M.iron, 0, BALCONY + 1.1, 0);
+  group.add(rail);
+  const posts = detail ? 64 : 0;
+  for (let i = 0; i < posts; i++) group.add(placeOnCircle(box(0.07, 1.1, 0.07, M.iron), (i / posts) * Math.PI * 2, 9.05, BALCONY));
+  if (!detail) group.add(cylinder(9.05, 9.05, 1.1, M.iron, 0, BALCONY, 0, segments, { open: true }));
+
+  // The set-back top storey with its doors onto the balcony, and the eaves.
+  group.add(cylinder(6.6, 6.6, EAVES - BALCONY, M.stone, 0, BALCONY, 0, segments));
+  const doors = detail ? 16 : 8;
+  for (let i = 0; i < doors; i++) group.add(placeOnCircle(mesh(archGeometry(1.1, 2.5), M.opening), ((i + 0.5) / doors) * Math.PI * 2, 6.62, BALCONY + 0.3));
+  group.add(cylinder(7.2, 7.2, 0.4, M.stoneDark, 0, EAVES, 0, segments));
+
+  // The steep lead cone, narrower than the balcony, with its little dormers, and the gilded finial.
+  const coneBase = EAVES + 0.4;
+  const coneHeight = APEX - coneBase;
+  const coneRadius = 7.1;
+  group.add(cone(coneRadius, coneHeight, M.lead, 0, coneBase, 0, segments));
+  if (detail) {
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const rise = 5;
+      const dormer = new THREE.Group();
+      dormer.add(box(0.9, 1.1, 1.4, M.lead, 0, 0, -0.5));
+      dormer.add(gableRoof(1.4, 0.9, 0.45, M.lead, 0, 1.1, -0.5, 0.06).rotateY(Math.PI / 2));
+      dormer.add(mesh(archGeometry(0.5, 0.9), M.opening, 0, 0.1, 0.21));
+      group.add(placeOnCircle(dormer, angle, coneRadius * (1 - rise / coneHeight), coneBase + rise));
+    }
+  }
+  group.add(cylinder(0.14, 0.24, 1.3, M.gold, 0, APEX - 0.4, 0, 8));
+  group.add(mesh(new THREE.SphereGeometry(0.5, 12, 8), M.gold, 0, APEX + 1.3, 0));
+  group.add(cylinder(0.09, 0.13, 1.0, M.gold, 0, APEX + 1.7, 0, 8));
+  group.add(mesh(new THREE.SphereGeometry(0.3, 10, 8), M.gold, 0, APEX + 2.9, 0));
+  group.add(cone(0.12, FINIAL_TIP - APEX - 3.1, M.gold, 0, APEX + 3.1, 0, 8));
+  return group;
 }
 
 /** The hilltop of Galata, 35 m above the Horn, as three terraces with the keep's barbican and houses. */

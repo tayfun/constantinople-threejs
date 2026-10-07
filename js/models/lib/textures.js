@@ -108,6 +108,33 @@ export const ashlar = () =>
     speckle(ctx, w, h, rnd, { count: 3000, color: [120, 105, 85], amount: 0.4, size: 1.5, alpha: 0.2 });
   });
 
+/**
+ * Rough-cut rubble: irregular stones of warm grey and brown, set in rough
+ * courses in pale mortar, like the shaft of the Galata Tower.
+ */
+export const rubble = () =>
+  paintTexture('rubble', { tile: 3 }, (ctx, w, h, rnd) => {
+    fill(ctx, w, h, [164, 152, 134]);
+    for (let y = 8; y < h + 16; y += 15 + rnd.next() * 5) {
+      let x = rnd.next() * 20;
+      while (x < w + 20) {
+        const rx = 8 + rnd.next() * 12;
+        const ry = 5 + rnd.next() * 4;
+        const sy = y + (rnd.next() - 0.5) * 3;
+        const tilt = (rnd.next() - 0.5) * 0.4;
+        ctx.fillStyle = vary(rnd, rnd.chance(0.5) ? [156, 132, 108] : [140, 128, 114], 0.35);
+        // Each stone is drawn again across the seams, so the texture tiles.
+        for (const [ox, oy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {
+          ctx.beginPath();
+          ctx.ellipse(x + ox, sy + oy, rx, ry, tilt, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        x += rx * 2 + 2 + rnd.next() * 3;
+      }
+    }
+    speckle(ctx, w, h, rnd, { count: 3500, color: [96, 82, 66], amount: 0.4, size: 1.5, alpha: 0.22 });
+  });
+
 /** Byzantine brickwork: thin bricks in thick beds of rosy, brick-dust mortar. */
 export const brick = () =>
   paintTexture('brick', { tile: 2 }, (ctx, w, h, rnd) => {

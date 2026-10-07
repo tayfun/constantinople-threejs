@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import {
-  archGeometry, box, boxGeometry, colonnade, cone, crenelRingGeometry, crenellationGeometry, cylinder, flag, gableRoof, groundPlane,
-  hipRoof, mesh, placeOnCircle, pyramid, stairs,
+  box, boxGeometry, colonnade, crenellationGeometry, cylinder, flag, gableRoof, groundPlane,
+  hipRoof, mesh, pyramid, stairs,
 } from './lib/primitives.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
+import { addGalataKeep } from './galataTower.js';
 import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
 import { createMerchantShip } from './merchantShip.js';
@@ -59,7 +60,7 @@ function createColony() {
     colony.add(mesh(crenellationGeometry(9, { merlon: 0.8, gap: 0.6, height: 1 }), M.stone, x, TERRACE + 17, -68 - 4.15));
   }
   addKeep(colony, 0, TERRACE, -65);
-  labelAt(colony, 'galataTower', 0, TERRACE + 60, -65);
+  labelAt(colony, 'galataTower', 0, TERRACE + 68, -65);
 
   // Quay, harbour water and cargo.
   colony.add(box(210, 1.8, 13, M.stone, 0, -1.2, 47.5));
@@ -98,7 +99,6 @@ function createColony() {
   finalizeModel(colony);
   colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), -35, 17.5, -2));
   colony.add(placed(flag('genoa', { width: 3, height: 2, pole: 6 }), 10, 9, 40));
-  colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), 0, TERRACE + 62.4, -65));
   colony.add(placed(createMerchantShip({ banner: 'genoa', rig: 'square' }), 30, 0, 70, -0.15));
   colony.add(placed(createMerchantShip({ banner: 'genoa', sail: false }), -55, 0, 72, Math.PI + 0.1));
   return colony;
@@ -110,28 +110,11 @@ function placed(object, x, y, z, rotation = 0) {
   return object;
 }
 
-/** The keep of the Holy Cross at the top of the hill: the Galata Tower in brief. */
+/** The keep of the Holy Cross at the top of the hill: the Galata Tower, built as in its own diorama. */
 function addKeep(group, x, y, z) {
-  group.add(cylinder(8.3, 9.6, 4, M.stoneDark, x, y, z, 24));
-  group.add(cylinder(7.75, 8.25, 46, M.stone, x, y, z, 24));
-  for (let i = 0; i < 20; i++) {
-    const corbel = placeOnCircle(box(0.9, 1.4, 2, M.stoneDark), (i / 20) * Math.PI * 2, 8.4, y + 45);
-    corbel.position.x += x;
-    corbel.position.z += z;
-    group.add(corbel);
-  }
-  group.add(cylinder(9.2, 9.2, 4.5, M.stone, x, y + 47, z, 24));
-  group.add(mesh(crenelRingGeometry(8.85, { count: 18, merlon: 1.1, height: 1.5 }), M.stone, x, y + 51.5, z));
-  group.add(cone(8.6, 11, M.lead, x, y + 51.3, z, 24));
-  const slit = archGeometry(0.55, 2.2);
-  for (const [sy, count] of [[14, 4], [27, 5], [40, 6]]) {
-    for (let i = 0; i < count; i++) {
-      const window = placeOnCircle(mesh(slit, M.opening), ((i + 0.3) / count) * Math.PI * 2, 8.1, y + sy);
-      window.position.x += x;
-      window.position.z += z;
-      group.add(window);
-    }
-  }
+  const keep = addGalataKeep(new THREE.Group());
+  keep.position.set(x, y, z);
+  group.add(keep);
 }
 
 /**

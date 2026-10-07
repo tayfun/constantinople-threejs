@@ -11,6 +11,7 @@ export const materials = {
   banded: standard({ map: textures.bandedMasonry() }),
   stone: standard({ map: textures.ashlar() }),
   stoneDark: standard({ map: textures.ashlar(), color: 0x9b9182 }),
+  rubble: standard({ map: textures.rubble() }),
   marble: standard({ map: textures.marble(), roughness: 0.45 }),
   brick: standard({ map: textures.brick() }),
   plaster: standard({ map: textures.plaster() }),
