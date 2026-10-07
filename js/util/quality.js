@@ -3,7 +3,12 @@ import * as THREE from 'three';
 /**
  * Rendering quality chosen once from what the device tells us. Phones,
  * tablets and small machines get a lighter setting: a lower pixel ratio,
- * smaller shadow maps and cheaper shadow filtering. Visitors who asked
+ * smaller shadow maps, cheaper shadow filtering, half-size painted textures,
+ * dioramas that give back their GPU memory once left, and a map with half
+ * as many leafy trees, each of fewer blobs: the trees are most of the map's
+ * triangles, and a phone's tiled GPU can fault binning too many of them. A phone that runs
+ * out of GPU memory loses its WebGL context, and Chrome then blocks WebGL
+ * for the whole site until the browser is restarted. Visitors who asked
  * their system for reduced motion get a still scene that only redraws
  * when something changes.
  */
@@ -22,6 +27,10 @@ const TIERS = {
     shadowType: THREE.PCFSoftShadowMap,
     mapShadowSize: 4096,
     detailShadowSize: 2048,
+    textureScale: 1,
+    releaseDioramas: false,
+    treeDensity: 1,
+    crownBlobs: 3,
   },
   low: {
     tier: 'low',
@@ -29,6 +38,10 @@ const TIERS = {
     shadowType: THREE.PCFShadowMap,
     mapShadowSize: 2048,
     detailShadowSize: 1024,
+    textureScale: 0.5,
+    releaseDioramas: true,
+    treeDensity: 0.5,
+    crownBlobs: 2,
   },
 };
 

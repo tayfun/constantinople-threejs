@@ -6,12 +6,13 @@ import {
 import { mapStone, wallAlongGeometry } from '../models/lib/mapWalls.js';
 import { crownGeometry, cypressGeometry, judasTreeGeometry } from '../models/lib/trees.js';
 import { createRandom } from '../util/random.js';
+import { QUALITY } from '../util/quality.js';
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
   ARKLA_ISLET, ASIA, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, GALATA, GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP,
-  EUROPE, LAND_WALLS, MESE, MESE_NORTH, SEA_WALLS, magnify,
+  EUROPE, LAND_WALLS, MESE, MESE_NORTH, PERA_HILLS, SEA_WALLS, magnify,
 } from '../data/geography.js';
 
 /**
@@ -70,11 +71,19 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
   for (const town of towns) merge(planTown(rnd, town));
 
   const outsideTowns = (p) => [CITY, GALATA, CHRYSOPOLIS, CHALCEDON_TOWN].every((town) => !pointInPolygon(p, town) && away(p, town.concat([town[0]]), 0.3));
-  merge(planCountryside(rnd, {
+  const countryside = planCountryside(rnd, {
     bounds: [-95, -45, 85, 90],
     open: (p, margin) => onLand(p, margin) && outsideTowns(p) && away(p, LAND_WALLS, 3.2) && clear(p),
     cemeteries: [[-53.5, -6], [-53, 6], [-50.5, 15], [-4, 24]].map(magnify),
-  }));
+  });
+  // The countryside of both shores is left mostly open, its woods cut to a scattering; only the ridge of
+  // Galata and Pera and the cemeteries' cypress groves keep theirs. Trees are most of the map's triangles,
+  // and these woods most of its trees.
+  const thinning = createRandom(1204);
+  const onPeraRidge = (point) => PERA_HILLS.some(({ at, radius }) => Math.hypot(point[0] - at[0], point[1] - at[1]) < radius);
+  countryside.trees = countryside.trees.filter(({ point, grove }) => grove || onPeraRidge(point)
+    || !(pointInPolygon(point, EUROPE) || pointInPolygon(point, ASIA)) || thinning.chance(COUNTRY_WOODS_KEPT));
+  merge(countryside);
 
   for (const item of Object.values(layers).flat()) item.y = LAND_HEIGHT + ground.heightAt(item.point);
 
@@ -110,6 +119,7 @@ function alignedTo(lines) {
   };
 }
 
+const COUNTRY_WOODS_KEPT = 1 / 8; // share of the countryside's trees left standing beyond the Pera ridge
 const ERGUVAN_ROOM = 0.3; // map units kept clear around each Judas tree
 
 /** Spots for the Judas trees: for each site, a few points at random bearings just beyond the landmark's clearing. */
@@ -220,11 +230,12 @@ function createHouses(rnd, houses) {
 }
 
 function createTrees(rnd, trees) {
-  const leafy = trees.filter((tree) => tree.kind !== 'cypress');
+  // A modest device plants only some of the leafy trees, an even spread of them.
+  const leafy = trees.filter((tree) => tree.kind !== 'cypress').filter((tree, i) => (i * QUALITY.treeDensity) % 1 < QUALITY.treeDensity);
   const cypresses = trees.filter((tree) => tree.kind === 'cypress');
   // The crowns carry their own shading as vertex colours, which the instance colours tint.
   const foliage = new THREE.MeshStandardMaterial({ roughness: 0.95, vertexColors: true });
-  const crowns = instanced(crownGeometry({ blobs: 3, detail: 0, seed: 7 }), foliage, leafy.length);
+  const crowns = instanced(crownGeometry({ blobs: QUALITY.crownBlobs, detail: 0, seed: 7 }), foliage, leafy.length);
   const spires = instanced(cypressGeometry({ segments: 6, coarse: true, seed: 7 }), foliage, cypresses.length);
   const trunks = instanced(cylinderGeometry(0.5, 0.6, 1, 4, { open: true }), new THREE.MeshStandardMaterial({ color: 0x6b5038, roughness: 1 }), leafy.length);
   const matrix = new THREE.Matrix4();

@@ -6,6 +6,7 @@ import { createNoise } from '../util/noise.js';
  * where it says "farmed", and cypress groves with a chapel at the
  * cemeteries outside the walls. Returns plain data
  * in map units ([east, north]); rendering happens in cityFabric.js.
+ * The cemeteries' trees are marked `grove`.
  *
  * options:
  *   bounds         [east0, north0, east1, north1] area to fill
@@ -44,7 +45,7 @@ export function planCountryside(rnd, { bounds: [e0, n0, e1, n1], open, cemeterie
     for (let k = 0; k < 22; k++) {
       const point = [centre[0] + rnd.range(-0.9, 0.9), centre[1] + rnd.range(-0.9, 0.9)];
       if (Math.hypot(point[0] - centre[0], point[1] - centre[1]) < 0.45) continue;
-      if (open(point, 0.6)) plan.trees.push({ point, kind: 'cypress', size: rnd.range(0.3, 0.45) });
+      if (open(point, 0.6)) plan.trees.push({ point, kind: 'cypress', size: rnd.range(0.3, 0.45), grove: true });
     }
   }
   return plan;

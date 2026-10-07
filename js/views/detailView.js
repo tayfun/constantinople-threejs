@@ -16,10 +16,11 @@ const LABEL_GAP = 4; // px kept clear between part labels; a label that would cr
 /**
  * The close-up stage: one landmark at a time, built at full detail, set on
  * a round plinth and slowly turning. Models are built on first visit and
- * cached afterwards. Parts of a model tagged with userData.landmarkId (the
- * monuments on the Hippodrome's spina) can be hovered and clicked to open
- * their own diorama. Named parts (anchors with userData.part) carry plain
- * labels that follow them as the model turns.
+ * cached afterwards; on a modest device a model that leaves the stage gives
+ * back its GPU memory and is uploaded again if it returns. Parts of a model
+ * tagged with userData.landmarkId (the monuments on the Hippodrome's spina)
+ * can be hovered and clicked to open their own diorama. Named parts (anchors
+ * with userData.part) carry plain labels that follow them as the model turns.
  *
  * container: the element the canvas sits in, for the hover tooltip.
  */
@@ -151,6 +152,7 @@ export class DetailView {
 
   show(landmark) {
     this.setHovered(null);
+    this.releaseCurrent();
     this.stage.clear();
     this.current = this.cache.get(landmark.id) ?? this.build(landmark);
     this.cache.set(landmark.id, this.current);
@@ -302,8 +304,16 @@ export class DetailView {
     this.active = active;
     this.labelLayer.hidden = !active;
     this.controls.enabled = active;
-    if (!active) this.setHovered(null);
+    if (!active) {
+      this.setHovered(null);
+      this.releaseCurrent();
+    }
     this.dirty = true;
+  }
+
+  /** On a modest device, frees the GPU memory of the diorama on stage; three.js uploads it again when next drawn. */
+  releaseCurrent() {
+    if (QUALITY.releaseDioramas && this.current) releaseGpu(this.current.wrapper);
   }
 
   resize(width, height) {
@@ -346,6 +356,19 @@ export class DetailView {
     renderer.render(this.scene, this.camera);
     if (this.active) this.placeLabels();
   }
+}
+
+/**
+ * Frees an object's geometries and textures on the GPU. Materials are kept,
+ * since they are shared with the map and recompiling their shaders is slow.
+ */
+function releaseGpu(object) {
+  object.traverse((child) => {
+    child.geometry?.dispose();
+    for (const material of [child.material ?? []].flat()) {
+      for (const value of Object.values(material)) if (value?.isTexture) value.dispose();
+    }
+  });
 }
 
 /** Largest horizontal distance of any vertex from the centre, so round dioramas get a snug plinth. */

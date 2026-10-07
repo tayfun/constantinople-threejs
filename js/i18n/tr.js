@@ -18,6 +18,7 @@ export default {
     backTo: '← Geri: {name}',
     loading: 'Kentin surları yükseliyor…',
     error: 'Kent çizilemedi: {message}. Bu sayfa WebGL destekleyen bir tarayıcı gerektirir.',
+    noWebgl: 'Kent çizilemedi: tarayıcı bu sayfaya 3B grafik vermedi. Daha önce çalıştıysa, tarayıcı grafik belleği tükendiği için bunu kapatmış olabilir; tarayıcıyı tamamen kapatıp yeniden açın ve sayfayı yenileyin.',
     landmarks: 'Simge Yapılar',
     groupCity: 'Kent',
     groupShores: 'Karşı Kıyılar',

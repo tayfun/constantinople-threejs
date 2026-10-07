@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createRandom, hashString } from '../../util/random.js';
+import { QUALITY } from '../../util/quality.js';
 import { GREEK_INSCRIPTION, LATIN_INSCRIPTION, OBELISK_FACES, OBELISK_SCENE, WALLED_OBELISK_INSCRIPTION } from '../../data/obeliskInscriptions.js';
 
 /**
@@ -55,11 +56,15 @@ const fontsAvailable = () => [GLYPH_FONT, LATIN_FONT, GREEK_FONT].every((font) =
 /**
  * A canvas texture. `paint(ctx, width, height, fonts)` runs now; if it sets
  * text and the fonts are still loading it runs again once they are in.
+ * On a modest device it is painted at full size, so every stroke keeps its
+ * proportions, and uploaded at QUALITY.textureScale: these canvases are
+ * the heaviest textures in the city.
  */
 function paintedTexture(width, height, paint, { tile = false, text = false } = {}) {
+  const scaled = QUALITY.textureScale < 1;
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = Math.round(width * QUALITY.textureScale);
+  canvas.height = Math.round(height * QUALITY.textureScale);
   const ctx = canvas.getContext('2d');
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -67,8 +72,15 @@ function paintedTexture(width, height, paint, { tile = false, text = false } = {
   if (tile) texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
   const run = (fonts) => {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    paint(ctx, width, height, fonts);
+    // The full-size canvas is only a sketch pad: it is let go as soon as it has been copied down.
+    const pad = scaled ? Object.assign(document.createElement('canvas'), { width, height }) : canvas;
+    const padCtx = scaled ? pad.getContext('2d') : ctx;
+    padCtx.setTransform(1, 0, 0, 1, 0, 0);
+    paint(padCtx, width, height, fonts);
+    if (scaled) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(pad, 0, 0, canvas.width, canvas.height);
+    }
     texture.needsUpdate = true;
   };
   const ready = !text || fontsAvailable();

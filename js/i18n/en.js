@@ -18,6 +18,7 @@ export default {
     backTo: '← Back to {name}',
     loading: 'Raising the walls of the city…',
     error: 'The city could not be drawn: {message}. This page needs a browser with WebGL.',
+    noWebgl: 'The city could not be drawn: the browser would not give this page 3D graphics. If it worked before, the browser may have switched them off after running out of graphics memory; close the browser completely, open it again and reload.',
     landmarks: 'Landmarks',
     groupCity: 'The City',
     groupShores: 'Across the Water',

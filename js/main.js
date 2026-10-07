@@ -16,6 +16,8 @@ try {
 } catch (error) {
   const loading = root.querySelector('#loading');
   loading.classList.add('is-error');
-  loading.textContent = ui('error', { message: error.message });
+  // three.js throws this when the browser refuses a WebGL context, which Chrome also does to a site whose page lost one before.
+  const noWebgl = error.message.startsWith('Error creating WebGL context');
+  loading.textContent = noWebgl ? ui('noWebgl') : ui('error', { message: error.message });
   throw error;
 }

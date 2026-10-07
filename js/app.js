@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as Sentry from '@sentry/browser';
 import { MapView } from './views/mapView.js';
 import { DetailView } from './views/detailView.js';
 import { InfoPanel } from './ui/infoPanel.js';
@@ -39,6 +40,7 @@ export class App {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     viewport.appendChild(this.renderer.domElement);
+    this.watchContext(this.renderer.domElement);
 
     this.mapView = new MapView({
       renderer: this.renderer,
@@ -116,6 +118,33 @@ export class App {
       if (firstFrame) {
         firstFrame = false;
         this.root.querySelector('#loading').classList.add('is-done');
+      }
+    });
+  }
+
+  /**
+   * A phone that runs out of GPU memory takes the WebGL context away. three.js
+   * asks for it back and rebuilds its state once it is restored; the shadow
+   * maps, drawn only on demand, must then be redrawn. The loss is reported,
+   * with what was on screen, since Chrome blocks WebGL for a site whose pages
+   * keep losing it; every report carries the GPU's name, to tell which
+   * phones suffer.
+   */
+  watchContext(canvas) {
+    const gl = this.renderer.getContext();
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    Sentry.setContext('gpu', {
+      renderer: gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER),
+      vendor: gl.getParameter(info ? info.UNMASKED_VENDOR_WEBGL : gl.VENDOR),
+      quality: QUALITY.tier,
+    });
+    canvas.addEventListener('webglcontextlost', () => {
+      Sentry.captureMessage('WebGL context lost', { level: 'warning', extra: { mode: this.mode, landmark: this.openId } });
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      for (const view of [this.mapView, this.detailView]) {
+        view.shadowDirty = true;
+        view.dirty = true;
       }
     });
   }
