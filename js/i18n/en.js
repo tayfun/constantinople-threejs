@@ -238,6 +238,31 @@ export default {
       ],
       today: 'The Boukoleon sea-wall façade survives, and the peristyle\'s floor mosaics are shown in the Great Palace Mosaic Museum.',
     },
+    'judas-tree': {
+      name: 'Judas Tree',
+      subtitle: 'Erguvan · Cercis siliquastrum, the tree of Istanbul\'s spring',
+      years: 'Every April',
+      labels: { built: 'Blooms', builder: 'Species', purpose: 'Grows' },
+      built: 'In April, for two or three weeks, before its leaves open',
+      fate: 'Still flowering every spring on both shores of the Bosphorus',
+      builder: 'Cercis siliquastrum, a small tree of the pea family',
+      purpose: 'Wild on the rocky slopes of the eastern Mediterranean; planted for its blossom in gardens and parks',
+      summary: 'A small, broad tree of several leaning stems that covers itself in magenta blossom each April, before a single leaf has opened — the flowers burst even from the old bark of the trunk. The model shows it a few weeks on, as the heart-shaped leaves unfold among the last of the flowers. It grows wild on the hillsides around the Bosphorus, and the model plants a few in the terraced gardens of the Great Palace. Its Turkish name, erguvan, comes from the Persian arghavan and is also the name of its colour, a purplish pink.',
+      legend: {
+        title: 'Why "Judas"?',
+        paragraphs: [
+          'A medieval legend held that this was the tree on which Judas Iscariot hanged himself after betraying Christ. Its flowers, once white, blushed with shame — or with his blood — and have opened in that colour ever since. Some tellings add that the tree, once tall and straight, grew low and crooked from that day on.',
+          'The Gospels do not name the tree, and the English name more likely comes from the French arbre de Judée, "tree of Judea", after the hills of the Holy Land where it grows wild. The legend has clung to it all the same.',
+        ],
+      },
+      facts: [
+        'The flowers grow in clusters straight from the trunk and the old branches as well as from the twigs, a habit botanists call cauliflory.',
+        'The heart-shaped leaves unfold as the flowers fade, and flat purple-brown seed pods hang on the branches into winter; the name siliquastrum refers to these pods.',
+        'The flowers are edible, with a sharp, slightly sour taste, and are sometimes added to salads.',
+        'In Turkish the colour takes its name from the tree: erguvani means a purplish red.',
+      ],
+      today: 'Erguvan is Istanbul\'s herald of spring. Every April the woods above the Bosphorus — at Emirgan, Bebek, Kandilli and Beykoz, in Yıldız Park, Otağtepe and the Fethi Paşa Grove — turn pink with it, and the city plants it widely along its roads, parks and shores.',
+    },
     'basilica-cistern': {
       name: 'Basilica Cistern',
       subtitle: 'Yerebatan Sarayı · the "Sunken Palace"',

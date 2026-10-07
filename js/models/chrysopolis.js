@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M, tinted, cloth } from './lib/materials.js';
 import {
   archGeometry, box, colonnade, crenelRingGeometry, crenellationGeometry, cylinder, cypress, dome, faceToward, flag,
-  gableRoof, groundPlane, hipRoof, landGeometry, mesh, pyramid, roundTree, windowRow,
+  gableRoof, groundPlane, hipRoof, judasTree, landGeometry, mesh, pyramid, roundTree, windowRow,
 } from './lib/primitives.js';
 import { createHouse } from './lib/buildings.js';
 import { createHull } from './lib/hull.js';
@@ -447,7 +447,10 @@ function addPlanting(town, rnd, detail, elevation) {
     if (Math.abs(z - ROAD_Z) < 8 || Math.hypot(x - MONASTERY[0], z - MONASTERY[1]) < 30 || Math.hypot(x - PALACE[0], z - PALACE[1]) < 26) continue;
     if (x < shoreX(z) + 6 || nearTerraceEdge(x, z, 3) || (!detail && Math.abs(z) > 98)) continue;
     const y = elevation(x, z);
-    town.add(x > 60 ? roundTree(rnd.range(5, 7), x, y, z) : rnd.chance(0.5) ? cypress(rnd.range(9, 13), x, y, z) : roundTree(rnd.range(6, 9), x, y, z));
+    if (x > 60) town.add(roundTree(rnd.range(5, 7), x, y, z));
+    else if (rnd.chance(0.5)) town.add(cypress(rnd.range(9, 13), x, y, z));
+    else if (i % 3) town.add(roundTree(rnd.range(6, 9), x, y, z));
+    else town.add(judasTree(rnd.range(6, 9), x, y, z, { detail, seed: i })); // every third broadleaf in the town an erguvan in flower
   }
   // Olive groves in rows on the top terrace and on the shelf south of the town; the map thins them to every other tree.
   for (let row = 0; row < 4; row++) {

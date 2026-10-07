@@ -32,8 +32,9 @@ function flipWinding(geometry) {
 
 function bakeGeometry(meshObject, toRoot) {
   const geometry = meshObject.geometry.index ? meshObject.geometry.toNonIndexed() : meshObject.geometry.clone();
+  const keep = meshObject.material.vertexColors ? [...KEEP_ATTRIBUTES, 'color'] : KEEP_ATTRIBUTES;
   for (const name of Object.keys(geometry.attributes)) {
-    if (!KEEP_ATTRIBUTES.includes(name)) geometry.deleteAttribute(name);
+    if (!keep.includes(name)) geometry.deleteAttribute(name);
   }
   if (!geometry.attributes.normal) geometry.computeVertexNormals();
   if (!geometry.attributes.uv) {

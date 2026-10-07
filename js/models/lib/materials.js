@@ -47,9 +47,13 @@ export const materials = {
   dirt: standard({ map: textures.dirt() }),
   paving: standard({ map: textures.paving() }),
   mosaic: standard({ map: textures.mosaic(), roughness: 0.6 }),
-  foliage: standard({ color: 0x2e4a2c }),
-  foliageLight: standard({ color: 0x5a7440 }),
+  foliage: standard({ color: 0x527f48, vertexColors: true, roughness: 0.95 }),
+  foliageLight: standard({ color: 0x7a9c4e, vertexColors: true, roughness: 0.95 }),
   trunk: standard({ color: 0x5b4331 }),
+  blossom: standard({ color: 0xe57cc0, vertexColors: true, roughness: 0.9 }), // the erguvan's magenta
+  erguvanBark: standard({ color: 0x4d4440, roughness: 0.95 }), // the Judas tree's dark grey-brown bark
+  erguvanLeaves: standard({ color: 0x8ab44e, vertexColors: true, side: THREE.DoubleSide, roughness: 0.8 }), // fresh spring green
+  petals: standard({ color: 0xe3a6cf, roughness: 1 }),
 
   water: createWaterMaterial({ scale: 0.12 }),
   waterSide: standard({ color: 0x1f4f63, roughness: 0.3 }),

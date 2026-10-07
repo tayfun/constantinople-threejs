@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { materials as M, banner } from './materials.js';
+import { crownGeometry, cypressGeometry, judasTreeGeometry } from './trees.js';
+import { createRandom } from '../../util/random.js';
 
 /**
  * Architectural building blocks shared by all models.
@@ -323,15 +325,17 @@ export function stairs(width, count, rise, run, material = M.stone) {
 
 // ---------- planting ----------
 
-const cypressGeometry = coneGeometry(1, 1, 8);
+const cypressCrowns = [1, 2, 3].map((seed) => cypressGeometry({ segments: 10, seed }));
+const leafyCrowns = [1, 2, 3].map((seed) => crownGeometry({ blobs: 5, detail: 1, seed }));
 const trunkGeometry = cylinderGeometry(0.15, 0.2, 1, 6);
-const crownGeometry = new THREE.IcosahedronGeometry(1, 1);
+// Varied by where the tree stands, so the same model always plants the same trees.
+const variant = (crowns, x, z) => crowns[Math.abs(Math.round(x * 7 + z * 13)) % crowns.length];
 
 export function cypress(height = 12, x = 0, y = 0, z = 0) {
   const group = new THREE.Group();
   const trunk = mesh(trunkGeometry, M.trunk);
   trunk.scale.set(height / 12, height * 0.12, height / 12);
-  const crown = mesh(cypressGeometry, M.foliage, 0, height * 0.1, 0);
+  const crown = mesh(variant(cypressCrowns, x, z), M.foliage, 0, height * 0.1, 0);
   crown.scale.set(height * 0.13, height * 0.9, height * 0.13);
   group.add(trunk, crown);
   group.position.set(x, y, z);
@@ -342,11 +346,52 @@ export function roundTree(height = 8, x = 0, y = 0, z = 0) {
   const group = new THREE.Group();
   const trunk = mesh(trunkGeometry, M.trunk);
   trunk.scale.set(height / 8, height * 0.5, height / 8);
-  const crown = mesh(crownGeometry, M.foliageLight, 0, height * 0.62, 0);
+  const crown = mesh(variant(leafyCrowns, x, z), M.foliageLight, 0, height * 0.62, 0);
+  crown.rotation.y = x * 3.1 + z * 1.7;
   crown.scale.set(height * 0.36, height * 0.32, height * 0.36);
   group.add(trunk, crown);
   group.position.set(x, y, z);
   return group;
+}
+
+// A few Judas trees grown once and shared, as their bark, blossom and leaf geometries; lighter ones for the map.
+const erguvans = {
+  fine: [1, 2, 3].map((seed) => judasTreeGeometry({ seed })),
+  coarse: [1, 2].map((seed) => judasTreeGeometry({ seed, coarse: true })),
+};
+
+/**
+ * The Judas tree, erguvan, as it stands in late April: a vase of slender
+ * stems strung with magenta flowers, the round, heart-based leaves
+ * unfolding on its twigs, and in the dioramas fallen petals scattered
+ * under it. See judasTreeGeometry() for how it is grown; `detail: false`
+ * draws the lighter tree grown for the map.
+ */
+export function judasTree(height = 7, x = 0, y = 0, z = 0, { detail = true, seed = 1 } = {}) {
+  const rnd = createRandom(seed);
+  const variants = detail ? erguvans.fine : erguvans.coarse;
+  const { wood, flowers, leaves } = variants[Math.abs(seed - 1) % variants.length];
+  const group = new THREE.Group();
+  for (const [geometry, material] of [[wood, M.erguvanBark], [flowers, M.blossom], [leaves, M.erguvanLeaves]]) {
+    group.add(mesh(geometry, material));
+  }
+  group.scale.setScalar(height);
+  group.rotation.y = rnd.range(0, Math.PI * 2);
+
+  if (detail) {
+    // Fallen petals: pink specks scattered under the crown.
+    const drifts = [];
+    for (let i = 0; i < 40; i++) {
+      const angle = rnd.range(0, Math.PI * 2);
+      const out = 0.45 * Math.sqrt(rnd.next());
+      drifts.push(new THREE.CircleGeometry(rnd.range(0.008, 0.02), 5).rotateX(-Math.PI / 2).translate(Math.cos(angle) * out, 0, Math.sin(angle) * out));
+    }
+    group.add(mesh(mergeGeometries(drifts), M.petals, 0, 0.06 / height, 0));
+  }
+  const holder = new THREE.Group();
+  holder.add(group);
+  holder.position.set(x, y, z);
+  return holder;
 }
 
 // ---------- obelisks ----------

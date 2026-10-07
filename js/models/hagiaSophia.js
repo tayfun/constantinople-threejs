@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import {
-  archGeometry, box, colonnade, cylinder, cypress, dome, faceToward, mesh, placeOnCircle, windowRow,
+  archGeometry, box, colonnade, cylinder, cypress, dome, faceToward, judasTree, mesh, placeOnCircle, windowRow,
 } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
 
@@ -93,9 +93,11 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   addAtrium(church);
   if (detail) {
     church.add(box(150, 1, 116, M.paving, -25, -1, 0));
-    for (const [x, z] of [[40, 30], [44, 18], [42, -26], [-20, 50], [-6, 50], [8, -52], [20, -52], [-60, 44], [-74, -44]]) {
+    for (const [x, z] of [[40, 30], [44, 18], [42, -26], [-6, 50], [20, -52], [-60, 44]]) {
       church.add(cypress(13, x, 0, z));
     }
+    // Erguvans in flower among the cypresses.
+    [[-20, 50], [8, -52], [-74, -44]].forEach(([x, z], i) => church.add(judasTree(9, x, 0, z, { seed: i + 1 })));
   } else {
     church.add(box(100, 0.4, 90, M.paving, -10, -0.4, 0));
   }

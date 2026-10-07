@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
-import { archShape, box, cypress, groundPlane, mesh, roundTree, scaleUV } from './lib/primitives.js';
+import { archShape, box, cypress, groundPlane, judasTree, mesh, roundTree, scaleUV } from './lib/primitives.js';
 import { scatterHouses } from './lib/buildings.js';
 import { createRandom } from '../util/random.js';
 import { finalizeModel } from './lib/merge.js';
@@ -63,9 +63,11 @@ export function createAqueductOfValens({ lod = 'detail' } = {}) {
       const x = rnd.range(-HALF, HALF);
       structure.add(cypress(rnd.range(9, 14), x, valley(x), rnd.pick([-1, 1]) * rnd.range(16, 70)));
     }
+    // Every other one an erguvan in flower.
     for (let i = 0; i < 8; i++) {
       const x = rnd.range(-HALF + 10, HALF - 10);
-      structure.add(roundTree(rnd.range(6, 9), x, valley(x), rnd.pick([-1, 1]) * rnd.range(14, 70)));
+      const [height, z] = [rnd.range(6, 9), rnd.pick([-1, 1]) * rnd.range(14, 70)];
+      structure.add(i % 2 ? roundTree(height, x, valley(x), z) : judasTree(height, x, valley(x), z, { seed: i + 1 }));
     }
   } else {
     structure.position.y = 13;

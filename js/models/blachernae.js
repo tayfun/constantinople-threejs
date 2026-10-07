@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M, tinted } from './lib/materials.js';
 import {
   archGeometry, archedWallGeometry, box, colonnade, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, cypress, dome,
-  faceToward, gableRoof, groundPlane, hipRoof, mesh, regularOpenings, roundTree, windowRow,
+  faceToward, gableRoof, groundPlane, hipRoof, mesh, regularOpenings, judasTree, roundTree, windowRow,
 } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
 import { labelAt, labelled } from './lib/parts.js';
@@ -65,7 +65,8 @@ export function createBlachernae({ lod = 'detail' } = {}) {
   if (detail) {
     for (const [x, z] of [[-100, 86], [-20, 70], [2, 84], [-112, 30], [8, 10], [-60, 84]]) quarter.add(cypress(12, x, TERRACE, z));
     for (const [x, z] of [[-100, -28], [-80, -28], [-10, -28], [10, -28]]) quarter.add(cypress(9, x, LOWER_TERRACE, z));
-    for (const [x, z] of [[40, 20], [60, 30], [90, -10], [20, 50], [100, 40]]) quarter.add(roundTree(9, x, 0, z));
+    for (const [x, z] of [[60, 30], [100, 40]]) quarter.add(roundTree(9, x, 0, z));
+    [[40, 20], [90, -10], [20, 50]].forEach(([x, z], i) => quarter.add(judasTree(8, x, 0, z, { seed: i + 1 }))); // erguvans in flower
     quarter.add(groundPlane(320, 70, M.water, 5, -0.4, -125));
   }
   return finalizeModel(quarter);

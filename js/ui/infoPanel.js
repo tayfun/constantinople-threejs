@@ -14,18 +14,20 @@ export class InfoPanel {
     this.showing = () => this.showLandmark(landmark, { animate: false });
     const info = landmarkText(landmark.id);
     const { period } = landmark;
+    // Something that was not built (a tree) names its own facts and its years.
+    const label = (key) => info.labels?.[key] ?? ui(key);
     this.render([
       h('p', { class: 'info-panel__region' }, regionText(landmark.region).name),
       h('h2', {}, info.name),
-      h('p', { class: 'info-panel__years' }, formatPeriod(period)),
+      h('p', { class: 'info-panel__years' }, info.years ?? formatPeriod(period)),
       h('p', { class: 'info-panel__subtitle' }, info.subtitle),
       h('dl', { class: 'info-panel__stats' },
-        h('dt', {}, ui('built')), h('dd', {}, info.built),
+        h('dt', {}, label('built')), h('dd', {}, info.built),
         period.to === undefined
-          ? [h('dt', {}, ui('status')), h('dd', {}, info.fate)]
+          ? [h('dt', {}, label('status')), h('dd', {}, info.fate)]
           : [h('dt', {}, ui(period.ending)), h('dd', {}, `${formatYear(period.to, period.toApprox)} — ${info.fate}`)],
-        h('dt', {}, ui('builder')), h('dd', {}, info.builder),
-        h('dt', {}, ui('purpose')), h('dd', {}, info.purpose)),
+        h('dt', {}, label('builder')), h('dd', {}, info.builder),
+        h('dt', {}, label('purpose')), h('dd', {}, info.purpose)),
       h('div', { class: 'info-panel__ornament' }),
       h('p', {}, info.summary),
       info.legend && legendBlock(info.legend),

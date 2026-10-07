@@ -238,6 +238,31 @@ export default {
       ],
       today: 'Bukoleon\'un deniz suru üzerindeki cephesi ayakta; peristil avlusunun taban mozaikleri Büyük Saray Mozaik Müzesi\'nde sergileniyor.',
     },
+    'judas-tree': {
+      name: 'Erguvan',
+      subtitle: 'Cercis siliquastrum · İstanbul baharının ağacı',
+      years: 'Her nisan',
+      labels: { built: 'Çiçeklenme', builder: 'Tür', purpose: 'Yetiştiği yer' },
+      built: 'Nisanda, yaprakları açmadan önce, iki üç hafta boyunca',
+      fate: 'Her bahar Boğaz\'ın iki yakasında çiçek açmayı sürdürüyor',
+      builder: 'Cercis siliquastrum, baklagiller familyasından küçük bir ağaç',
+      purpose: 'Doğu Akdeniz\'in kayalık yamaçlarında kendiliğinden yetişir; çiçekleri için bahçelere ve parklara dikilir',
+      summary: 'Birkaç eğik gövdeli, alçak ve geniş bir ağaç: Her nisan, daha tek bir yaprağı açmadan macenta çiçeklerle kaplanır — çiçekler gövdenin yaşlı kabuğundan bile fışkırır. Model onu birkaç hafta sonraki haliyle, kalp biçimli yapraklar son çiçeklerin arasında açılırken gösteriyor. Boğaz çevresindeki yamaçlarda kendiliğinden yetişir; model, Büyük Saray\'ın teraslı bahçelerine birkaç tane dikiyor. Adı Farsça arğavan\'dan gelir ve aynı zamanda renginin, mora çalan pembenin de adıdır.',
+      legend: {
+        title: 'Neden "Yahuda ağacı"?',
+        paragraphs: [
+          'Bir Orta Çağ efsanesine göre Yahuda İskariyot, İsa\'ya ihanet ettikten sonra kendini bu ağaca asmıştı. Eskiden beyaz olan çiçekleri utançtan — ya da onun kanından — kızarmış ve o günden beri bu renkte açar olmuş. Kimi anlatımlara göre bir zamanlar uzun ve dik olan ağaç da o günden sonra alçak ve eğri büğrü kalmış.',
+          'İnciller ağacın adını vermez. Batı dillerindeki "Yahuda ağacı" adı büyük olasılıkla, ağacın yabani olarak yetiştiği Kutsal Topraklar\'ın tepelerine atfen Fransızca arbre de Judée, yani "Yahudiye ağacı" adından gelir. Yine de efsane ağacın peşini hiç bırakmamış.',
+        ],
+      },
+      facts: [
+        'Çiçekleri yalnız ince dallarda değil, doğrudan gövdede ve yaşlı dallarda da salkım salkım açar; botanikçiler buna kauliflori der.',
+        'Çiçekler solarken kalp biçimli yapraklar açılır; yassı, mor-kahverengi tohum kabukları kışa dek dallarda asılı kalır. Siliquastrum adı bu kabuklara işaret eder.',
+        'Çiçekleri yenebilir; keskin, hafif ekşi bir tadı vardır ve kimi zaman salatalara katılır.',
+        'Türkçede renk adını ağaçtan alır: erguvani, mora çalan kırmızı demektir.',
+      ],
+      today: 'Erguvan İstanbul\'da baharın müjdecisidir. Her nisan Boğaz\'ın üzerindeki korular — Emirgan, Bebek, Kandilli ve Beykoz, Yıldız Parkı, Otağtepe ve Fethi Paşa Korusu — pembeye boyanır; kent onu yollar, parklar ve kıyılar boyunca bolca diker.',
+    },
     'basilica-cistern': {
       name: 'Yerebatan Sarnıcı',
       subtitle: 'Basilica Cisterna · "Batık Saray"',

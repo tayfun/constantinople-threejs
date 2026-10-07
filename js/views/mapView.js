@@ -67,7 +67,11 @@ export class MapView {
     for (const object of climbing) object.userData.onGround(this.ground);
 
     this.scene.add(createTerrain(this.ground));
-    this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut) }));
+    // Judas trees ring the great landmarks, just outside their clearings.
+    const erguvanSites = grounded.filter(({ landmark }) => landmark.map.erguvans).map(({ landmark, footprint }) => ({
+      ...footprint, clearance: landmark.map.clearance ?? 0.25, count: landmark.map.erguvans,
+    }));
+    this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut), erguvanSites }));
     this.scene.add(createShipping());
 
     this.labelRenderer = createLabelRenderer(container, { canvas: renderer.domElement });

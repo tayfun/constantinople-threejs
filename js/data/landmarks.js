@@ -1,6 +1,6 @@
 import { createHagiaSophia } from '../models/hagiaSophia.js';
 import { createHippodrome, SPINA_MONUMENTS, SPINA_TOP } from '../models/hippodrome.js';
-import { createGreatPalace } from '../models/greatPalace.js';
+import { createGreatPalace, JUDAS_TREES, MAP_LAWN_LIFT } from '../models/greatPalace.js';
 import { createBasilicaCistern } from '../models/basilicaCistern.js';
 import { createAqueductOfValens } from '../models/aqueductOfValens.js';
 import { createBlachernae } from '../models/blachernae.js';
@@ -13,6 +13,7 @@ import { createGenoeseQuarter } from '../models/genoeseQuarter.js';
 import { createChalcedon } from '../models/chalcedon.js';
 import { createChrysopolis } from '../models/chrysopolis.js';
 import { createForumOfConstantine } from '../models/forumOfConstantine.js';
+import { createJudasTree } from '../models/judasTree.js';
 import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from './geography.js';
 
 /**
@@ -30,6 +31,7 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from '
  * map.clearance   map units kept free of houses and trees around the footprint (default 0.25)
  * map.labelWithin the label appears only when the camera is this close, in map
  *                 units, so small monuments don't crowd their host's label
+ * map.erguvans    how many Judas trees in flower to plant just outside the clearing
  *
  * period.from     year it was built or founded (negative = BC)
  * period.to       year it was demolished or ceased to exist (absent if it still stands)
@@ -37,7 +39,8 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from '
  * *Approx         marks a year as approximate
  */
 
-const HIPPODROME = { at: [-6.6, -4], rotation: 60, scale: 2.5 };
+const HIPPODROME = { at: [-6.6, -4], rotation: 60, scale: 2.5, erguvans: 4 };
+const GREAT_PALACE = { at: [0.5, -4.6], rotation: 48, scale: 3, erguvans: 4 };
 
 /** Placement on the map for a monument standing on the Hippodrome's spina. */
 function onSpina(id, scale) {
@@ -54,13 +57,30 @@ function onSpina(id, scale) {
   };
 }
 
+/** Placement on the map for a Judas tree in the gardens of the Great Palace, at [x, y, z] in the palace's metres. */
+function inPalaceGardens([x, y, z], scale) {
+  const metre = GREAT_PALACE.scale * METERS_TO_MAP;
+  const angle = (GREAT_PALACE.rotation * Math.PI) / 180;
+  return {
+    at: [
+      GREAT_PALACE.at[0] + (x * Math.cos(angle) + z * Math.sin(angle)) * metre,
+      GREAT_PALACE.at[1] + (x * Math.sin(angle) - z * Math.cos(angle)) * metre,
+    ],
+    rotation: GREAT_PALACE.rotation,
+    scale,
+    on: 'great-palace',
+    lift: (y + MAP_LAWN_LIFT) * metre,
+    labelWithin: 14,
+  };
+}
+
 export const LANDMARKS = [
   {
     id: 'hagia-sophia',
     region: 'constantinople',
     period: { from: 537 },
     create: createHagiaSophia,
-    map: { at: [3.5, 2.5], rotation: -32, scale: 6 },
+    map: { at: [3.5, 2.5], rotation: -32, scale: 6, erguvans: 6 },
   },
   {
     id: 'hippodrome',
@@ -95,35 +115,42 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 330, to: 1453, toApprox: true, ending: 'demolished' },
     create: createGreatPalace,
-    map: { at: [0.5, -4.6], rotation: 48, scale: 3 },
+    map: GREAT_PALACE,
+  },
+  {
+    id: 'judas-tree',
+    region: 'constantinople',
+    period: { from: 330, fromApprox: true }, // with the palace gardens it flowers in
+    create: createJudasTree,
+    map: inPalaceGardens(JUDAS_TREES[0], 4),
   },
   {
     id: 'basilica-cistern',
     region: 'constantinople',
     period: { from: 532 },
     create: createBasilicaCistern,
-    map: { at: [-6.75, 5.15], rotation: 0, scale: 4.3, lift: 0.43 }, // lifted so the cutaway's floor sits on the map's solid ground, as the diorama shows it
+    map: { at: [-6.75, 5.15], rotation: 0, scale: 4.3, lift: 0.43, erguvans: 3 }, // lifted so the cutaway's floor sits on the map's solid ground, as the diorama shows it
   },
   {
     id: 'forum-of-constantine',
     region: 'constantinople',
     period: { from: 330, fromApprox: true },
     create: createForumOfConstantine,
-    map: { at: FORUM_OF_CONSTANTINE, rotation: -4, scale: 4.9 },
+    map: { at: FORUM_OF_CONSTANTINE, rotation: -4, scale: 4.9, erguvans: 4 },
   },
   {
     id: 'aqueduct-of-valens',
     region: 'constantinople',
     period: { from: 368 },
     create: createAqueductOfValens,
-    map: { at: [-21, 9.5], rotation: -25, scale: 4.2, clearance: 0.9 },
+    map: { at: [-21, 9.5], rotation: -25, scale: 4.2, clearance: 0.9, erguvans: 5 },
   },
   {
     id: 'blachernae',
     region: 'constantinople',
     period: { from: 500, fromApprox: true },
     create: createBlachernae,
-    map: { at: [-30.8, 27.6], rotation: -10, scale: 2.9 },
+    map: { at: [-30.8, 27.6], rotation: -10, scale: 2.9, erguvans: 5 },
   },
   {
     id: 'theodosian-walls',
@@ -158,7 +185,7 @@ export const LANDMARKS = [
     region: 'pera',
     period: { from: 1348 },
     create: createGalataTower,
-    map: { at: GALATA_TOWER, rotation: 0, scale: 8.4 },
+    map: { at: GALATA_TOWER, rotation: 0, scale: 8.4, erguvans: 4 },
   },
   {
     id: 'genoese-quarter',

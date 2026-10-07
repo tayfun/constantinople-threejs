@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M, cloth, tinted } from './lib/materials.js';
 import {
   archedWallGeometry, archGeometry, box, boxGeometry, cylinderGeometry, crenellationGeometry, cylinder, cypress, dome, faceToward, gableRoof,
-  groundPlane, hipRoof, mesh, placeOnCircle, roundTree, stairs, windowRow, flag,
+  groundPlane, hipRoof, judasTree, mesh, placeOnCircle, roundTree, stairs, windowRow, flag,
 } from './lib/primitives.js';
 import { createHull } from './lib/hull.js';
 import { createLionAndBull, createSeatedLion } from './lib/figures.js';
@@ -43,6 +43,11 @@ const curve = (detail, fine, coarse) => (detail ? fine : coarse);
 /** Height of a pavement or lawn above the slab under it: centimetres in the diorama, more on the map, whose far camera cannot tell them apart. */
 const lift = (dy, detail) => (detail ? dy : dy * 12);
 
+/** Judas trees in the palace gardens, [x, y, z]: on the Mesokepion lawn, in the western garden, above the harbour. */
+export const JUDAS_TREES = [[46, UPPER, -14], [4, UPPER, -46], [-108, UPPER, -18], [-118, MIDDLE, 14], [20, LOWER, 58]];
+/** How far the map build raises its lawns above the terrace they lie on. */
+export const MAP_LAWN_LIFT = lift(0.05, false);
+
 export function createGreatPalace({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const palace = new THREE.Group();
@@ -74,12 +79,22 @@ export function createGreatPalace({ lod = 'detail' } = {}) {
   labelAt(palace, 'tzykanisterion', 92, LOWER + 1, 66);
 
   const trees = detail
-    ? [[-118, UPPER, -26], [-108, UPPER, -18], [-98, UPPER, -28], [118, UPPER, -60], [110, UPPER, -86], [122, UPPER, -70],
-      [46, UPPER, -14], [60, UPPER, -42], [8, UPPER, -14], [4, UPPER, -46], [40, UPPER, -46], [120, UPPER, -20],
-      [-120, MIDDLE, 40], [-118, MIDDLE, 14], [66, MIDDLE, 38], [80, MIDDLE, 44], [122, MIDDLE, 40], [124, MIDDLE, 4],
-      [-118, LOWER, 60], [-126, LOWER, 76], [20, LOWER, 58], [34, LOWER, 56]]
+    ? [[-118, UPPER, -26], [-98, UPPER, -28], [118, UPPER, -60], [110, UPPER, -86], [122, UPPER, -70],
+      [60, UPPER, -42], [8, UPPER, -14], [40, UPPER, -46], [120, UPPER, -20],
+      [-120, MIDDLE, 40], [66, MIDDLE, 38], [80, MIDDLE, 44], [122, MIDDLE, 40], [124, MIDDLE, 4],
+      [-118, LOWER, 60], [-126, LOWER, 76], [34, LOWER, 56]]
     : []; // the map plants its own trees
   for (const [x, y, z] of trees) palace.add(Math.abs(x) > 100 || y === LOWER ? roundTree(9, x, y, z) : cypress(12, x, y, z));
+  // Judas trees in flower among them, each opening the erguvan's own diorama. The map shows the
+  // first as a landmark of its own. Kept apart from the merge (dynamic) so they can glow when hovered.
+  if (detail) {
+    JUDAS_TREES.forEach(([x, y, z], i) => {
+      const tree = judasTree(9, x, y + lift(0.05, detail), z, { seed: i + 1 });
+      tree.userData.landmarkId = 'judas-tree';
+      tree.userData.dynamic = true;
+      palace.add(tree);
+    });
+  }
 
   finalizeModel(palace);
   if (detail) addImperialBarge(palace);

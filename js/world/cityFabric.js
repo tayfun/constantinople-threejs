@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { materials as M } from '../models/lib/materials.js';
 import {
-  box, boxGeometry, coneGeometry, cylinder, cylinderGeometry, domeGeometry, hipRoofGeometry, mesh, crenelRingGeometry, pyramid,
+  box, boxGeometry, cylinder, cylinderGeometry, domeGeometry, hipRoofGeometry, mesh, crenelRingGeometry, pyramid,
 } from '../models/lib/primitives.js';
 import { mapStone, wallAlongGeometry } from '../models/lib/mapWalls.js';
+import { crownGeometry, cypressGeometry, judasTreeGeometry } from '../models/lib/trees.js';
 import { createRandom } from '../util/random.js';
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import { planTown } from './townPlanner.js';
@@ -22,11 +23,19 @@ import {
  *
  * ground: { heightAt, slopeAt } from ground.js.
  * keepOut: [(point) => boolean, …] tests for areas reserved for landmarks.
+ * erguvanSites: [{ centre, distance, clearance, count }, …] landmarks to ring
+ *   with Judas trees: `distance(point)` is how far a point lies outside the
+ *   landmark's footprint, and the trees stand a little beyond `clearance`.
  */
-export function createCityFabric({ ground, keepOut = [] }) {
+export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
   const rnd = createRandom(330);
-  const clear = (point) => !keepOut.some((occupies) => occupies(point));
+  const erguvans = []; // planted first, so houses and other trees keep clear of them
+  const clear = (point) => !keepOut.some((occupies) => occupies(point))
+    && !erguvans.some(([east, north]) => Math.hypot(point[0] - east, point[1] - north) < ERGUVAN_ROOM);
   const away = (point, line, distance) => distanceToPolyline(point, line) > distance;
+
+  erguvans.push(...planErguvans(createRandom(1453), erguvanSites, (p) => onLand(p, 0.4) && clear(p)
+    && away(p, SEA_WALLS, 0.5) && away(p, LAND_WALLS, 0.8) && away(p, MESE, 0.25) && away(p, MESE_NORTH, 0.25) && away(p, GALATA_WALLS, 0.3)));
 
   const towns = [
     {
@@ -75,6 +84,7 @@ export function createCityFabric({ ground, keepOut = [] }) {
     createHouses(rnd, layers.houses),
     createChurches(rnd, layers.churches),
     createTrees(rnd, layers.trees),
+    createErguvans(createRandom(1454), erguvans, ground),
   );
   fabric.add(createSeaWalls(), createArkla());
   return fabric;
@@ -100,6 +110,27 @@ function alignedTo(lines) {
   };
 }
 
+const ERGUVAN_ROOM = 0.3; // map units kept clear around each Judas tree
+
+/** Spots for the Judas trees: for each site, a few points at random bearings just beyond the landmark's clearing. */
+function planErguvans(rnd, sites, open) {
+  const spots = [];
+  for (const { centre, distance, clearance, count } of sites) {
+    let placed = 0;
+    for (let attempt = 0; attempt < count * 15 && placed < count; attempt++) {
+      const angle = rnd.range(0, Math.PI * 2);
+      const at = (r) => [centre[0] + Math.cos(angle) * r, centre[1] + Math.sin(angle) * r];
+      let r = 0;
+      while (distance(at(r)) < clearance && r < 20) r += 0.05; // out to the edge of the clearing
+      const spot = at(r + rnd.range(0.12, 0.4));
+      if (!open(spot) || spots.some(([e, n]) => Math.hypot(spot[0] - e, spot[1] - n) < ERGUVAN_ROOM * 1.4)) continue;
+      spots.push(spot);
+      placed++;
+    }
+  }
+  return spots;
+}
+
 function onLand(point, margin) {
   for (const land of [EUROPE, ASIA]) {
     if (pointInPolygon(point, land)) return distanceToPolyline(point, land, true) > margin;
@@ -123,9 +154,9 @@ const PLOT_TONES = {
   fallow: palette(0xc4ad78, 0xbba270),
 };
 const TREE_TONES = {
-  round: palette(0x5f9a40, 0x6ea648, 0x528c38, 0x78ad4e),
-  orchard: palette(0x84b250, 0x90ba58),
-  cypress: palette(0x2f5e34, 0x37693a, 0x2a5530),
+  round: palette(0x6ea845, 0x7db650, 0x5f9a3e, 0x8bbd55),
+  orchard: palette(0x96c25a, 0xa3c862),
+  cypress: palette(0x3f7a42, 0x47844a, 0x376e3c),
 };
 
 /** A colour from a palette with a slight brightness jitter. */
@@ -191,25 +222,42 @@ function createHouses(rnd, houses) {
 function createTrees(rnd, trees) {
   const leafy = trees.filter((tree) => tree.kind !== 'cypress');
   const cypresses = trees.filter((tree) => tree.kind === 'cypress');
-  const foliage = new THREE.MeshStandardMaterial({ roughness: 0.95, flatShading: true });
-  const crowns = instanced(new THREE.IcosahedronGeometry(1, 0), foliage, leafy.length);
-  const spires = instanced(coneGeometry(1, 1, 7), foliage, cypresses.length);
-  const trunks = instanced(cylinderGeometry(0.5, 0.6, 1, 5), new THREE.MeshStandardMaterial({ color: 0x6b5038, roughness: 1 }), leafy.length);
+  // The crowns carry their own shading as vertex colours, which the instance colours tint.
+  const foliage = new THREE.MeshStandardMaterial({ roughness: 0.95, vertexColors: true });
+  const crowns = instanced(crownGeometry({ blobs: 3, detail: 0, seed: 7 }), foliage, leafy.length);
+  const spires = instanced(cypressGeometry({ segments: 6, coarse: true, seed: 7 }), foliage, cypresses.length);
+  const trunks = instanced(cylinderGeometry(0.5, 0.6, 1, 4, { open: true }), new THREE.MeshStandardMaterial({ color: 0x6b5038, roughness: 1 }), leafy.length);
   const matrix = new THREE.Matrix4();
 
   leafy.forEach(({ point: [east, north], y, kind, size }, i) => {
     const trunk = size * 0.35;
-    trunks.setMatrixAt(i, compose(matrix, east, y - 0.02, north, 0, size * 0.09, trunk + 0.02, size * 0.09));
-    crowns.setMatrixAt(i, compose(matrix, east, y + trunk + size * 0.3, north, rnd.range(0, Math.PI), size * 0.5, size * 0.42, size * 0.5));
-    crowns.setColorAt(i, tone(rnd, TREE_TONES[kind], 0.1));
+    const spread = size * rnd.range(0.46, 0.56);
+    trunks.setMatrixAt(i, compose(matrix, east, y - 0.02, north, rnd.range(0, Math.PI), size * 0.09, trunk + 0.02, size * 0.09));
+    crowns.setMatrixAt(i, compose(matrix, east, y + trunk + size * 0.3, north, rnd.range(0, Math.PI * 2), spread, size * rnd.range(0.4, 0.48), spread));
+    crowns.setColorAt(i, tone(rnd, TREE_TONES[kind], 0.16));
   });
   cypresses.forEach(({ point: [east, north], y, size }, i) => {
-    spires.setMatrixAt(i, compose(matrix, east, y - 0.02, north, rnd.range(0, Math.PI), size * 0.16, size * 1.3, size * 0.16));
-    spires.setColorAt(i, tone(rnd, TREE_TONES.cypress, 0.1));
+    spires.setMatrixAt(i, compose(matrix, east, y - 0.02, north, rnd.range(0, Math.PI * 2), size * 0.15, size * rnd.range(1.2, 1.4), size * 0.15));
+    spires.setColorAt(i, tone(rnd, TREE_TONES.cypress, 0.14));
   });
 
   const group = new THREE.Group();
   group.add(trunks, crowns, spires);
+  return group;
+}
+
+/** The Judas trees: the light map erguvan, instanced as bark, blossom and leaves. */
+function createErguvans(rnd, spots, ground) {
+  const { wood, flowers, leaves } = judasTreeGeometry({ seed: 2, coarse: true });
+  const parts = [[wood, M.erguvanBark], [flowers, M.blossom], [leaves, M.erguvanLeaves]].map(([geometry, material]) => instanced(geometry, material, spots.length));
+  const matrix = new THREE.Matrix4();
+  spots.forEach(([east, north], i) => {
+    const size = rnd.range(0.32, 0.4);
+    compose(matrix, east, LAND_HEIGHT + ground.heightAt([east, north]) - 0.01, north, rnd.range(0, Math.PI * 2), size, size, size);
+    for (const part of parts) part.setMatrixAt(i, matrix);
+  });
+  const group = new THREE.Group();
+  group.add(...parts);
   return group;
 }
 

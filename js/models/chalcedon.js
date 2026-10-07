@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M, tinted } from './lib/materials.js';
 import {
   archGeometry, box, colonnade, crenellationGeometry, cylinder, cypress, dome, faceToward, gableRoof, groundPlane,
-  hipRoof, landGeometry, mesh, roundTree, windowRow,
+  hipRoof, judasTree, landGeometry, mesh, roundTree, windowRow,
 } from './lib/primitives.js';
 import { createHouse } from './lib/buildings.js';
 import { createHull } from './lib/hull.js';
@@ -464,7 +464,9 @@ function addPlanting(city, rnd, detail, elevation) {
     if (Math.abs(x - 10) < 6 || Math.abs(z - 30) < 6 || Math.abs(acropolisRadius(x, z) - 1) * 30 < 3) continue;
     if (z > 52 && x > -40 && x < 20) continue; // the harbour strip
     const y = elevation(x, z);
-    city.add(rnd.chance(0.5) ? cypress(rnd.range(9, 13), x, y, z) : roundTree(rnd.range(5, 8), x, y, z));
+    if (rnd.chance(0.5)) city.add(cypress(rnd.range(9, 13), x, y, z));
+    else if (i % 3) city.add(roundTree(rnd.range(5, 8), x, y, z));
+    else city.add(judasTree(rnd.range(5, 8) + 1, x, y, z, { detail, seed: i })); // every third broadleaf an erguvan in flower
   }
   // Olive groves in rows on the open ground south-east of the walls; the map thins them to every other tree.
   for (let row = 0; row < 5; row++) {
