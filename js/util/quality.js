@@ -3,7 +3,7 @@ import * as THREE from 'three';
 /**
  * Rendering quality chosen once from what the device tells us. Phones,
  * tablets and small machines get a lighter setting: a lower pixel ratio,
- * smaller shadow maps, cheaper shadow filtering, half-size painted textures,
+ * smaller shadow maps, half-size painted textures,
  * dioramas that give back their GPU memory once left, and a map with half
  * as many leafy trees, each of fewer blobs: the trees are most of the map's
  * triangles, and a phone's tiled GPU can fault binning too many of them. A phone that runs
@@ -11,6 +11,10 @@ import * as THREE from 'three';
  * for the whole site until the browser is restarted. Visitors who asked
  * their system for reduced motion get a still scene that only redraws
  * when something changes.
+ *
+ * Both tiers filter shadows with PCFSoftShadowMap. Plain PCFShadowMap (17
+ * taps) resets the GPU of the Pixel 10's PowerVR DXT within ~35 frames, in
+ * three.js's own shadow example too; soft PCF, basic and VSM run fine.
  */
 
 function isModestDevice() {
@@ -35,7 +39,7 @@ const TIERS = {
   low: {
     tier: 'low',
     maxPixelRatio: 1,
-    shadowType: THREE.PCFShadowMap,
+    shadowType: THREE.PCFSoftShadowMap,
     mapShadowSize: 2048,
     detailShadowSize: 1024,
     textureScale: 0.5,
