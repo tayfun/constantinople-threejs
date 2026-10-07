@@ -1,6 +1,6 @@
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import {
-  BLACHERNAE_WALLS, CITY, LAND_WALLS, PERA, PERA_HILLS, PERA_SHORE, SEA_WALLS, SEVEN_HILLS,
+  BLACHERNAE_WALLS, CITY, ISLANDS, LAND_WALLS, PERA, PERA_HILLS, PERA_SHORE, SEA_WALLS, SEVEN_HILLS,
 } from '../data/geography.js';
 
 const smoothstep = (edge0, edge1, x) => {
@@ -17,7 +17,8 @@ const TERRACE_BLEND = 1.2;
  * The seven hills rise inside the city and fade out towards the sea walls and
  * land walls, so shores and fortifications stay level. Across the Horn the
  * hill of Galata and the Pera ridge rise from the water; Galata's walls climb
- * the slope (see mapWalls.js), so only the shore holds that ridge down. Each
+ * the slope (see mapWalls.js), so only the shore holds that ridge down. Out in
+ * the Marmara the Princes' Islands rise steeply from their beaches. Each
  * landmark sits on a terrace: inside its footprint the ground is flattened to
  * the height at its centre, blending smoothly back into the hills around it —
  * much as the Byzantines terraced the slopes for their great buildings.
@@ -37,6 +38,9 @@ export function createGround({ footprints = [] } = {}) {
       return bumps(point, SEVEN_HILLS) * shoreward(point, SEA_WALLS) * walls;
     }
     if (pointInPolygon(point, PERA)) return bumps(point, PERA_HILLS) * shoreward(point, PERA_SHORE);
+    for (const { shore, hills, fade } of ISLANDS) {
+      if (pointInPolygon(point, shore)) return bumps(point, hills) * smoothstep(0.3, fade, distanceToPolyline(point, shore, true));
+    }
     return 0;
   };
 

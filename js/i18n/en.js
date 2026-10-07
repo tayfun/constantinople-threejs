@@ -1,4 +1,4 @@
-/** English text: interface strings, region and landmark descriptions, map labels. */
+/** English text: interface strings, region and landmark descriptions. */
 
 const legend = {
   title: 'The city of the blind',
@@ -92,6 +92,41 @@ export default {
       paragraphs: [
         'A drowned river valley curving some 7 km inland, the Golden Horn gave Constantinople one of the finest natural harbours of the Mediterranean world — the main reason the founders of Chalcedon were thought so blind.',
         'Its city shore was lined with harbours, landing stages and the quarters of Italian merchants. In wartime a great chain closed its mouth, and the imperial fleet of dromons sheltered behind it.',
+      ],
+    },
+    bosphorus: {
+      name: 'Bosphorus',
+      subtitle: 'Bosporos — the strait of the ox-ford',
+      paragraphs: [
+        'Some 30 km long and at its narrowest barely 700 m wide, the Bosphorus joins the Black Sea to the Sea of Marmara and divides Europe from Asia. Its name, "ox-ford", was explained by the myth of Io, who swam across it in the shape of a heifer.',
+        'A strong surface current runs south out of the Black Sea while a saltier counter-current creeps north beneath it. The Greek colonists who founded Byzantium around 660 BC chose the point where strait, Golden Horn and Marmara meet, so that every ship from the grain lands of the Black Sea had to pass beneath the city\'s walls.',
+        'Darius bridged it with boats for his Scythian campaign around 513 BC. In Byzantine times the strait was closed to enemy fleets by the fortress of Hieron at its Black Sea mouth, and finally by Rumeli Hisarı, which Mehmed II raised in 1452 to cut the city off before the siege.',
+      ],
+    },
+    propontis: {
+      name: 'Propontis',
+      subtitle: 'Sea of Marmara — "the sea before the Pontus"',
+      paragraphs: [
+        'The Propontis, the "fore-sea" before the Pontus Euxinus, is an inland sea some 280 km long, bounded by the Bosphorus to the north-east and the Hellespont to the south-west. Its modern name comes from the island of Marmara, whose white marble quarries at Proconnesus supplied the columns and revetments of Constantinople for a thousand years.',
+        'Along the city\'s Marmara shore lay the great harbours of Julian and Theodosius, where the grain fleets from Egypt unloaded, and the sea walls ran some 8 km from the Golden Gate round to Seraglio Point. Across the water the Princes\' Islands and the Bithynian coast closed the horizon.',
+        'The Marmara route to the Hellespont and the Aegean was the city\'s lifeline to the Mediterranean; a southerly gale could hold ships in the Propontis for weeks.',
+      ],
+    },
+    'princes-islands': {
+      name: 'Princes\' Islands',
+      subtitle: 'Prinkipos and its sisters — Adalar',
+      paragraphs: [
+        'Nine islands lie in the Marmara 15–20 km south-east of the city: Prote (Kınalıada), Antigoni (Burgazada), Halki (Heybeliada), Prinkipo (Büyükada), the largest, and the islets Pita, Terebinthos, Plati, Oxeia and Neandros. The Byzantines called them the Prinkēpōn nēsoi, the Princes\' Islands, or the Papadonisia, the priests\' islands, after their monasteries.',
+        'Those monasteries served as prisons for deposed emperors, empresses and patriarchs. The Empress Irene was banished to Prinkipo in 802; Michael I Rangabe ended his days as a monk on Prote after his abdication in 813; Romanos IV Diogenes, blinded after Manzikert, died there in 1072. The monastery of St George Koudounas still crowns Büyükada\'s southern hill.',
+        'Prinkipo rises to 202 m at Yücetepe, the highest point of the group; Kınalıada, the "henna island", owes its red-brown colour to the iron and copper mined there since antiquity.',
+      ],
+    },
+    mese: {
+      name: 'The Mese',
+      subtitle: 'Μέση ὁδός — the Middle Street',
+      paragraphs: [
+        'The Mese, the "middle street", was Constantinople\'s colonnaded main avenue. It began at the Milion, the gilded milestone beside Hagia Sophia from which all distances in the empire were measured, and ran west past the Forum of Constantine, the Forum of Theodosius and the Forum of the Ox to the Golden Gate, where it joined the Via Egnatia towards Rome. A northern branch led past the Holy Apostles to the Charisian Gate, today\'s Edirnekapı.',
+        'Lined with porticoes and shops and opening into the great fora with their columns and statues, it was the route of imperial triumphs: a victorious emperor entered by the Golden Gate and rode along the Mese to Hagia Sophia and the Great Palace. Its course survives as the Divan Yolu.',
       ],
     },
   },
@@ -406,23 +441,5 @@ export default {
     genoa: 'The Genoese settle in Galata',
     'galata-tower': 'The Galata Tower is raised',
     conquest: 'Mehmed II conquers Constantinople',
-  },
-  labels: {
-    'golden-horn': {
-      name: 'Golden Horn',
-      sub: 'Chrysokeras',
-    },
-    bosphorus: {
-      name: 'Bosphorus',
-      sub: 'Bosporos',
-    },
-    propontis: {
-      name: 'Propontis',
-      sub: 'Sea of Marmara',
-    },
-    mese: {
-      name: 'The Mese',
-      sub: 'Middle Street',
-    },
   },
 };

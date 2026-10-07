@@ -285,6 +285,22 @@ export const mapMeadow = () =>
     blotches(ctx, w, h, rnd, { count: 10, color: [160, 178, 96], radius: 70, alpha: 0.18 });
   });
 
+/** Pine woods on the islands: deep green, broken by sunlit clearings. */
+export const mapPines = () =>
+  paintTexture('mapPines', { tile: 36 }, (ctx, w, h, rnd) => {
+    fill(ctx, w, h, [66, 104, 58]);
+    blotches(ctx, w, h, rnd, { count: 18, color: [50, 84, 46], radius: 70, alpha: 0.3 });
+    blotches(ctx, w, h, rnd, { count: 10, color: [104, 134, 70], radius: 50, alpha: 0.22 });
+  });
+
+/** Dry scrub over rusty ground, for the bare island of Kınalıada. */
+export const mapScrub = () =>
+  paintTexture('mapScrub', { tile: 36 }, (ctx, w, h, rnd) => {
+    fill(ctx, w, h, [150, 126, 86]);
+    blotches(ctx, w, h, rnd, { count: 14, color: [164, 106, 72], radius: 60, alpha: 0.3 });
+    blotches(ctx, w, h, rnd, { count: 12, color: [118, 128, 72], radius: 45, alpha: 0.28 });
+  });
+
 // ---------- special-purpose (non-tiling) textures ----------
 
 /** Pink granite face with a column of carved hieroglyphs, for the Egyptian obelisk. */

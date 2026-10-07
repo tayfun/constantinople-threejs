@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { materials as M } from '../models/lib/materials.js';
-import { cityGround, mapMeadow } from '../models/lib/textures.js';
+import { cityGround, mapMeadow, mapPines, mapScrub } from '../models/lib/textures.js';
 import { createWaterMaterial } from '../models/lib/water.js';
 import { mesh } from '../models/lib/primitives.js';
 import { pointInPolygon, samplePolyline } from '../util/geo.js';
 import {
-  ASIA, CITY, EUROPE, GALATA, LAND_HEIGHT, MESE, MESE_NORTH, PERA,
+  ASIA, CITY, EUROPE, GALATA, ISLANDS, LAND_HEIGHT, MESE, MESE_NORTH, PERA,
 } from '../data/geography.js';
 
 /**
  * The map's ground: the two shores, Europe and Asia, with sandy beaches, open water,
  * the built-up area of each town, the city's seven hills and the ridge of
- * Galata and Pera, and the Mese,
+ * Galata and Pera, the Princes' Islands out in the Marmara, and the Mese,
  * Constantinople's main street, running over them.
  *
  * ground: heights from ground.js.
@@ -23,6 +23,10 @@ export function createTerrain(ground) {
   terrain.add(water);
 
   for (const polygon of [EUROPE, ASIA]) terrain.add(landMesh(polygon));
+  for (const { shore, bare } of ISLANDS) {
+    const cover = bare ? scrub : pines;
+    terrain.add(landMesh(shore, cover), hillsMesh(ground, cover, { within: shore }));
+  }
 
   const urban = new THREE.MeshStandardMaterial({
     map: cityGround(),
@@ -120,9 +124,11 @@ function ribbonGeometry(line, width, ground) {
 }
 
 const meadow = new THREE.MeshStandardMaterial({ map: mapMeadow(), roughness: 0.95 });
+const pines = new THREE.MeshStandardMaterial({ map: mapPines(), roughness: 0.95 });
+const scrub = new THREE.MeshStandardMaterial({ map: mapScrub(), roughness: 0.95 });
 
 /** Extruded land with a bevelled, sandy shoreline sloping under the water. */
-function landMesh(polygon) {
+function landMesh(polygon, cover = meadow) {
   const shape = new THREE.Shape(polygon.map(([east, north]) => new THREE.Vector2(east, north)));
   const depth = 2;
   const bevel = 0.5;
@@ -136,7 +142,7 @@ function landMesh(polygon) {
   });
   geometry.rotateX(-Math.PI / 2);
   geometry.translate(0, LAND_HEIGHT - depth - bevel, 0);
-  const land = new THREE.Mesh(geometry, [meadow, M.sand]);
+  const land = new THREE.Mesh(geometry, [cover, M.sand]);
   land.receiveShadow = true;
   return land;
 }

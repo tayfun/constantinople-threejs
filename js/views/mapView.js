@@ -7,13 +7,13 @@ import { createCityFabric } from '../world/cityFabric.js';
 import { createShipping } from '../world/shipping.js';
 import { createRouteFollower } from '../world/motion.js';
 import { createLabel, createLabelRenderer, setLabelText } from '../world/labels.js';
-import { labelText, landmarkText, regionText } from '../i18n/index.js';
+import { landmarkText, regionText } from '../i18n/index.js';
 import { ease, tween } from '../util/tween.js';
 import { standsIn } from '../data/timeline.js';
 import { toWorld } from '../util/geo.js';
 import { applyViewInsets } from '../util/viewport.js';
 import { QUALITY } from '../util/quality.js';
-import { LAND_HEIGHT, METERS_TO_MAP, PLACE_LABELS, WATER_LABELS } from '../data/geography.js';
+import { LAND_HEIGHT, METERS_TO_MAP } from '../data/geography.js';
 
 const HORIZON = 0xe9d7b6;
 const HOME = { position: new THREE.Vector3(3, 94, 78), target: new THREE.Vector3(3, 0, 2) };
@@ -146,14 +146,13 @@ export class MapView {
     }
     this.updateLabelVisibility();
 
+    // Districts float high over their area; waters lie on the surface and the Mese sits just above its hills.
+    const lift = { water: 0.3, place: 1.8 };
     for (const region of regions.filter((r) => r.labelAt)) {
+      const kind = region.labelKind ?? 'region';
       const read = () => ({ text: regionText(region.id).name, sub: regionText(region.id).subtitle });
-      add(this.scene, toWorld(region.labelAt, 3), read, { kind: 'region', onClick: () => onSelectRegion(region.id) });
-    }
-    for (const [list, kind, height] of [[WATER_LABELS, 'water', 0.3], [PLACE_LABELS, 'place', 1.8]]) {
-      for (const { id, at } of list) {
-        add(this.scene, toWorld(at, height + this.ground.heightAt(at)), () => ({ text: labelText(id).name, sub: labelText(id).sub }), { kind });
-      }
+      const height = kind === 'region' ? 3 : lift[kind] + this.ground.heightAt(region.labelAt);
+      add(this.scene, toWorld(region.labelAt, height), read, { kind, onClick: () => onSelectRegion(region.id) });
     }
   }
 

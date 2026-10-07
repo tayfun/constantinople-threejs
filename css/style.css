@@ -518,7 +518,6 @@ html, body {
 .map-label--region:hover { color: var(--gold-bright); }
 
 .map-label--water {
-  pointer-events: none;
   font-style: italic;
   font-size: 16px;
   letter-spacing: 0.12em;
@@ -526,13 +525,14 @@ html, body {
   text-shadow: 0 1px 4px rgba(10, 40, 60, 0.8);
 }
 .map-label--water small { display: block; font-size: 12px; letter-spacing: 0.05em; opacity: 0.85; }
+.map-label--water:hover { color: #ffffff; text-shadow: 0 1px 4px rgba(10, 40, 60, 0.9), 0 0 14px rgba(200, 240, 255, 0.6); }
 
 .map-label--place {
-  pointer-events: none;
   font-size: 13px;
   color: #fff6df;
   text-shadow: 0 1px 4px rgba(40, 20, 10, 0.9);
 }
+.map-label--place:hover { color: var(--gold-bright); }
 .map-label--place small { display: block; font-style: italic; font-size: 11.5px; color: var(--parchment-deep); }
 
 /* ---------- Fade & loading ---------- */

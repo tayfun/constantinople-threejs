@@ -1,4 +1,4 @@
-/** Türkçe metinler: arayüz, bölge ve yapı açıklamaları, harita etiketleri. */
+/** Türkçe metinler: arayüz, bölge ve yapı açıklamaları. */
 
 const legend = {
   title: 'Körler ülkesi',
@@ -92,6 +92,41 @@ export default {
       paragraphs: [
         'Yaklaşık 7 km içeri kıvrılan, sular altında kalmış bir ırmak vadisi olan Haliç, Konstantinopolis\'e Akdeniz dünyasının en iyi doğal limanlarından birini kazandırdı — Kalkedon\'un kurucularının bu kadar kör sayılmasının başlıca nedeni de buydu.',
         'Kent tarafındaki kıyısı limanlar, iskeleler ve İtalyan tüccarların mahalleleriyle doluydu. Savaş zamanında ağzı büyük bir zincirle kapatılır, imparatorluk donanmasının dromonları onun ardına sığınırdı.',
+      ],
+    },
+    bosphorus: {
+      name: 'İstanbul Boğazı',
+      subtitle: 'Bosporos — "öküz geçidi"',
+      paragraphs: [
+        'Yaklaşık 30 km uzunluğundaki ve en dar yerinde 700 m\'yi bulmayan Boğaz, Karadeniz\'i Marmara\'ya bağlar ve Avrupa ile Asya\'yı birbirinden ayırır. "Öküz geçidi" anlamına gelen adı, düve kılığında karşıya yüzen İo söylencesiyle açıklanırdı.',
+        'Karadeniz\'den güneye güçlü bir yüzey akıntısı akar; altında daha tuzlu bir karşı akıntı kuzeye süzülür. MÖ 660 dolaylarında Byzantion\'u kuran Yunan kolonistler Boğaz\'ın, Haliç\'in ve Marmara\'nın buluştuğu noktayı seçmişti; böylece Karadeniz\'in tahıl ülkelerinden gelen her gemi kentin surlarının önünden geçmek zorundaydı.',
+        'Dareios, MÖ 513 dolayındaki İskit seferinde Boğaz\'ı kayıklardan kurulu bir köprüyle aştı. Bizans döneminde Boğaz, Karadeniz ağzındaki Hieron kalesiyle, en sonunda da II. Mehmed\'in kuşatma öncesinde kenti tecrit etmek için 1452\'de yaptırdığı Rumeli Hisarı\'yla düşman donanmalarına kapatıldı.',
+      ],
+    },
+    propontis: {
+      name: 'Propontis',
+      subtitle: 'Marmara Denizi — "Pontos\'un önündeki deniz"',
+      paragraphs: [
+        'Pontos Euksinos\'un "ön denizi" Propontis, kuzeydoğuda Boğaz, güneybatıda Çanakkale Boğazı ile sınırlanan yaklaşık 280 km uzunluğunda bir iç denizdir. Bugünkü adını, Prokonnesos\'taki beyaz mermer ocakları bin yıl boyunca Konstantinopolis\'in sütunlarını ve kaplamalarını sağlayan Marmara Adası\'ndan alır.',
+        'Kentin Marmara kıyısında Mısır\'dan gelen tahıl filolarının boşaltıldığı büyük Iulianos ve Theodosios limanları uzanır, deniz surları Altın Kapı\'dan Sarayburnu\'na yaklaşık 8 km boyunca sürerdi. Karşıda Prens Adaları ve Bithynia kıyısı ufku kapatırdı.',
+        'Çanakkale Boğazı\'na ve Ege\'ye uzanan Marmara yolu kentin Akdeniz\'e açılan can damarıydı; bir lodos fırtınası gemileri haftalarca Propontis\'te tutabilirdi.',
+      ],
+    },
+    'princes-islands': {
+      name: 'Prens Adaları',
+      subtitle: 'Prinkipos ve kardeşleri — Adalar',
+      paragraphs: [
+        'Kentin 15–20 km güneydoğusunda, Marmara\'da dokuz ada sıralanır: Prote (Kınalıada), Antigoni (Burgazada), Halki (Heybeliada), en büyükleri Prinkipo (Büyükada) ve Pita, Terebinthos, Plati, Oxeia ve Neandros adacıkları. Bizanslılar onlara Prinkēpōn nēsoi, "Prens Adaları", ya da manastırlarından ötürü Papadonisia, "papaz adaları" derdi.',
+        'Bu manastırlar tahttan indirilen imparatorlar, imparatoriçeler ve patrikler için hapishane işlevi gördü. İmparatoriçe Eirene 802\'de Prinkipo\'ya sürüldü; I. Mikhael Rangabe 813\'te tahttan çekildikten sonra günlerini Prote\'de keşiş olarak tamamladı; Malazgirt\'ten sonra gözlerine mil çekilen IV. Romanos Diogenes 1072\'de orada öldü. Aya Yorgi (Hagios Georgios Koudounas) Manastırı bugün de Büyükada\'nın güney tepesini taçlandırır.',
+        'Prinkipo, adaların en yüksek noktası olan 202 m\'lik Yücetepe\'ye yükselir; "kına adası" Kınalıada ise kızıl-kahve rengini antik çağdan beri işletilen demir ve bakır madenlerine borçludur.',
+      ],
+    },
+    mese: {
+      name: 'Mese',
+      subtitle: 'Μέση ὁδός — Orta Yol',
+      paragraphs: [
+        'Mese, "orta yol", Konstantinopolis\'in sütunlu ana caddesiydi. Ayasofya\'nın yanında, imparatorluktaki bütün mesafelerin ölçüldüğü yaldızlı mil taşı Milion\'dan başlar; batıya doğru Konstantinos Forumu\'nu, Theodosios Forumu\'nu ve Öküz Forumu\'nu geçerek Altın Kapı\'ya ulaşır, orada Roma\'ya giden Via Egnatia\'ya bağlanırdı. Kuzey kolu Kutsal Havariler Kilisesi\'nin önünden Kharisios Kapısı\'na, bugünkü Edirnekapı\'ya uzanırdı.',
+        'Revaklar ve dükkânlarla çevrili, sütunlu ve heykelli büyük forumlara açılan cadde imparatorluk zaferlerinin güzergâhıydı: muzaffer imparator Altın Kapı\'dan girer, Mese boyunca Ayasofya\'ya ve Büyük Saray\'a at sürerdi. Güzergâhı bugün Divan Yolu olarak yaşar.',
       ],
     },
   },
@@ -406,23 +441,5 @@ export default {
     genoa: 'Cenevizliler Galata\'ya yerleşir',
     'galata-tower': 'Galata Kulesi yükselir',
     conquest: 'II. Mehmed Konstantinopolis\'i fetheder',
-  },
-  labels: {
-    'golden-horn': {
-      name: 'Haliç',
-      sub: 'Khrysokeras',
-    },
-    bosphorus: {
-      name: 'İstanbul Boğazı',
-      sub: 'Bosporos',
-    },
-    propontis: {
-      name: 'Propontis',
-      sub: 'Marmara Denizi',
-    },
-    mese: {
-      name: 'Mese',
-      sub: 'Orta Yol',
-    },
   },
 };

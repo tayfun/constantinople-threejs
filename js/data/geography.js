@@ -154,6 +154,87 @@ export const CHRYSOPOLIS = line([[24.5, 12.5], [31, 12.5], [34, 22], [28, 20]]);
 
 export const CHALCEDON_TOWN = line([[36.5, -14.5], [44, -15], [44, -28], [35, -29]]);
 
+// ---------- the Princes' Islands ----------
+
+/**
+ * The Princes' Islands (Prinkēpōn nēsoi), 15–20 km south-east of the city in
+ * the Marmara, where deposed emperors and princes were sent into exile in the
+ * island monasteries. Outlines are simplified from the modern coastline, in
+ * surveyed coordinates; the islands are steep and pine-clad (Büyükada rises
+ * 202 m, more than any of the city's hills), except Kınalıada, bare and
+ * reddish from its mines. Island hills are exaggerated like the city's seven.
+ *
+ * shore   outline polygon      hills  bumps as in SEVEN_HILLS
+ * bare    scrub instead of pines     fade   map units in from the shore over which the hills rise
+ */
+/** Rounds a polygon by cutting its corners (Chaikin), so a dozen surveyed points read as a natural coastline. */
+const rounded = (polygon, passes = 2) => {
+  let points = polygon;
+  for (let pass = 0; pass < passes; pass++) {
+    points = points.flatMap((a, i) => {
+      const b = points[(i + 1) % points.length];
+      return [[a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]];
+    });
+  }
+  return points;
+};
+
+const island = (id, { shore, hills, bare = false, fade = 2.5 }) => ({
+  id,
+  shore: rounded(line(shore)),
+  hills: hills.map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) })),
+  bare,
+  fade,
+});
+
+export const ISLANDS = [
+  island('kinaliada', { // Kınalıada, bare and reddish from its iron and copper, which named it 'henna island'
+    shore: [[58.0, -101.9], [65.6, -103.0], [68.1, -110.8], [63.9, -117.5], [58.0, -118.6], [54.6, -111.9], [54.6, -105.3]],
+    hills: [{ at: [60.9, -110.3], height: 2.9, radius: 4 }],
+    bare: true, fade: 1.5,
+  }),
+  island('burgazada', { // Burgazada, Antigoni, under its pine-clad Bayraktepe
+    shore: [[68.9, -133.1], [77.3, -135.3], [80.7, -143.1], [76.5, -152.0], [68.9, -154.2], [63.0, -148.7], [63.9, -138.6]],
+    hills: [{ at: [70.6, -143.1], height: 4.2, radius: 6 }],
+    bare: false, fade: 1.8,
+  }),
+  island('kasik-adasi', { // Kaşık Adası, the 'spoon' islet between Burgaz and Heybeli
+    shore: [[82.8, -146.4], [84.5, -148.7], [84.5, -153.1], [82.8, -154.2], [81.9, -150.9]],
+    hills: [{ at: [83.2, -150.1], height: 0.8, radius: 2 }],
+    bare: false, fade: 0.6,
+  }),
+  island('heybeliada', { // Heybeliada, Halki, with the Değirmentepe hill and the monastery of the Holy Trinity
+    shore: [[89.1, -139.8], [95.8, -138.6], [105.9, -143.1], [107.6, -150.9], [102.5, -158.7], [92.4, -159.8], [87.4, -156.5], [86.6, -147.6]],
+    hills: [{ at: [99.2, -147.6], height: 3.4, radius: 5 }, { at: [87.4, -149.8], height: 2.1, radius: 4 }],
+    bare: false, fade: 1.8,
+  }),
+  island('buyukada', { // Büyükada, Prinkipo, the largest: Yücetepe to the south and İsa Tepe with St George's monastery
+    shore: [[115.1, -145.3], [126.0, -147.6], [132.8, -156.5], [131.9, -167.6], [131.9, -177.6], [126.9, -186.5], [119.3, -188.7], [111.8, -184.3], [110.9, -174.3], [104.2, -168.7], [110.9, -163.1], [110.1, -153.1]],
+    hills: [{ at: [122.7, -178.7], height: 5.0, radius: 8 }, { at: [121.0, -154.2], height: 4.1, radius: 7 }],
+    bare: false, fade: 1.8,
+  }),
+  island('sedef-adasi', { // Sedef Adası, Terebinthos, off Büyükada's eastern shore
+    shore: [[137.0, -163.1], [142.8, -164.3], [142.8, -170.9], [137.8, -172.0], [135.3, -167.6]],
+    hills: [{ at: [139.5, -167.6], height: 1.5, radius: 2 }],
+    bare: false, fade: 1.0,
+  }),
+  island('tavsan-adasi', { // Tavşan Adası, a rock south of Büyükada
+    shore: [[123.5, -195.4], [126.0, -196.5], [125.2, -199.9], [122.7, -198.8]],
+    hills: [{ at: [124.4, -197.6], height: 0.5, radius: 1 }],
+    bare: false, fade: 0.6,
+  }),
+  island('yassiada', { // Yassıada, Plati, the flat island, with Sivriada the westernmost of the group
+    shore: [[11.8, -159.8], [16.8, -160.9], [16.8, -166.5], [12.6, -167.6]],
+    hills: [{ at: [14.3, -163.6], height: 1.0, radius: 2 }],
+    bare: false, fade: 1.0,
+  }),
+  island('sivriada', { // Sivriada, Oxeia, a pointed rock
+    shore: [[-7.5, -144.2], [-3.3, -145.3], [-4.2, -149.8], [-8.4, -148.7]],
+    hills: [{ at: [-5.8, -146.8], height: 2.2, radius: 2 }],
+    bare: false, fade: 0.6,
+  }),
+];
+
 // ---------- streets, harbours and routes ----------
 
 /**
@@ -206,15 +287,3 @@ export const HORN_PATROL = line([
 
 export const MARMARA_ROUTE = line([[-50, -32], [-10, -22], [18, -18], [24, -30], [-15, -38]]);
 export const BOSPHORUS_ROUTE = line([[14, 2], [15, 20], [29, 32], [42, 40], [45, 37.5], [33, 28], [19, 16], [20, 2]]);
-
-// ---------- labels (text in the locale files, keyed by id) ----------
-
-export const WATER_LABELS = [
-  { id: 'golden-horn', at: magnify([-21, 25.5]) },
-  { id: 'bosphorus', at: magnify([22, 30]) },
-  { id: 'propontis', at: magnify([-18, -25]) },
-];
-
-export const PLACE_LABELS = [
-  { id: 'mese', at: magnify([-44, -10]) },
-];
