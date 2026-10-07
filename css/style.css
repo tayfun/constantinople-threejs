@@ -92,7 +92,29 @@ html, body {
 .sidebar.is-collapsed .sidebar__body { display: none; }
 .sidebar.is-collapsed .sidebar__chevron { transform: rotate(-90deg); }
 .sidebar__chevron { display: inline-block; transition: transform 0.2s; }
-.sidebar__region { margin-top: 6px; }
+.sidebar__group { border-top: 1px solid rgba(241, 207, 107, 0.18); }
+.sidebar__group-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 16px 8px;
+  list-style: none;
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+.sidebar__group-summary::-webkit-details-marker { display: none; }
+.sidebar__group-summary:hover { background: rgba(241, 207, 107, 0.08); }
+.sidebar__group-summary:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: -2px; }
+.sidebar__group-chevron { display: inline-block; font-size: 13px; transform: rotate(-90deg); transition: transform 0.2s; }
+.sidebar__group.is-open > .sidebar__group-summary .sidebar__group-chevron { transform: none; }
+.sidebar__group-body { overflow: hidden; }
+.sidebar__group > .sidebar__region:first-of-type .sidebar__region-button { border-top: 0; }
+.sidebar__region { margin-top: 0; padding-bottom: 4px; }
 .sidebar__region-button {
   display: block;
   width: 100%;
