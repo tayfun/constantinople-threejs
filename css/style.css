@@ -497,6 +497,26 @@ html, body {
 .settings__option[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--purple-deep); }
 .settings__option[aria-pressed="true"]::before { content: "✓ "; }
 
+/* ---------- Sources page (from the settings menu) ---------- */
+
+.sources__open::after { content: " →"; }
+.sources__dialog { width: min(560px, calc(100% - 32px)); overflow-y: auto; }
+.sources__intro { margin: 0; font-size: 16px; line-height: 1.45; }
+.sources__heading { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(241, 207, 107, 0.2); }
+.sources__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.sources__entry { position: relative; padding-left: 18px; }
+.sources__entry::before { content: "◆"; position: absolute; left: 0; top: 0.3em; font-size: 10px; color: var(--gold); }
+.sources__cite { display: block; font-style: italic; color: var(--gold-bright); }
+.sources__covers { display: block; color: var(--text-muted); }
+
 /* ---------- Map labels (CSS2D) ---------- */
 
 /* z-index makes the layer a stacking context, so per-label z-indices from CSS2DRenderer stay below the panels. */

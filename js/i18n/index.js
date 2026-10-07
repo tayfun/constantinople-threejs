@@ -83,6 +83,7 @@ export function ui(key, params = {}) {
 export const landmarkText = (id) => LOCALES[current].landmarks[id];
 export const regionText = (id) => LOCALES[current].regions[id];
 export const eventText = (id) => LOCALES[current].events[id];
+export const sourcesText = () => LOCALES[current].sources;
 
 /** A year for display: "537", "685 BC" / "MÖ 685", optionally marked approximate. */
 export function formatYear(year, approximate = false) {

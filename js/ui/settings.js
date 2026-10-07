@@ -1,12 +1,14 @@
 import { h } from './dom.js';
-import { LANGUAGES, getLanguage, setLanguage, ui } from '../i18n/index.js';
+import { SourcesDialog } from './sources.js';
+import { LANGUAGES, getLanguage, setLanguage, sourcesText, ui } from '../i18n/index.js';
 
 const CONTROL_KEYS = ['controlRotate', 'controlPan', 'controlZoom', 'controlSelect', 'controlTouch'];
 
 /**
- * The gear button and the settings dialog it opens: the language choice and
- * a reminder of how to steer the map. A native <dialog> gives the modal its
- * backdrop, focus trapping and Escape handling.
+ * The gear button and the settings dialog it opens: the language choice,
+ * a reminder of how to steer the map and a link to the sources page.
+ * A native <dialog> gives the modal its backdrop, focus trapping and
+ * Escape handling.
  */
 export class SettingsMenu {
   constructor(element) {
@@ -14,6 +16,7 @@ export class SettingsMenu {
     this.button = element.querySelector('.settings__button');
     this.dialog = h('dialog', { class: 'settings__dialog', 'aria-labelledby': 'settings-title' });
     element.append(this.dialog);
+    this.sources = new SourcesDialog(element);
 
     this.button.addEventListener('click', () => this.setOpen(true));
     // Clicking the backdrop (outside the dialog's own box) closes it.
@@ -51,7 +54,11 @@ export class SettingsMenu {
       h('section', { class: 'settings__section' },
         h('h3', { class: 'settings__heading' }, ui('controls')),
         h('ul', { class: 'settings__controls' }, CONTROL_KEYS.map((key) => h('li', {}, ui(key))))),
+      h('section', { class: 'settings__section' },
+        h('h3', { class: 'settings__heading' }, ui('sources')),
+        h('button', { class: 'settings__option sources__open', type: 'button', onClick: (event) => this.sources.open(event.currentTarget) }, sourcesText().title)),
     );
+    this.sources.render();
     if (hadFocus) options.find((option) => option.getAttribute('aria-pressed') === 'true')?.focus();
   }
 
