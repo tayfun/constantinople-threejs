@@ -102,7 +102,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 532 },
     create: createBasilicaCistern,
-    map: { at: [-4.5, 5.4], rotation: 0, scale: 4.9 },
+    map: { at: [-5, 5.15], rotation: 0, scale: 4.3 },
   },
   {
     id: 'forum-of-constantine',

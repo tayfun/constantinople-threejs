@@ -7,24 +7,39 @@ import { finalizeModel } from './lib/merge.js';
 
 /**
  * Hagia Sophia (532–537) as Justinian left it: no minarets, a shallow lead
- * dome on a ring of 40 windows, half-domes east and west, the great
- * buttresses north and south, the narthexes and the colonnaded atrium.
- * Apse faces +x (east). Origin = centre of the nave at ground level.
+ * dome on a ring of 40 windows, half-domes east and west flanked by their
+ * exedrae, the great north and south arches with their tympana of windows,
+ * the four buttress arms that carry the piers' thrust out to the aisle
+ * walls, the three-sided apse, the double narthex with its ramp towers and
+ * the colonnaded atrium. Brick walls with rosy mortar on a stone plinth,
+ * marble cornices, lead roofs. The nave square is 31 m; the dome crown
+ * stands 55 m up. Apse faces +x (east). Origin = centre of the nave at
+ * ground level.
  */
 export function createHagiaSophia({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const church = new THREE.Group();
 
-  // Nave block (aisles + galleries) and the central tower carrying the dome.
+  // Nave block (aisles + galleries): brick on a stone plinth, a marble cornice under the lead roof,
+  // and the tympanum block that fills the great arches up to the dome base.
   church.add(box(62, 28, 72, M.brick, 0, 0, 0));
-  church.add(box(62.8, 0.7, 72.8, M.lead, 0, 28, 0));
+  church.add(box(63, 2.6, 73, M.stone, 0, 0, 0));
+  church.add(box(63, 1, 73, M.marble, 0, 27.6, 0));
+  church.add(box(62.8, 0.7, 72.8, M.lead, 0, 28.6, 0));
   church.add(box(34, 12, 37, M.brick, 0, 28, 0));
 
-  // The four great buttress piers on the north and south flanks.
+  // The great north and south arches: brick bands springing from the main piers, their crowns at the dome base.
+  for (const sz of [-1, 1]) church.add(archBand(15.6, 17.4, 3, M.brick, 0, 24, sz * 18.5));
+
+  // The four buttress arms: from each main pier of the nave square, a massive wall runs out over the
+  // galleries to the aisle wall, stepping down as it goes, and carries the thrust of the arches.
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) {
-      church.add(box(9, 38, 9, M.brick, sx * 14, 0, sz * 38));
-      church.add(box(9.6, 0.6, 9.6, M.lead, sx * 14, 38, sz * 38));
+      church.add(box(8, 37, 11, M.brick, sx * 15.5, 0, sz * 21.5));
+      church.add(box(8.6, 0.6, 11.6, M.lead, sx * 15.5, 37, sz * 21.5));
+      church.add(box(8, 33, 11, M.brick, sx * 15.5, 0, sz * 32));
+      church.add(box(8.6, 0.6, 11.6, M.lead, sx * 15.5, 33, sz * 32));
+      church.add(box(8.6, 1, 11.6, M.marble, sx * 15.5, 32.2, sz * 32));
     }
   }
 
@@ -50,15 +65,23 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
     }
   }
 
-  // Eastern apse with its own semi-dome.
-  church.add(faceToward(cylinder(7.5, 7.5, 22, M.brick, 31, 0, 0, 20, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
-  church.add(faceToward(dome(7.5, M.lead, 31, 22, 0, { heightScale: 0.8, phiLength: Math.PI, segments: 16 }), 1, 0));
+  // Eastern apse: three-sided outside, as it still is, under its own semi-dome.
+  church.add(faceToward(cylinder(7.5, 7.5, 22, M.brick, 31, 0, 0, 3, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
+  church.add(faceToward(cylinder(7.6, 7.6, 1, M.marble, 31, 21.3, 0, 3, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
+  church.add(faceToward(dome(7.5, M.lead, 31, 22.3, 0, { heightScale: 0.8, phiLength: Math.PI, segments: 16 }), 1, 0));
 
-  // Inner and outer narthex on the west front.
+  // Inner and outer narthex on the west front, and the ramp towers at their northern and southern ends.
   church.add(box(10, 22, 66, M.brick, -36, 0, 0));
-  church.add(box(10.8, 0.6, 66.8, M.lead, -36, 22, 0));
+  church.add(box(11, 1, 67, M.marble, -36, 21.6, 0));
+  church.add(box(10.8, 0.6, 66.8, M.lead, -36, 22.6, 0));
   church.add(box(7, 14, 66, M.brick, -44.5, 0, 0));
-  church.add(box(7.8, 0.6, 66.8, M.lead, -44.5, 14, 0));
+  church.add(box(8, 1, 67, M.marble, -44.5, 13.6, 0));
+  church.add(box(7.8, 0.6, 66.8, M.lead, -44.5, 14.6, 0));
+  church.add(box(50, 2.6, 67, M.stone, -37, 0, 0));
+  for (const sz of [-1, 1]) {
+    church.add(box(9, 24, 8, M.brick, -36, 0, sz * 37));
+    church.add(box(9.4, 0.6, 8.4, M.lead, -36, 24, sz * 37));
+  }
 
   // Skeuophylakion: the round treasury north-east of the church.
   church.add(cylinder(6, 6, 9, M.brick, 36, 0, -46, 20));
@@ -78,11 +101,23 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   return finalizeModel(church);
 }
 
+/** A semicircular band of masonry: an arch seen on a façade, standing in the plane z = constant. */
+function archBand(inner, outer, depth, material, x, y, z) {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, outer, 0, Math.PI, false);
+  shape.lineTo(-inner, 0);
+  shape.absarc(0, 0, inner, Math.PI, 0, true);
+  shape.lineTo(outer, 0);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 24 });
+  geometry.translate(0, 0, -depth / 2);
+  return mesh(geometry, material, x, y, z);
+}
+
 function addWindows(church) {
   // Tympanum walls under the dome arches (north and south faces).
   for (const side of [-1, 1]) {
-    const upper = windowRow({ count: 7, spacing: 4, width: 2.2, height: 4.5, y: 30.5 });
-    const lower = windowRow({ count: 5, spacing: 5, width: 1.6, height: 2.8, y: 36.2 });
+    const upper = windowRow({ count: 7, spacing: 3.6, width: 2.1, height: 4.5, y: 30.5 });
+    const lower = windowRow({ count: 3, spacing: 4.6, width: 1.6, height: 2.8, y: 36 });
     for (const row of [upper, lower]) {
       row.position.z = side * 18.55;
       row.rotation.y = side > 0 ? 0 : Math.PI;
@@ -104,10 +139,10 @@ function addWindows(church) {
     row.rotation.y = -Math.PI / 2;
     church.add(row);
   }
-  // Apse windows.
-  for (const angle of [-0.5, 0, 0.5]) {
+  // Apse windows, one in each of the three faces (the faces of a 3-sided half-cylinder lie 6.5 m out).
+  for (const angle of [-Math.PI / 3, 0, Math.PI / 3]) {
     const window = mesh(archGeometry(1.8, 4.5), M.opening);
-    placeOnCircle(window, angle, 7.55, 9, 31, 0);
+    placeOnCircle(window, angle, 6.55, 9, 31, 0);
     church.add(window);
   }
 }

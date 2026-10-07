@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import {
-  archedWallGeometry, box, colonnade, crenellationGeometry, cylinder, flag, gableRoof, groundPlane, hipRoof,
-  mesh, pyramid, windowRow, faceToward, dome,
+  archGeometry, box, boxGeometry, colonnade, cone, crenelRingGeometry, crenellationGeometry, cylinder, flag, gableRoof, groundPlane,
+  hipRoof, mesh, placeOnCircle, pyramid, stairs,
 } from './lib/primitives.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
@@ -12,10 +13,17 @@ import { createMerchantShip } from './merchantShip.js';
 import { GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP, magnify } from '../data/geography.js';
 
 /**
- * Galata, the walled Genoese colony across the Golden Horn (1267–1453):
- * the Podestà's palace, the Dominican church of San Paolo e Domenico with
- * its bell tower, the merchants' loggia, tall Ligurian houses and a quay
- * full of cogs. The Golden Horn lies to the south (+z).
+ * Galata (Pera), the walled Genoese colony across the Golden Horn (1267–1453):
+ * the Palazzo del Comune of the Podestà (1316, a copy of the 13th-century
+ * wing of Genoa's Palazzo San Giorgio), the Dominican church of San Paolo
+ * e Domenico (1323–37, today the Arap Camii) with its square Gothic bell
+ * tower, the merchants' loggia, tall Ligurian houses on the hillside, the
+ * keep of the Holy Cross (the Galata Tower, 1348) at the apex of the land
+ * wall and a quay with a cocha and a nave. The Golden Horn lies to the
+ * south (+z); the hill climbs to the north.
+ *
+ * Masonry follows the surviving buildings: courses of brick alternating
+ * with ashlar, Gothic pointed arches, swallowtail battlements on the palace.
  *
  * Detail: a slice of the colony. Map: the wall circuit in map units with
  * the main buildings at their places (absolute), climbing the hill of Galata.
@@ -24,17 +32,32 @@ export function createGenoeseQuarter({ lod = 'detail' } = {}) {
   return lod === 'detail' ? createColony() : createMapColony();
 }
 
+const TERRACE = 4; // the upper town stands this much higher than the shore
+
 function createColony() {
   const colony = new THREE.Group();
   colony.add(box(210, 3, 125, M.paving, 0, -3, -12));
+  colony.add(box(210, TERRACE, 46, M.paving, 0, 0, -52)); // the upper terrace
+  colony.add(box(210, TERRACE, 1.2, M.stoneDark, 0, 0, -28.6)); // its retaining wall
+  const steps = stairs(10, 8, 0.5, 0.8, M.stone);
+  steps.position.set(-10, 0, -21.6);
+  steps.rotation.y = Math.PI;
+  colony.add(steps);
 
-  // Sea wall with the harbour gate, and the uphill land wall.
-  colony.add(mesh(archedWallGeometry({ length: 200, height: 9, thickness: 3, openings: [{ x: 10, width: 6, bottom: 0, spring: 5 }] }), M.stone, 0, 0, 40));
+  // Sea wall with the harbour gate; the land wall on the hill with the keep at its apex.
+  colony.add(mesh(pointedWallGeometry({ length: 200, height: 9, thickness: 3, openings: [{ x: 10, width: 5.5, bottom: 0, height: 7 }] }), M.stone, 0, 0, 40));
   colony.add(mesh(crenellationGeometry(200), M.stone, 0, 9, 41.2));
-  colony.add(box(200, 12, 3.5, M.stone, 0, 0, -68));
-  colony.add(mesh(crenellationGeometry(200), M.stone, 0, 12, -69.4));
-  for (const x of [-85, -35, 55, 92]) colony.add(box(8, 13, 8, M.stone, x, 0, 40));
-  for (const x of [-60, 0, 60]) colony.add(box(9, 17, 9, M.stone, x, 0, -68));
+  for (const x of [-85, -35, 55, 92]) {
+    colony.add(box(8, 13, 8, M.stone, x, 0, 40));
+    colony.add(mesh(crenellationGeometry(8, { merlon: 0.8, gap: 0.6, height: 1 }), M.stone, x, 13, 3.65 + 40));
+  }
+  colony.add(box(200, 12, 3.5, M.stone, 0, TERRACE, -68));
+  colony.add(mesh(crenellationGeometry(200), M.stone, 0, TERRACE + 12, -69.4));
+  for (const x of [-60, 60]) {
+    colony.add(box(9, 17, 9, M.stone, x, TERRACE, -68));
+    colony.add(mesh(crenellationGeometry(9, { merlon: 0.8, gap: 0.6, height: 1 }), M.stone, x, TERRACE + 17, -68 - 4.15));
+  }
+  addKeep(colony, 0, TERRACE, -65);
 
   // Quay, harbour water and cargo.
   colony.add(box(210, 1.8, 13, M.stone, 0, -1.2, 47.5));
@@ -43,13 +66,14 @@ function createColony() {
   for (let i = 0; i < 18; i++) {
     const x = rnd.range(-90, 90);
     const z = rnd.range(43, 52);
-    colony.add(rnd.chance(0.5) ? cylinder(0.6, 0.6, 1.3, M.wood, x, 0.6, z, 10) : box(1.4, 1.2, 1.4, M.wood, x, 0.6, z));
+    colony.add(rnd.chance(0.5) ? cylinder(0.6, 0.6, 1.3, M.wood, x, 0.6, z, 10) : box(1.4, 1.2, 1.4, M.sail, x, 0.6, z));
   }
+  for (const x of [-20, 40]) colony.add(cylinder(0.3, 0.3, 2, M.wood, x, 0.6, 52, 6)); // mooring posts
 
-  addPodestaPalace(colony, { x: -35, z: -6, detail: true });
-  addDominicanChurch(colony, { x: 42, z: -22, detail: true });
+  addPodestaPalace(colony, { x: -35, z: 6, detail: true });
+  addDominicanChurch(colony, { x: 46, z: 2, detail: true });
 
-  // The merchants' loggia near the harbour gate.
+  // The merchants' loggia inside the harbour gate.
   for (const z of [17, 29]) {
     const columns = colonnade({ length: 24, count: 6, height: 7, radius: 0.45 });
     columns.position.set(10, 0, z);
@@ -57,17 +81,18 @@ function createColony() {
   }
   colony.add(hipRoof(27, 15, 3.5, M.roof, 10, 7, 23));
 
-  scatterHouses(colony, rnd, {
-    count: 34,
-    area: [-95, -60, 95, 32],
-    avoid: [[-35, -6, 30], [42, -22, 30], [10, 23, 18], [10, 36, 8]],
-    style: { roof: 'gable' },
-  });
+  // Tall, narrow Ligurian houses: three or four storeys under tiled gables.
+  const avoid = [[-35, 6, 26], [46, 2, 30], [10, 23, 18], [10, 36, 8], [0, -65, 16], [-10, -25, 8]];
+  scatterHouses(colony, rnd, { count: 14, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 8, d: 7, h: 13 } });
+  scatterHouses(colony, rnd, { count: 10, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 10, d: 7, h: 10 } });
+  scatterHouses(colony, rnd, { count: 12, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 8, d: 7, h: 12 } });
+  scatterHouses(colony, rnd, { count: 8, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 9, d: 7, h: 9 } });
 
   finalizeModel(colony);
-  colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), -35, 28, -14));
+  colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), -35, 17.5, -2));
   colony.add(placed(flag('genoa', { width: 3, height: 2, pole: 6 }), 10, 9, 40));
-  colony.add(placed(createMerchantShip({ banner: 'genoa' }), 30, 0, 68, -0.15));
+  colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), 0, TERRACE + 62.4, -65));
+  colony.add(placed(createMerchantShip({ banner: 'genoa', rig: 'square' }), 30, 0, 70, -0.15));
   colony.add(placed(createMerchantShip({ banner: 'genoa', sail: false }), -55, 0, 72, Math.PI + 0.1));
   return colony;
 }
@@ -78,47 +103,216 @@ function placed(object, x, y, z, rotation = 0) {
   return object;
 }
 
-/** Palazzo del Comune (1316), seat of the Podestà, modelled on Genoa's civic palaces. */
-function addPodestaPalace(group, { x, z, detail }) {
-  group.add(box(36, 16, 20, M.stone, x, 0, z));
-  group.add(box(36.6, 0.5, 20.6, M.stone, x, 16, z));
-  for (const side of [-1, 1]) {
-    group.add(mesh(crenellationGeometry(36, { merlon: 1, gap: 0.9 }), M.stone, x, 16.5, z + side * 9.9));
+/** The keep of the Holy Cross at the top of the hill: the Galata Tower in brief. */
+function addKeep(group, x, y, z) {
+  group.add(cylinder(8.3, 9.6, 4, M.stoneDark, x, y, z, 24));
+  group.add(cylinder(7.75, 8.25, 46, M.stone, x, y, z, 24));
+  for (let i = 0; i < 20; i++) {
+    const corbel = placeOnCircle(box(0.9, 1.4, 2, M.stoneDark), (i / 20) * Math.PI * 2, 8.4, y + 45);
+    corbel.position.x += x;
+    corbel.position.z += z;
+    group.add(corbel);
   }
-  group.add(box(7, 28, 7, M.stone, x, 0, z - 8));
-  group.add(mesh(crenellationGeometry(7), M.stone, x, 28, z - 4.8));
-  group.add(mesh(crenellationGeometry(7), M.stone, x, 28, z - 11.2));
-  if (detail) {
-    for (const y of [3.5, 10]) {
-      const row = windowRow({ count: 7, spacing: 4.6, width: 1.7, height: 3.6, y });
-      row.position.set(x, 0, z + 10.05);
-      group.add(row);
+  group.add(cylinder(9.2, 9.2, 4.5, M.stone, x, y + 47, z, 24));
+  group.add(mesh(crenelRingGeometry(8.85, { count: 18, merlon: 1.1, height: 1.5 }), M.stone, x, y + 51.5, z));
+  group.add(cone(8.6, 11, M.lead, x, y + 51.3, z, 24));
+  const slit = archGeometry(0.55, 2.2);
+  for (const [sy, count] of [[14, 4], [27, 5], [40, 6]]) {
+    for (let i = 0; i < count; i++) {
+      const window = placeOnCircle(mesh(slit, M.opening), ((i + 0.3) / count) * Math.PI * 2, 8.1, y + sy);
+      window.position.x += x;
+      window.position.z += z;
+      group.add(window);
     }
   }
 }
 
-/** San Paolo e Domenico: a Gothic friars' church whose square bell tower still stands. */
+/**
+ * Palazzo del Comune (1316), seat of the Podestà, modelled on the 13th-century
+ * wing of Palazzo San Giorgio: a Gothic arcade at street level, two storeys
+ * of two-light pointed windows, and swallowtail (Ghibelline) battlements.
+ * Faces the harbour (+z).
+ */
+function addPodestaPalace(group, { x, z, detail }) {
+  const [w, d, h] = [36, 20, 16];
+  if (!detail) {
+    group.add(box(w, h, d, M.banded, x, 0, z));
+    group.add(box(w + 0.6, 0.5, d + 0.6, M.stone, x, h, z));
+    for (const side of [-1, 1]) group.add(mesh(crenellationGeometry(w, { merlon: 1, gap: 0.9 }), M.stone, x, h + 0.5, z + side * (d / 2 - 0.35)));
+    group.add(hipRoof(w - 3, d - 3, 3, M.roof, x, h + 0.5, z, 0));
+    return;
+  }
+  // The arcaded front, the solid body behind it, cornice and battlements.
+  const openings = Array.from({ length: 7 }, (_, i) => ({ x: -15 + i * 5, width: 3.4, bottom: 0, height: 5.4 }));
+  group.add(mesh(pointedWallGeometry({ length: w, height: h, thickness: 1.2, openings }), M.banded, x, 0, z + d / 2 - 0.6));
+  group.add(box(w, h, d - 1.2, M.banded, x, 0, z - 0.6));
+  group.add(box(w + 0.8, 0.5, d + 0.8, M.stone, x, h, z));
+  for (const side of [-1, 1]) {
+    group.add(mesh(swallowtailGeometry(w + 0.8), M.stone, x, h + 0.5, z + side * (d / 2 + 0.05)));
+    const flank = mesh(swallowtailGeometry(d - 1), M.stone, x + side * (w / 2 + 0.05), h + 0.5, z);
+    flank.rotation.y = Math.PI / 2;
+    group.add(flank);
+  }
+  group.add(hipRoof(w - 3, d - 3, 3, M.roof, x, h + 0.5, z, 0));
+  // The loggia floor and the two-light windows of the piano nobile and the storey above.
+  group.add(box(w, 0.6, 5, M.stone, x, 5.6, z + d / 2 - 2.5));
+  const light = pointedArchGeometry(0.9, 2.8);
+  for (const [y, count] of [[7.6, 7], [12.2, 7]]) {
+    for (let i = 0; i < count; i++) {
+      const wx = x - 15 + i * 5;
+      group.add(mesh(pointedArchGeometry(2.8, 3.6), M.stoneDark, wx, y - 0.3, z + d / 2 + 0.02));
+      for (const side of [-0.6, 0.6]) group.add(mesh(light, M.opening, wx + side, y, z + d / 2 + 0.04));
+      group.add(cylinder(0.12, 0.12, 2.3, M.marble, wx, y, z + d / 2 + 0.05, 6));
+    }
+  }
+  // Windows on the ends.
+  for (const side of [-1, 1]) {
+    for (const y of [7.6, 12.2]) {
+      for (const wz of [-5, 0, 5]) {
+        const window = mesh(pointedArchGeometry(1.4, 3), M.opening, x + side * (w / 2 + 0.03), y, z + wz);
+        window.rotation.y = side * Math.PI / 2;
+        group.add(window);
+      }
+    }
+  }
+}
+
+/**
+ * San Paolo e Domenico (1323–37): a three-aisled mendicant basilica in the
+ * Ligurian Gothic manner — a tall nave under a timber roof, lower lean-to
+ * aisles with buttresses, a square groin-vaulted sanctuary, lancet windows,
+ * a rose window in the west front, and the square bell tower at the
+ * south-east corner. The west front faces the harbour (+z).
+ */
 function addDominicanChurch(group, { x, z, detail }) {
-  group.add(box(14, 15, 38, M.stone, x, 0, z));
-  const roof = gableRoof(38, 14, 5, M.roof, x, 15, z);
+  const length = 40;
+  const nave = 10;
+  const aisle = 5;
+  group.add(box(nave, 16, length, M.banded, x, 0, z));
+  const roof = gableRoof(length, nave, 4.2, M.roof, x, 16, z, 0.4);
   roof.rotation.y = Math.PI / 2;
   group.add(roof);
-  group.add(faceToward(cylinder(7, 7, 12, M.stone, x, 0, z - 19, 8, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, -1));
-  group.add(faceToward(dome(7, M.roof, x, 12, z - 19, { phiLength: Math.PI, heightScale: 0.6, segments: 8 }), 0, -1));
-  const [tx, tz] = [x + 11, z + 14];
-  group.add(box(6.5, 28, 6.5, M.stone, tx, 0, tz));
-  group.add(pyramid(7.4, 7.4, 6, M.roof, tx, 28, tz));
-  if (detail) {
-    for (let i = 0; i < 4; i++) {
-      const belfry = windowRow({ count: 2, spacing: 2.4, width: 1.3, height: 3, y: 22 });
-      const angle = (i * Math.PI) / 2;
-      belfry.rotation.y = angle;
-      belfry.position.set(tx + Math.sin(angle) * 3.28, 0, tz + Math.cos(angle) * 3.28);
-      group.add(belfry);
-    }
-    const rose = mesh(new THREE.CircleGeometry(2.2, 20), M.opening, x, 10, z + 19.05);
-    group.add(rose);
+  for (const side of [-1, 1]) {
+    group.add(box(aisle, 9, length, M.banded, x + side * (nave + aisle) / 2, 0, z));
+    group.add(mesh(leanToRoofGeometry(length + 0.8, aisle + 0.6, 2.6, side), M.roof, x + side * (nave / 2 + aisle / 2 + 0.3), 9, z));
   }
+  // Square sanctuary at the east end.
+  group.add(box(nave, 13, 10, M.banded, x, 0, z - length / 2 - 5));
+  const chancelRoof = gableRoof(10, nave, 3.6, M.roof, x, 13, z - length / 2 - 5, 0.4);
+  chancelRoof.rotation.y = Math.PI / 2;
+  group.add(chancelRoof);
+  // The bell tower: four storeys, a belfry of twin lancets, pyramid roof.
+  const [tx, tz] = [x + 11, z - 19];
+  group.add(box(6.5, 30, 6.5, M.banded, tx, 0, tz));
+  group.add(box(7.1, 0.5, 7.1, M.stone, tx, 30, tz));
+  group.add(pyramid(7.4, 7.4, 7, M.roof, tx, 30.5, tz));
+  if (!detail) return;
+
+  const lancet = pointedArchGeometry(0.9, 3.6);
+  const tall = pointedArchGeometry(1.1, 4.6);
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 6; i++) {
+      const wz = z - length / 2 + 4 + i * 6.4;
+      const clerestory = mesh(lancet, M.opening, x + side * (nave / 2 + 0.03), 11, wz);
+      clerestory.rotation.y = side * Math.PI / 2;
+      group.add(clerestory);
+      const low = mesh(tall, M.opening, x + side * (nave / 2 + aisle + 0.03), 3.2, wz);
+      low.rotation.y = side * Math.PI / 2;
+      group.add(low);
+      group.add(box(1, 7.5, 1.4, M.stone, x + side * (nave / 2 + aisle + 0.4), 0, wz + 3.2));
+    }
+  }
+  // West front: portal, rose window, and the gable's small lancets; east lancets in the sanctuary.
+  const front = z + length / 2 + 0.03;
+  group.add(mesh(pointedArchGeometry(3, 5.5), M.stoneDark, x, 0, front));
+  group.add(mesh(pointedArchGeometry(2.2, 4.6), M.opening, x, 0, front + 0.02));
+  group.add(mesh(new THREE.RingGeometry(2.6, 3.1, 24), M.stone, x, 11.5, front));
+  group.add(mesh(new THREE.CircleGeometry(2.6, 24), M.opening, x, 11.5, front + 0.01));
+  for (const side of [-1, 1]) group.add(mesh(lancet, M.opening, x + side * (nave + aisle) / 2, 2.5, front));
+  for (const side of [-1, 1]) {
+    const east = mesh(tall, M.opening, x + side * 2.6, 5, z - length / 2 - 10 - 0.03);
+    east.rotation.y = Math.PI;
+    group.add(east);
+  }
+  // Belfry openings on all four faces, and a lancet per storey below.
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const face = new THREE.Group();
+    for (const dx of [-1.3, 1.3]) face.add(mesh(pointedArchGeometry(1.4, 4.2), M.opening, dx, 23.5, 0));
+    face.add(mesh(lancet, M.opening, 0, 16, 0));
+    face.add(mesh(lancet, M.opening, 0, 9, 0));
+    face.rotation.y = angle;
+    face.position.set(tx + Math.sin(angle) * 3.28, 0, tz + Math.cos(angle) * 3.28);
+    group.add(face);
+  }
+}
+
+// ---------- Gothic helpers ----------
+
+/** An equilateral pointed arch standing on y = 0, apex at height h. */
+function pointedArchShape(w, h, x = 0, y = 0) {
+  const r = w / 2;
+  const spring = Math.max(0.1, h - w * Math.sin(Math.PI / 3));
+  const shape = new THREE.Shape();
+  shape.moveTo(x - r, y);
+  shape.lineTo(x + r, y);
+  shape.lineTo(x + r, y + spring);
+  shape.absarc(x - r, y + spring, w, 0, Math.PI / 3, false);
+  shape.absarc(x + r, y + spring, w, (Math.PI * 2) / 3, Math.PI, false);
+  shape.lineTo(x - r, y);
+  return shape;
+}
+
+function pointedArchGeometry(w, h) {
+  return new THREE.ShapeGeometry(pointedArchShape(w, h), 6);
+}
+
+/** A wall along x pierced by pointed arches { x, width, bottom, height }; those with bottom 0 are cut from the foot. */
+function pointedWallGeometry({ length, height, thickness, openings = [] }) {
+  const half = length / 2;
+  const sorted = [...openings].sort((a, b) => a.x - b.x);
+  const shape = new THREE.Shape();
+  shape.moveTo(-half, 0);
+  for (const opening of sorted) {
+    if (opening.bottom > 0) continue;
+    const r = opening.width / 2;
+    const spring = Math.max(0.1, opening.height - opening.width * Math.sin(Math.PI / 3));
+    shape.lineTo(opening.x - r, 0);
+    shape.lineTo(opening.x - r, spring);
+    shape.absarc(opening.x + r, spring, opening.width, Math.PI, (Math.PI * 2) / 3, true);
+    shape.absarc(opening.x - r, spring, opening.width, Math.PI / 3, 0, true);
+    shape.lineTo(opening.x + r, 0);
+  }
+  shape.lineTo(half, 0);
+  shape.lineTo(half, height);
+  shape.lineTo(-half, height);
+  shape.lineTo(-half, 0);
+  for (const opening of sorted) {
+    if (opening.bottom <= 0) continue;
+    shape.holes.push(pointedArchShape(opening.width, opening.height, opening.x, opening.bottom));
+  }
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false, curveSegments: 8 });
+  return geometry.translate(0, 0, -thickness / 2);
+}
+
+/** Swallowtail (Ghibelline) merlons along x, base at y = 0. */
+function swallowtailGeometry(length, { merlon = 1.4, gap = 0.9, height = 1.6, thickness = 0.6 } = {}) {
+  const count = Math.max(1, Math.floor((length + gap) / (merlon + gap)));
+  const used = count * merlon + (count - 1) * gap;
+  const parts = [];
+  for (let i = 0; i < count; i++) {
+    const cx = -used / 2 + merlon / 2 + i * (merlon + gap);
+    parts.push(boxGeometry(merlon, height * 0.55, thickness).translate(cx, 0, 0));
+    for (const side of [-1, 1]) parts.push(boxGeometry(merlon * 0.3, height * 0.45, thickness).translate(cx + side * merlon * 0.35, height * 0.55, 0));
+  }
+  return mergeGeometries(parts);
+}
+
+/** A lean-to roof over an aisle: ridge against the nave, sloping outwards on `side`. */
+function leanToRoofGeometry(length, width, rise, side) {
+  const shape = new THREE.Shape([new THREE.Vector2(-width / 2 * side, rise), new THREE.Vector2(width / 2 * side, 0), new THREE.Vector2(width / 2 * side, -0.3), new THREE.Vector2(-width / 2 * side, -0.3)]);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false });
+  return geometry.translate(0, 0, -length / 2);
 }
 
 // ---------- map version ----------

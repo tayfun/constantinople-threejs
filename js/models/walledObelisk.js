@@ -9,9 +9,10 @@ import { walledObeliskArt } from './lib/obeliskArt.js';
  * limestone blocks at the sphendone end of the spina, its faces pocked with
  * the holes that once pinned the gilded bronze plates Constantine VII gave
  * it (stripped by the Crusaders in 1204), under a shallow pyramidal cap. It
- * rises from a marble pedestal block carrying the emperor's inscription, on
- * a cracked slab and two marble steps. Proportions in metres, from
- * photographs. North is +x (along the spina), east is +z.
+ * rises from a marble pedestal block carrying the emperor's inscription (on
+ * the east face, towards the kathisma), on a cracked slab and marble steps.
+ * Proportions in metres, from photographs. North is +x (along the spina),
+ * east is +z.
  */
 export const WALLED_OBELISK = {
   steps: [{ width: 5.4, height: 0.4 }, { width: 4.6, height: 0.4 }],
@@ -35,7 +36,7 @@ export function createWalledObelisk({ lod = 'detail' } = {}) {
   monument.add(box(slab.width, slab.height, slab.width, M.marble, 0, y, 0));
   y += slab.height;
 
-  // The pedestal block: the inscription faces north, up the spina towards the Obelisk of Theodosius.
+  // The pedestal block: Constantine VII's inscription is on the east face, towards the kathisma and the palace.
   if (detail) {
     const block = new THREE.Mesh(new THREE.BoxGeometry(pedestal.width, pedestal.height, pedestal.width), stone.pedestal);
     block.position.y = y + pedestal.height / 2;
@@ -76,7 +77,7 @@ function detailMaterials() {
   materials = {
     faces: art.faces.map((map) => carved(map, 0.03)),
     cap: new THREE.MeshStandardMaterial({ map: art.cap, roughness: 0.9 }),
-    pedestal: [carved(art.inscribed, 0.012), plain, M.marble, M.marble, plain, plain],
+    pedestal: [plain, plain, M.marble, M.marble, carved(art.inscribed, 0.012), plain],
   };
   return materials;
 }

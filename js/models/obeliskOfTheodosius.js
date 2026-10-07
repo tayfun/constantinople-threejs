@@ -9,15 +9,19 @@ import { obeliskArt } from './lib/obeliskArt.js';
  * from Karnak, re-erected in 390 AD by Theodosius I on a marble pedestal
  * carved with the emperor at the races, raised on four bronze blocks.
  *
- * Proportions in metres, measured from photographs. Bottom to top:
- * the lower block with the chariot race (south), the raising of the obelisk
- * (north) and the Latin (east) and Greek (west) inscriptions; the arcaded
+ * Proportions in metres, measured from photographs. Bottom to top: the
+ * two-step limestone substructure (c. 7 m square in reality, kept narrower
+ * here so the monument fits the spina) and a plain socle; the lower block
+ * with the chariot race (south), the raising of the obelisk (north) and the
+ * Latin (east) and Greek (west) inscriptions; the arcaded
  * block with porphyry stones at its corners; the upper block with the
  * imperial scenes under its cornice; the bronze cubes; the shaft, 18.5 m
  * with its pyramidion, carved with one column of hieroglyphs on each face.
  * North is +x (along the spina towards the starting gates), east is +z.
  */
 export const OBELISK = {
+  steps: [{ width: 5.6, height: 0.3 }, { width: 4.8, height: 0.3 }],
+  socle: 0.25,
   lower: { width: 3.5, height: 1.15 },
   arcade: { width: 2.5, height: 0.62 },
   porphyry: 0.62,
@@ -33,9 +37,17 @@ const CORNERS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const monument = new THREE.Group();
-  const { lower, arcade, porphyry, upper, cornice, cube, shaft, pyramidion } = OBELISK;
+  const { steps, socle, lower, arcade, porphyry, upper, cornice, cube, shaft, pyramidion } = OBELISK;
   const stone = detail ? detailMaterials() : null;
   let y = 0;
+
+  // The two-step substructure of grey limestone and the plain marble socle under the carved pedestal.
+  for (const step of steps) {
+    monument.add(box(step.width, step.height, step.width, M.stone, 0, y, 0));
+    y += step.height;
+  }
+  monument.add(box(lower.width + 0.3, socle, lower.width + 0.3, M.marble, 0, y, 0));
+  y += socle;
 
   // The lower block, with its reliefs and inscriptions.
   monument.add(detail ? sidedBox(lower.width, lower.height, y, stone.lower) : box(lower.width, lower.height, lower.width, M.marble, 0, y, 0));
