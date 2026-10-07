@@ -9,6 +9,7 @@ import { createRouteFollower } from '../world/motion.js';
 import { createLabel, createLabelRenderer, setLabelText } from '../world/labels.js';
 import { landmarkText, regionText } from '../i18n/index.js';
 import { ease, tween } from '../util/tween.js';
+import { setGlow } from '../util/glow.js';
 import { standsIn } from '../data/timeline.js';
 import { toWorld } from '../util/geo.js';
 import { applyViewInsets } from '../util/viewport.js';
@@ -380,31 +381,8 @@ function distanceOutside(holder, footprint) {
 
 // ---------- hover highlight ----------
 
-const glowing = new Map();
-
 /** A warm emissive copy of a material, created once and shared. */
-function glowingVersion(material) {
-  if (!glowing.has(material)) {
-    const copy = material.clone();
-    if (copy.emissive) {
-      copy.emissive = new THREE.Color(0xffb84a);
-      copy.emissiveIntensity = 0.42;
-    }
-    glowing.set(material, copy);
-  }
-  return glowing.get(material);
-}
-
 function highlight(entry, on) {
   entry.label.element.classList.toggle('is-hover', on);
-  entry.holder.traverse((object) => {
-    if (!object.isMesh || object.material.isShaderMaterial) return;
-    if (on) {
-      object.userData.restMaterial = object.material;
-      object.material = glowingVersion(object.material);
-    } else if (object.userData.restMaterial) {
-      object.material = object.userData.restMaterial;
-      delete object.userData.restMaterial;
-    }
-  });
+  setGlow(entry.holder, on);
 }

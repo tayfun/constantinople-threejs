@@ -5,7 +5,7 @@ import { InfoPanel } from './ui/infoPanel.js';
 import { Sidebar } from './ui/sidebar.js';
 import { SettingsMenu } from './ui/settings.js';
 import { Timeline } from './ui/timeline.js';
-import { onLanguageChange, translateDocument } from './i18n/index.js';
+import { landmarkText, onLanguageChange, translateDocument, ui } from './i18n/index.js';
 import { updateWater } from './models/lib/water.js';
 import { wait } from './util/tween.js';
 import { QUALITY, pixelRatio } from './util/quality.js';
@@ -46,7 +46,7 @@ export class App {
       onSelectLandmark: (id) => this.openLandmark(id),
       onSelectRegion: (id) => this.openRegion(id),
     });
-    this.detailView = new DetailView({ renderer: this.renderer });
+    this.detailView = new DetailView({ renderer: this.renderer, container: viewport, onSelectLandmark: (id) => this.openLandmark(id) });
 
     this.panel = new InfoPanel(root.querySelector('#info-panel'), {
       onSelectLandmark: (id) => this.openLandmark(id),
@@ -69,6 +69,8 @@ export class App {
     });
     onLanguageChange(() => this.applyLanguage());
 
+    this.trail = []; // dioramas to step back through before returning to the map
+    this.openId = null;
     this.backButton = root.querySelector('#back-button');
     this.backButton.addEventListener('click', () => this.closeLandmark());
     this.fadeLayer = root.querySelector('#fade');
@@ -121,18 +123,39 @@ export class App {
     if (this.mode === 'map') {
       this.hidePanel();
       await this.mapView.focusLandmark(id);
+    } else if (this.openId && this.openId !== id) {
+      // Opened from inside another diorama (a monument on the Hippodrome's spina): the back button returns there first.
+      this.trail.push(this.openId);
     }
+    this.openId = id;
     await this.fade(true);
     this.panel.showLandmark(landmark);
     this.setMode('detail');
     this.detailView.show(landmark);
+    this.updateBackButton();
     await this.fade(false);
     this.busy = false;
   }
 
+  /** Steps back: to the diorama this one was opened from, or else to the map. */
   async closeLandmark() {
     if (this.busy || this.mode !== 'detail') return;
+    if (this.trail.length) {
+      this.busy = true;
+      const id = this.trail.pop();
+      const landmark = landmarkById(id);
+      this.openId = id;
+      this.sidebar.setActive(id);
+      await this.fade(true);
+      this.panel.showLandmark(landmark);
+      this.detailView.show(landmark);
+      this.updateBackButton();
+      await this.fade(false);
+      this.busy = false;
+      return;
+    }
     this.busy = true;
+    this.openId = null;
     this.sidebar.setActive(null);
     await this.fade(true);
     this.panel.hide();
@@ -140,6 +163,12 @@ export class App {
     await this.fade(false);
     await this.mapView.restoreView();
     this.busy = false;
+  }
+
+  /** The back button names where it leads: the previous diorama, or the map. */
+  updateBackButton() {
+    const previous = this.trail.at(-1);
+    this.backButton.textContent = previous ? ui('backTo', { name: landmarkText(previous).name }) : ui('back');
   }
 
   async openRegion(id) {
@@ -170,6 +199,7 @@ export class App {
   /** Re-renders every piece of text after the visitor picks another language. */
   applyLanguage() {
     translateDocument();
+    if (this.mode === 'detail') this.updateBackButton();
     this.sidebar.render();
     this.panel.refresh();
     this.mapView.refreshLabels();

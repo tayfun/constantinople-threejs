@@ -15,6 +15,7 @@ export default {
     title: 'Konstantinopolis',
     titleSub: 'Kentlerin Kraliçesi · 330 – 1453 arasından bileşik bir görünüm',
     back: '← Haritaya dön',
+    backTo: '← Geri: {name}',
     loading: 'Kentin surları yükseliyor…',
     error: 'Kent çizilemedi: {message}. Bu sayfa WebGL destekleyen bir tarayıcı gerektirir.',
     landmarks: 'Simge Yapılar',

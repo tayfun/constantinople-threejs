@@ -548,6 +548,22 @@ html, body {
   background: rgba(241, 207, 107, 0.7);
 }
 .map-label--landmark.is-hover { background: var(--purple-bright); color: var(--gold-bright); transform: translateY(-16px) scale(1.06); }
+/* Name of a pickable part of a diorama (a monument on the Hippodrome's spina), pinned above it while hovered. */
+.detail-tooltip {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -100%) translateY(-14px);
+  padding: 2px 9px 3px;
+  border-radius: 999px;
+  background: var(--purple-bright);
+  border: 1px solid rgba(241, 207, 107, 0.55);
+  color: var(--gold-bright);
+  font-size: 13.5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.detail-tooltip[hidden] { display: none; }
+
 .map-label--minor { padding: 1px 7px 2px; font-size: 11.5px; transform: translateY(-10px); }
 .map-label--minor::after { bottom: -5px; height: 5px; }
 .map-label--minor.is-hover { transform: translateY(-12px) scale(1.06); }

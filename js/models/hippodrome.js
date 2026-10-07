@@ -208,11 +208,15 @@ function addSpina(stadium, lod) {
     stadium.add(box(b - a - 0.8, 0.22, 3.8, M.waterSide, mid, SPINA_TOP, 0));
   }
 
-  // On the map the monuments are separate, clickable landmarks standing on this spina.
+  // On the map the monuments are separate, clickable landmarks standing on this spina. In the
+  // diorama they are built in, but kept as separate, tagged objects so they can be picked and
+  // opened from here too (finalizeModel leaves `dynamic` objects unmerged).
   if (lod === 'detail') {
-    for (const { x, create } of Object.values(SPINA_MONUMENTS)) {
+    for (const [id, { x, create }] of Object.entries(SPINA_MONUMENTS)) {
       const monument = create({ lod });
       monument.position.set(x, SPINA_TOP, 0);
+      monument.userData.landmarkId = id;
+      monument.userData.dynamic = true;
       stadium.add(monument);
     }
   }

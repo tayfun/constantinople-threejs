@@ -15,6 +15,7 @@ export default {
     title: 'Constantinople',
     titleSub: 'Queen of Cities · a composite view, 330 – 1453',
     back: '← Back to the map',
+    backTo: '← Back to {name}',
     loading: 'Raising the walls of the city…',
     error: 'The city could not be drawn: {message}. This page needs a browser with WebGL.',
     landmarks: 'Landmarks',

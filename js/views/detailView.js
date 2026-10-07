@@ -5,6 +5,8 @@ import { materials as M } from '../models/lib/materials.js';
 import { ease, tween } from '../util/tween.js';
 import { applyViewInsets } from '../util/viewport.js';
 import { QUALITY } from '../util/quality.js';
+import { setGlow } from '../util/glow.js';
+import { landmarkText } from '../i18n/index.js';
 
 const BACKDROP = 0xe6d3ae;
 const STAGE_SIZE = 26; // every model is scaled so its footprint spans this many units
@@ -13,10 +15,14 @@ const LIGHT_DISTANCE = 80;
 /**
  * The close-up stage: one landmark at a time, built at full detail, set on
  * a round plinth and slowly turning. Models are built on first visit and
- * cached afterwards.
+ * cached afterwards. Parts of a model tagged with userData.landmarkId (the
+ * monuments on the Hippodrome's spina) can be hovered and clicked to open
+ * their own diorama.
+ *
+ * container: the element the canvas sits in, for the hover tooltip.
  */
 export class DetailView {
-  constructor({ renderer }) {
+  constructor({ renderer, container, onSelectLandmark = () => {} }) {
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(BACKDROP, 90, 260);
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 3000);
@@ -49,9 +55,96 @@ export class DetailView {
     this.scene.add(this.stage);
     this.cache = new Map();
     this.current = null;
+
+    this.renderer = renderer;
+    this.onSelectLandmark = onSelectLandmark;
+    this.pointer = new THREE.Vector2();
+    this.pointerDirty = false;
+    this.hovered = null;
+    this.tooltip = document.createElement('div');
+    this.tooltip.className = 'detail-tooltip';
+    this.tooltip.hidden = true;
+    container.appendChild(this.tooltip);
+    this.listen(renderer.domElement);
+  }
+
+  // ---------- picking parts of the diorama ----------
+
+  listen(element) {
+    let downAt = null;
+    element.addEventListener('pointermove', (event) => {
+      if (!this.active) return;
+      const rect = element.getBoundingClientRect();
+      this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      this.pointerDirty = true;
+    });
+    element.addEventListener('pointerleave', () => this.setHovered(null));
+    element.addEventListener('pointerdown', (event) => { downAt = [event.clientX, event.clientY]; });
+    element.addEventListener('pointerup', (event) => {
+      if (!this.active || !downAt) return;
+      const moved = Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]);
+      downAt = null;
+      if (moved > 6) return;
+      const target = this.pick();
+      if (target) this.onSelectLandmark(target.userData.landmarkId);
+    });
+  }
+
+  /**
+   * The tagged part under the pointer, if any. The monuments are slender and small on the
+   * stage, so instead of a ray test each part's screen rectangle, padded by a few pixels,
+   * is tested, and the nearest containing one wins.
+   */
+  pick() {
+    const pickables = this.current?.pickables ?? [];
+    if (!pickables.length || !this.size) return null;
+    const { width, height } = this.size;
+    const px = ((this.pointer.x + 1) / 2) * width;
+    const py = ((1 - this.pointer.y) / 2) * height;
+    const margin = 18;
+    const corner = new THREE.Vector3();
+    let best = null;
+    for (const object of pickables) {
+      const box = new THREE.Box3().setFromObject(object);
+      let [minX, maxX, minY, maxY] = [Infinity, -Infinity, Infinity, -Infinity];
+      for (let k = 0; k < 8; k++) {
+        corner.set(k & 1 ? box.max.x : box.min.x, k & 2 ? box.max.y : box.min.y, k & 4 ? box.max.z : box.min.z).project(this.camera);
+        if (corner.z > 1) continue; // behind the camera
+        const sx = ((corner.x + 1) / 2) * width;
+        const sy = ((1 - corner.y) / 2) * height;
+        [minX, maxX, minY, maxY] = [Math.min(minX, sx), Math.max(maxX, sx), Math.min(minY, sy), Math.max(maxY, sy)];
+      }
+      if (px < minX - margin || px > maxX + margin || py < minY - margin || py > maxY + margin) continue;
+      const distance = Math.hypot(px - (minX + maxX) / 2, py - (minY + maxY) / 2);
+      if (!best || distance < best.distance) best = { object, distance };
+    }
+    return best?.object ?? null;
+  }
+
+  setHovered(target) {
+    if (target === this.hovered) return;
+    if (this.hovered) setGlow(this.hovered, false);
+    this.hovered = target;
+    if (target) {
+      setGlow(target, true);
+      this.tooltip.textContent = landmarkText(target.userData.landmarkId).name;
+    }
+    this.tooltip.hidden = !target;
+    this.renderer.domElement.style.cursor = target ? 'pointer' : '';
+    this.invalidate();
+  }
+
+  /** Keeps the tooltip pinned above the hovered part as the diorama turns. */
+  placeTooltip() {
+    if (!this.hovered || !this.size) return;
+    const box = new THREE.Box3().setFromObject(this.hovered);
+    const top = box.getCenter(new THREE.Vector3()).setY(box.max.y).project(this.camera);
+    this.tooltip.style.left = `${((top.x + 1) / 2) * this.size.width}px`;
+    this.tooltip.style.top = `${((1 - top.y) / 2) * this.size.height}px`;
   }
 
   show(landmark) {
+    this.setHovered(null);
     this.stage.clear();
     this.current = this.cache.get(landmark.id) ?? this.build(landmark);
     this.cache.set(landmark.id, this.current);
@@ -120,14 +213,17 @@ export class DetailView {
     wrapper.add(container);
 
     const animated = [];
+    const pickables = [];
     wrapper.traverse((object) => {
       if (object.userData.animate) animated.push(object.userData.animate);
+      if (object.userData.landmarkId) pickables.push(object);
     });
     // With reduced motion the parts never move; pose each once at its starting position.
     if (QUALITY.reducedMotion) for (const animate of animated) animate(0, 0);
     return {
       wrapper,
       animated,
+      pickables,
       radius: horizontalRadius(model, centre) * scale,
       height: size.y * scale,
     };
@@ -144,7 +240,9 @@ export class DetailView {
   }
 
   setActive(active) {
+    this.active = active;
     this.controls.enabled = active;
+    if (!active) this.setHovered(null);
     this.dirty = true;
   }
 
@@ -165,6 +263,11 @@ export class DetailView {
   update(time, delta) {
     const moved = this.controls.update(delta);
     this.sky.position.copy(this.camera.position);
+    if (this.active && this.pointerDirty) {
+      this.pointerDirty = false;
+      this.setHovered(this.pick());
+    }
+    if (this.hovered) this.placeTooltip();
     // Moving parts (oars, flags, chariots) cast moving shadows, so a diorama that has any keeps its shadows live.
     if (this.current?.animated.length && !QUALITY.reducedMotion) {
       for (const animate of this.current.animated) animate(time, delta);
