@@ -191,9 +191,17 @@ export const CHAIN_NORTH = magnify([-2.4, 14.7]);
 /** Leander's Tower islet off Chrysopolis. */
 export const ARKLA_ISLET = magnify([20.1, 13.9]);
 
+/**
+ * The dromon's patrol: a slim loop up the Golden Horn and back, held to the
+ * middle of the channel (the ship is drawn eight times life size, and the
+ * Horn is barely three ship-lengths wide off Galata), turning inside the
+ * chain at one end and well short of the narrows below Blachernae at the other.
+ */
 export const HORN_PATROL = line([
-  [-3, 12], [-9, 14.3], [-14, 18], [-19.5, 23.8], [-24.5, 28.3], [-26.8, 33], [-25.2, 30.2], [-20.5, 25.8],
-  [-15, 20.5], [-9.5, 15.8], [-4, 13.2],
+  [-3.7, 12.5], [-4.4, 12.9], [-6.2, 13.1], [-7.9, 13.6], [-9.5, 14.3], [-10.6, 15.5], [-11.6, 16.7], [-12.6, 18],
+  [-13.3, 19.4], [-14, 21], [-14.5, 22.6], [-15.5, 23.8], [-16.5, 24.9], [-18, 25.5], [-19.8, 25.7], [-21.5, 26.1],
+  [-20.8, 24.7], [-18.9, 24.5], [-17.5, 23.9], [-16.5, 22.7], [-15.5, 21.6], [-14.9, 19.9], [-14.3, 18.4], [-13.4, 17],
+  [-12.5, 15.6], [-11.3, 14.6], [-9.6, 14.1], [-8, 13.5], [-6.5, 12.7], [-4.9, 12.2],
 ]);
 
 export const MARMARA_ROUTE = line([[-50, -32], [-10, -22], [18, -18], [24, -30], [-15, -38]]);
