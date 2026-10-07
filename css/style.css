@@ -736,7 +736,8 @@ html, body {
 /* ---------- Small screens ---------- */
 
 @media (max-width: 760px) {
-  .sidebar { top: auto; bottom: 112px; left: 10px; width: 250px; max-height: 50%; }
+  /* Top left as on desktop, narrowed to clear the three buttons at the top right (3 × 42px + gaps). */
+  .sidebar { top: 10px; left: 10px; width: min(250px, calc(100% - 176px)); max-height: 40%; }
   .sidebar__greek, .sidebar__sub { display: none; }
   .sidebar__title { padding-right: 44px; }
   .sidebar__name { font-size: 15px; letter-spacing: 0.04em; }
