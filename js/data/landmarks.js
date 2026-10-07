@@ -36,7 +36,7 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from '
  * *Approx         marks a year as approximate
  */
 
-const HIPPODROME = { at: [-7.4, -2.6], rotation: 30, scale: 2.5 };
+const HIPPODROME = { at: [-6.6, -4], rotation: 60, scale: 2.5 };
 
 /** Placement on the map for a monument standing on the Hippodrome's spina. */
 function onSpina(id, scale) {
@@ -59,7 +59,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 537 },
     create: createHagiaSophia,
-    map: { at: [3.6, 5.2], rotation: 0, scale: 7 },
+    map: { at: [3.5, 2.5], rotation: -32, scale: 7 },
   },
   {
     id: 'hippodrome',
@@ -94,14 +94,14 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 330, to: 1453, toApprox: true, ending: 'demolished' },
     create: createGreatPalace,
-    map: { at: [2.66, -3.26], rotation: 48, scale: 3 },
+    map: { at: [0.5, -4.6], rotation: 48, scale: 3 },
   },
   {
     id: 'basilica-cistern',
     region: 'constantinople',
     period: { from: 532 },
     create: createBasilicaCistern,
-    map: { at: [-4.8, 5.2], rotation: 0, scale: 4.9 },
+    map: { at: [-4.5, 5.4], rotation: 0, scale: 4.9 },
   },
   {
     id: 'forum-of-constantine',
@@ -115,7 +115,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 368 },
     create: createAqueductOfValens,
-    map: { at: [-22, 8.5], rotation: 8, scale: 3.6 },
+    map: { at: [-20.5, 9.1], rotation: -25, scale: 3.6 },
   },
   {
     id: 'blachernae',

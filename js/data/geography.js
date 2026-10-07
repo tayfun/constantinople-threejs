@@ -155,12 +155,12 @@ export const FORUM_OF_CONSTANTINE = magnify(FORUM_SITE);
  * landmarks, so that they read from the overview.
  */
 export const SEVEN_HILLS = [
-  { at: [2, 2], height: 1.5, radius: 4 }, // I: the Acropolis — Hagia Sophia, the palace
+  { at: [2, 2], height: 1.0, radius: 4 }, // I: the Acropolis — Hagia Sophia, the palace; the lowest of the seven
   { at: [-11.5, 1], height: 1.4, radius: 3.5 }, // II: Forum of Constantine
-  { at: [-14, 8.2], height: 1.7, radius: 4 }, // III: the Forum of Theodosius, above the Golden Horn
-  { at: [-25.8, 12], height: 1.8, radius: 4.5 }, // IV: Holy Apostles
-  { at: [-25.8, 21], height: 1.5, radius: 3.5 }, // V: above the Horn
-  { at: [-38.8, 24.3], height: 1.9, radius: 4.5 }, // VI: towards Blachernae and the Charisian Gate
+  { at: [-14, 8.2], height: 1.6, radius: 4 }, // III: Süleymaniye, above the Forum of Theodosius and the Golden Horn
+  { at: [-25.8, 12], height: 1.7, radius: 4.5 }, // IV: Holy Apostles
+  { at: [-25.8, 21], height: 1.6, radius: 3.5 }, // V: above the Horn
+  { at: [-34.5, 25.3], height: 1.9, radius: 4.5 }, // VI: Edirnekapı and Chora, the highest, just inside the Charisian Gate
   { at: [-38, -6.2], height: 1.4, radius: 6 }, // VII: Xerolophos, the broad south-western hill
 ].map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) }));
 
