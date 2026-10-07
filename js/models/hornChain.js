@@ -14,9 +14,16 @@ import { CHAIN_NORTH, CHAIN_SOUTH, LAND_HEIGHT, METERS_TO_MAP } from '../data/ge
  * Eugenios (the Kentenarion) at the foot of the Acropolis, where the sea
  * wall turns. Surviving links are shown in Istanbul's museums.
  *
+ * The links follow the sections in the Naval and Military Museums: long,
+ * hand-forged loops of thick bar with a pinched waist, each turned a
+ * quarter-turn to the next. Following Kastenellos ("The Golden Horn Chain",
+ * 2017), the chain is drawn as a chain-linked boom: sections of seven links
+ * hooked nose to tail to long, heavy logs.
+ *
  * Detail: a compressed span between the two ends, the logs riding the
- * swell. Map: the chain across the mouth of the Horn (absolute), its logs
- * and the two forts at its ends in brief.
+ * swell; the links are drawn six times life size, or they would vanish on
+ * the stage. Map: the chain across the mouth of the Horn (absolute), its
+ * links much enlarged, its logs and the two forts at its ends in brief.
  */
 export function createHornChain({ lod = 'detail' } = {}) {
   return lod === 'detail' ? createSpan() : createMapChain();
@@ -24,25 +31,53 @@ export function createHornChain({ lod = 'detail' } = {}) {
 
 // ---------- detail ----------
 
-const LEFT_ANCHOR = new THREE.Vector3(-67.5, 2.6, 0);
-const RIGHT_ANCHOR = new THREE.Vector3(84.5, 2.6, 0);
-const LINK_LENGTH = 0.62; // "approximately two foot long"
+// The forts stand much closer than the real 750 m, so the chain fills the stage.
+const KASTELLION_X = -66;
+const EUGENIOS_X = 56;
+const STAGE = [210, 120]; // the water, and the shores that run off its two ends: a slice of the Horn's mouth
+const LEFT_ANCHOR = new THREE.Vector3(KASTELLION_X + 28.5, 2.6, 0);
+const RIGHT_ANCHOR = new THREE.Vector3(EUGENIOS_X - 7.5, 2.6, 0);
+const LINK_LENGTH = 0.62 * 6; // "approximately two foot long", drawn six times life size
+const LINK_WIDTH = 1.5;
+const LINK_BAR = 0.26;
+const LINK_PITCH = LINK_LENGTH - 3.2 * LINK_BAR; // each link reaches into the next
 const LINKS_PER_SECTION = 7;
-const LOG_LENGTH = 9;
+const LOG_LENGTH = 10;
+const LOG_RADIUS = 0.9;
+const HOOK_RISE = 1.0; // the hooks stand this far above a log's axis, so the chain rides at the waterline
+
+/**
+ * One hand-forged link, lying along x: a long loop of round bar with
+ * straightish sides drawn in at a waist, as on the surviving sections.
+ */
+function linkGeometry(length, width, bar) {
+  const points = [];
+  const count = 24;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const c = Math.cos(angle);
+    const sn = Math.sin(angle);
+    const x = (length / 2 - bar) * Math.sign(c) * Math.abs(c) ** 0.6;
+    const waist = 0.62 + 0.38 * Math.abs(c) ** 0.5;
+    points.push(new THREE.Vector3(x, 0, (width / 2 - bar) * sn * waist));
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, true), 40, bar, 6, true);
+}
 
 function createSpan() {
   const scene = new THREE.Group();
-  scene.add(groundPlane(280, 150, M.water, 0, 0, 0));
-  addKastellion(scene, -96, true);
-  addEugeniosTower(scene, 92, true);
+  scene.add(groundPlane(...STAGE, M.water, 0, 0, 0));
+  addKastellion(scene, KASTELLION_X, true);
+  addEugeniosTower(scene, EUGENIOS_X, true);
   // The fort's label sits low on its walls, clear of the chain tower's label above.
-  labelAt(scene, 'kastellion', -108, 10, 8);
-  labelAt(scene, 'windlassTower', -75, 31.5, -2);
-  labelAt(scene, 'eugeniosTower', 92, 25, 0);
-  labelAt(scene, 'chain', 8, 3, 0);
+  labelAt(scene, 'kastellion', KASTELLION_X - 12, 10, 8);
+  labelAt(scene, 'windlassTower', KASTELLION_X + 21, 31.5, -2);
+  labelAt(scene, 'eugeniosTower', EUGENIOS_X, 25, 0);
+  labelAt(scene, 'chain', (LEFT_ANCHOR.x + RIGHT_ANCHOR.x) / 2, 4, 0);
   finalizeModel(scene);
 
-  for (const [x, y, z] of [[-86, 29, 0], [92, 26, 0]]) {
+  // Banners on the cap of the Kastellion's landward corner turret and on the roof of the Tower of Eugenios.
+  for (const [x, y, z] of [[KASTELLION_X - 19, 19.4, -15], [EUGENIOS_X, 24, 0]]) {
     const banner = flag('byzantine', { width: 3, height: 2, pole: 5 });
     banner.position.set(x, y, z);
     scene.add(banner);
@@ -59,8 +94,10 @@ function createSpan() {
 function addKastellion(scene, cx, detail) {
   const segments = detail ? 12 : 8;
   if (detail) {
-    scene.add(box(66, 5, 80, M.stoneDark, cx - 3, -3, 0));
-    scene.add(box(58, 0.3, 72, M.grass, cx - 5, 2, 0));
+    // The Galata shore, from its quay wall to the stage's far end.
+    const [edge, shore] = [-STAGE[0] / 2, cx + 30];
+    scene.add(box(shore - edge, 5, STAGE[1], M.stoneDark, (edge + shore) / 2, -3, 0));
+    scene.add(box(shore - 4 - edge, 0.3, STAGE[1], M.grass, (edge + shore - 4) / 2, 2, 0));
   }
   const [w, d, h] = [40, 32, 12];
   scene.add(box(w, h, d, M.banded, cx, 2, 0));
@@ -117,8 +154,10 @@ function addKastellion(scene, cx, detail) {
  */
 function addEugeniosTower(scene, cx, detail) {
   if (detail) {
-    scene.add(box(36, 5, 80, M.stoneDark, cx + 11, -3, 0));
-    scene.add(box(28, 0.3, 72, M.grass, cx + 15, 2, 0));
+    // The Acropolis point, from the tower's foot to the stage's far end.
+    const [shore, edge] = [cx - 7, STAGE[0] / 2];
+    scene.add(box(edge - shore, 5, STAGE[1], M.stoneDark, (shore + edge) / 2, -3, 0));
+    scene.add(box(edge - shore - 8, 0.3, STAGE[1], M.grass, (shore + 8 + edge) / 2, 2, 0));
   }
   scene.add(box(14, 22, 14, M.banded, cx, 2, 0));
   for (const side of [-1, 1]) {
@@ -150,10 +189,11 @@ function createFloatingChain() {
   const group = new THREE.Group();
   group.userData.dynamic = true;
 
-  // The logs: squared timber baulks lying along the chain, with an iron hook at each end.
-  const logGeometry = cylinderGeometry(0.7, 0.7, LOG_LENGTH, 8).rotateZ(Math.PI / 2);
-  const hookGeometry = new THREE.TorusGeometry(0.4, 0.1, 5, 10);
-  const section = LINKS_PER_SECTION * LINK_LENGTH;
+  // The logs: heavy round trunks bound with iron straps, an iron eye at each end for the chain's hook.
+  const logGeometry = cylinderGeometry(LOG_RADIUS, LOG_RADIUS, LOG_LENGTH, 10).translate(0, -LOG_LENGTH / 2, 0).rotateZ(Math.PI / 2); // centred on the log's middle
+  const strapGeometry = new THREE.TorusGeometry(LOG_RADIUS + 0.04, 0.07, 4, 16).rotateY(Math.PI / 2);
+  const eyeGeometry = new THREE.TorusGeometry(0.6, 0.17, 6, 12);
+  const section = (LINKS_PER_SECTION - 1) * LINK_PITCH + LINK_LENGTH;
   const logs = [];
   const span = RIGHT_ANCHOR.x - LEFT_ANCHOR.x;
   const count = Math.floor((span - section) / (LOG_LENGTH + section));
@@ -161,15 +201,18 @@ function createFloatingChain() {
   for (let i = 0; i < count; i++) {
     const log = new THREE.Mesh(logGeometry, M.wood);
     log.castShadow = true;
-    log.position.set(start + i * (LOG_LENGTH + section), 0.1, 0);
-    for (const side of [-1, 1]) log.add(mesh(hookGeometry, M.iron, side * (LOG_LENGTH / 2 + 0.3), 0.3, 0));
+    log.position.set(start + i * (LOG_LENGTH + section), 0, 0);
+    for (const side of [-1, 1]) {
+      log.add(mesh(strapGeometry, M.iron, side * (LOG_LENGTH / 2 - 0.8), 0, 0));
+      log.add(box(1.1, HOOK_RISE, 0.4, M.iron, side * (LOG_LENGTH / 2 - 0.2), 0.1, 0)); // the strap carrying the eye
+      log.add(mesh(eyeGeometry, M.iron, side * (LOG_LENGTH / 2 + 0.25), HOOK_RISE + 0.1, 0));
+    }
     group.add(log);
     logs.push(log);
   }
 
-  const linkGeometry = new THREE.TorusGeometry(0.2, 0.08, 6, 12).scale(LINK_LENGTH / 0.4, 1, 1);
-  const capacity = (count + 1) * (LINKS_PER_SECTION + 6) + 8;
-  const links = new THREE.InstancedMesh(linkGeometry, M.iron, capacity);
+  const capacity = Math.ceil(span / LINK_PITCH) + 40;
+  const links = new THREE.InstancedMesh(linkGeometry(LINK_LENGTH, LINK_WIDTH, LINK_BAR), M.iron, capacity);
   links.castShadow = true;
   links.frustumCulled = false;
   group.add(links);
@@ -180,29 +223,39 @@ function createFloatingChain() {
   const scale = new THREE.Vector3(1, 1, 1);
   const xAxis = new THREE.Vector3(1, 0, 0);
   const point = new THREE.Vector3();
+  const previous = new THREE.Vector3();
   const next = new THREE.Vector3();
   const direction = new THREE.Vector3();
-  const hookAt = (log, side, target) => target.set(log.position.x + side * (LOG_LENGTH / 2 + 0.6), log.position.y + 0.3 - side * Math.sin(log.rotation.z) * 4.5, 0);
+  const hookAt = (log, side, target) => target.set(
+    log.position.x + side * (LOG_LENGTH / 2 + 0.7),
+    log.position.y + HOOK_RISE + 0.1 + side * Math.sin(log.rotation.z) * (LOG_LENGTH / 2),
+    0,
+  );
   const a = new THREE.Vector3();
   const b = new THREE.Vector3();
 
   group.userData.animate = (time) => {
     for (const [i, log] of logs.entries()) {
-      log.position.y = 0.1 + Math.sin(time * 1.3 + i * 0.9) * 0.14;
+      log.position.y = Math.sin(time * 1.3 + i * 0.9) * 0.14;
       log.rotation.z = Math.sin(time * 0.8 + i * 1.7) * 0.03;
       log.rotation.x = Math.sin(time * 1.1 + i) * 0.06;
     }
+    // Each stretch of chain hangs in a shallow curve between its two hooks, link after link,
+    // every other one turned a quarter-turn about the chain.
     let n = 0;
     for (let s = 0; s <= logs.length; s++) {
       if (s === 0) a.copy(LEFT_ANCHOR); else hookAt(logs[s - 1], 1, a);
       if (s === logs.length) b.copy(RIGHT_ANCHOR); else hookAt(logs[s], -1, b);
-      const steps = Math.max(1, Math.round(a.distanceTo(b) / (LINK_LENGTH * 0.85)));
-      const sag = Math.min(1.2, a.distanceTo(b) * 0.05);
+      const steps = Math.max(1, Math.round((a.distanceTo(b) - LINK_LENGTH) / LINK_PITCH) + 1);
+      const sag = Math.min(0.35, a.distanceTo(b) * 0.02);
       const at = (t, target) => target.lerpVectors(a, b, t).setY(a.y + (b.y - a.y) * t - sag * 4 * t * (1 - t));
+      const inset = LINK_LENGTH / 2 / a.distanceTo(b);
       for (let k = 0; k < steps && n < capacity; k++) {
-        at((k + 0.5) / steps, point);
-        at((k + 1.5) / steps, next);
-        direction.subVectors(next, point).normalize();
+        const t = steps === 1 ? 0.5 : inset + (k / (steps - 1)) * (1 - 2 * inset);
+        at(t, point);
+        at(Math.max(0, t - 0.005), previous);
+        at(Math.min(1, t + 0.005), next);
+        direction.subVectors(next, previous).normalize();
         quaternion.setFromUnitVectors(xAxis, direction);
         if (n % 2) quaternion.multiply(roll);
         matrix.compose(point, quaternion, scale);
@@ -218,7 +271,9 @@ function createFloatingChain() {
 
 // ---------- map ----------
 
-const MAP_LOGS = 14;
+const MAP_LOGS = 4;
+const MAP_LOG_LENGTH = 0.3;
+const MAP_LINK = { length: 0.28, width: 0.12, bar: 0.026 }; // some fifty times life size, to read on the map
 const KASTELLION_SCALE = 5.5 * METERS_TO_MAP;
 const EUGENIOS_SCALE = 5 * METERS_TO_MAP;
 
@@ -248,23 +303,36 @@ function createMapChain() {
   const inland = new THREE.Vector3().subVectors(kastellion, eugenios).setY(0).normalize().multiplyScalar(21 * KASTELLION_SCALE);
   chain.userData.keepOut = [[kastellion.x + inland.x, -(kastellion.z + inland.z), 1.45], [eugenios.x, -eugenios.z, 0.55]];
 
-  // The chain climbs from each tower's ring down to the water at the shore, then rides
-  // across on its logs, dipping between them.
+  // The chain climbs from each tower's ring down to the water at the shore, then crosses as a
+  // boom: stretches of links between logs set at even intervals, hooked to them end to end.
   const ringOn = (fort, scale, other) => fort.clone().lerp(other, (7 * scale) / fort.distanceTo(other)).setY(LAND_HEIGHT + 0.6 * scale);
-  const points = [ringOn(eugenios, EUGENIOS_SCALE, kastellion)];
-  for (let i = 0; i <= MAP_LOGS * 2; i++) {
-    const point = new THREE.Vector3().lerpVectors(south, north, i / (MAP_LOGS * 2));
-    if (i % 2 === 0 && i > 0 && i < MAP_LOGS * 2) point.y = 0.015;
-    points.push(point);
+  const water = (point) => point.clone().setY(0.03);
+  const route = new THREE.CurvePath();
+  const stops = [ringOn(eugenios, EUGENIOS_SCALE, kastellion), water(south), water(north), ringOn(kastellion, KASTELLION_SCALE, eugenios)];
+  for (let i = 1; i < stops.length; i++) route.add(new THREE.LineCurve3(stops[i - 1], stops[i]));
+  const total = route.getLength();
+  const [toShore, across] = [stops[0].distanceTo(stops[1]), stops[1].distanceTo(stops[2])];
+  const gap = (across - MAP_LOGS * MAP_LOG_LENGTH) / (MAP_LOGS + 1);
+  const logs = Array.from({ length: MAP_LOGS }, (_, i) => toShore + gap * (i + 1) + MAP_LOG_LENGTH * i); // where each log starts, along the route
+  const onLog = (d) => logs.some((start) => d > start - MAP_LINK.length / 2 && d < start + MAP_LOG_LENGTH + MAP_LINK.length / 2);
+
+  const linkShape = linkGeometry(MAP_LINK.length, MAP_LINK.width, MAP_LINK.bar);
+  const pitch = MAP_LINK.length - 3.2 * MAP_LINK.bar;
+  const xAxis = new THREE.Vector3(1, 0, 0);
+  for (let d = MAP_LINK.length / 2, n = 0; d < total - MAP_LINK.length / 2; d += pitch) {
+    if (onLog(d)) continue;
+    const link = mesh(linkShape, M.iron);
+    link.position.copy(route.getPointAt(d / total));
+    link.quaternion.setFromUnitVectors(xAxis, route.getTangentAt(d / total));
+    if (n++ % 2) link.rotateX(Math.PI / 2);
+    chain.add(link);
   }
-  points.push(ringOn(kastellion, KASTELLION_SCALE, eugenios));
-  chain.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), MAP_LOGS * 8 + 16, 0.03, 5), M.iron));
-  const direction = Math.atan2(north.z - south.z, north.x - south.x);
-  const log = cylinderGeometry(0.035, 0.035, 0.42, 6).rotateZ(Math.PI / 2);
-  for (let i = 0; i < MAP_LOGS; i++) {
+  const along = Math.atan2(north.z - south.z, north.x - south.x);
+  const log = cylinderGeometry(0.05, 0.05, MAP_LOG_LENGTH, 8).translate(0, -MAP_LOG_LENGTH / 2, 0).rotateZ(Math.PI / 2);
+  for (const start of logs) {
     const float = mesh(log, M.wood);
-    float.position.lerpVectors(south, north, (i + 0.5) / MAP_LOGS).setY(0.02);
-    float.rotation.y = -direction;
+    float.position.copy(route.getPointAt((start + MAP_LOG_LENGTH / 2) / total)).setY(0.025);
+    float.rotation.y = -along;
     chain.add(float);
   }
   return finalizeModel(chain);
