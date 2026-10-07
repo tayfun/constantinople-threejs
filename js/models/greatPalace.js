@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import { materials as M, cloth } from './lib/materials.js';
+import { materials as M, cloth, tinted } from './lib/materials.js';
 import {
   archedWallGeometry, archGeometry, box, boxGeometry, cylinderGeometry, crenellationGeometry, cylinder, cypress, dome, faceToward, gableRoof,
   groundPlane, hipRoof, mesh, placeOnCircle, roundTree, stairs, windowRow, flag,
 } from './lib/primitives.js';
 import { createHull } from './lib/hull.js';
+import { createLionAndBull, createSeatedLion } from './lib/figures.js';
 import { finalizeModel } from './lib/merge.js';
 import { labelAt, labelled } from './lib/parts.js';
 
@@ -470,8 +471,9 @@ function addLighthouse(palace) {
  * The Boukoleon: the sea palace built into the Marmara wall above its own
  * harbour. The surviving façade shows a storey of great marble-framed
  * windows above the wall, a balcony on marble consoles, the water gate and
- * the marble stair down to the marble quay, flanked by stone lions. The
- * lions are drawn larger than life, or they would vanish on the stage.
+ * the marble stair down to the marble quay, flanked by the seated marble
+ * lions, and the lion-and-bull group on its pedestal. Both are drawn larger
+ * than life, or they would vanish on the stage.
  */
 function addBoukoleon(palace, detail) {
   const [x, length] = [-40, 70];
@@ -528,45 +530,34 @@ function addBoukoleon(palace, detail) {
     // Harbour: the marble quay, moles, water, the marble stair down from the water gate between its two lions,
     // and the lion-and-bull statue that named the place.
     palace.add(groundPlane(320, 90, M.water, 0, 0, SEA_WALL_Z + 47));
-    palace.add(box(100, 1.3, 11, M.marble, x, -0.3, SEA_WALL_Z + 7.5));
+    // The quay in grey-veined Proconnesian marble, so the white statues stand out against it.
+    palace.add(box(100, 1.3, 11, tinted('marble', 0x9c9a96), x, -0.3, SEA_WALL_Z + 7.5));
     for (const moleX of [x - 52, x + 52]) palace.add(box(5, 1.5, 40, M.stone, moleX, -0.3, SEA_WALL_Z + 21));
     palace.add(box(5, 1.5, 7, M.stone, x - 52, 1.2, SEA_WALL_Z + 38)); // the mole's beacon base
     const flight = stairs(6, 8, 0.5, 0.8, M.marble);
     flight.position.set(x + 12, 1, SEA_WALL_Z + 8.6);
     flight.rotation.y = Math.PI;
     palace.add(flight);
-    for (const side of [-1, 1]) palace.add(lion(x + 12 + side * 6, 1, SEA_WALL_Z + 8, side));
-    labelAt(palace, 'boukoleonLions', x + 12, 6, SEA_WALL_Z + 9);
-    palace.add(box(4, 3, 4, M.marble, x - 18, 1, SEA_WALL_Z + 7));
-    const beasts = [box(3, 1.4, 1, M.marble, x - 18.8, 4, SEA_WALL_Z + 7), box(2.4, 1.8, 1.1, M.marble, x - 17, 4, SEA_WALL_Z + 7)];
-    beasts[1].rotation.z = 0.5;
-    palace.add(...beasts);
-    labelAt(palace, 'lionAndBull', x - 18, 6.5, SEA_WALL_Z + 7);
+    // The lions face the sea, each turning its head a little outwards.
+    for (const side of [-1, 1]) {
+      const guardian = createSeatedLion(M.marble, { turn: -side * 0.3 });
+      guardian.scale.setScalar(2.2);
+      guardian.rotation.y = -Math.PI / 2;
+      guardian.position.set(x + 12 + side * 6, 1, SEA_WALL_Z + 8);
+      palace.add(guardian);
+    }
+    labelAt(palace, 'boukoleonLions', x + 12, 7, SEA_WALL_Z + 9);
+    // The pedestal of the lion and bull: plinth, die and cornice, the group along the quay with the lion towards the sea.
+    const [px, pz] = [x - 18, SEA_WALL_Z + 7];
+    palace.add(box(7.4, 0.6, 4.6, M.marble, px, 1, pz));
+    palace.add(box(6.4, 3.2, 3.8, M.marble, px, 1.6, pz));
+    palace.add(box(7.4, 0.5, 4.6, M.marble, px, 4.8, pz));
+    const group = createLionAndBull(M.marble);
+    group.scale.setScalar(2);
+    group.position.set(px - 0.5, 5.3, pz - 0.5);
+    palace.add(group);
+    labelAt(palace, 'lionAndBull', px, 11.5, pz);
   }
-}
-
-/**
- * A stylised marble lion on its plinth, couchant with its head raised,
- * facing the sea (+z): body and haunches, a maned chest, head and muzzle,
- * forelegs stretched out before it and the tail along the flank away from
- * the stair (`side`).
- */
-function lion(x, y, z, side) {
-  const group = new THREE.Group();
-  group.add(box(3.4, 1, 7, M.marble, 0, 0, 0)); // plinth
-  group.add(box(2.2, 1.8, 4, M.marble, 0, 1, -1)); // body
-  group.add(mesh(new THREE.SphereGeometry(1.2, 12, 8).scale(1, 0.85, 1.1), M.marble, 0, 2.1, -2.6)); // haunches
-  group.add(mesh(new THREE.SphereGeometry(1.45, 14, 10).scale(1, 1.1, 0.9), M.marble, 0, 3.1, 1.2)); // mane
-  group.add(box(1.5, 1.5, 1.5, M.marble, 0, 2.7, 2.1)); // head
-  group.add(box(0.95, 0.8, 0.9, M.marble, 0, 2.7, 3.1)); // muzzle
-  for (const dx of [-0.6, 0.6]) {
-    group.add(box(0.6, 1.5, 0.7, M.marble, dx, 1, 1.9)); // foreleg
-    group.add(box(0.75, 0.35, 1.5, M.marble, dx, 1, 2.6)); // paw
-  }
-  group.add(box(0.3, 0.3, 3.2, M.marble, -side * 1.25, 1.1, -1.2)); // tail along the flank
-  group.add(mesh(new THREE.SphereGeometry(0.35, 8, 6), M.marble, -side * 1.25, 1.3, 0.5)); // its tuft
-  group.position.set(x, y, z);
-  return group;
 }
 
 /** A small gilded barge moored in the Boukoleon harbour. */
