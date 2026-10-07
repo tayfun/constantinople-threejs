@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import { box, mesh, obeliskGeometry } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { QUALITY } from '../util/quality.js';
 import { obeliskArt } from './lib/obeliskArt.js';
 
 /**
@@ -98,8 +99,9 @@ let materials = null;
 function detailMaterials() {
   if (materials) return materials;
   const art = obeliskArt();
-  const carvedMarble = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.012, roughness: 0.6 });
-  const carvedGranite = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 0.02, roughness: 0.52 });
+  const bump = (map) => (QUALITY.bumpMaps ? map : null);
+  const carvedMarble = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: bump(map), bumpScale: 0.012, roughness: 0.6 });
+  const carvedGranite = (map) => new THREE.MeshStandardMaterial({ map, bumpMap: bump(map), bumpScale: 0.02, roughness: 0.52 });
   const sided = (textures) => [carvedMarble(textures.north), carvedMarble(textures.south), M.marble, M.marble, carvedMarble(textures.east), carvedMarble(textures.west)];
   const arcade = carvedMarble(art.arcade);
   materials = {

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import { box, mesh, obeliskGeometry } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
+import { QUALITY } from '../util/quality.js';
 import { walledObeliskArt } from './lib/obeliskArt.js';
 
 /**
@@ -72,7 +73,7 @@ let materials = null;
 function detailMaterials() {
   if (materials) return materials;
   const art = walledObeliskArt(WALLED_OBELISK.shaft);
-  const carved = (map, bumpScale) => new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale, roughness: 0.9 });
+  const carved = (map, bumpScale) => new THREE.MeshStandardMaterial({ map, bumpMap: QUALITY.bumpMaps ? map : null, bumpScale, roughness: 0.9 });
   const plain = carved(art.pedestal, 0.015);
   materials = {
     faces: art.faces.map((map) => carved(map, 0.03)),

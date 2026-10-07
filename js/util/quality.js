@@ -15,6 +15,9 @@ import * as THREE from 'three';
  * Both tiers filter shadows with PCFSoftShadowMap. Plain PCFShadowMap (17
  * taps) resets the GPU of the Pixel 10's PowerVR DXT within ~35 frames, in
  * three.js's own shadow example too; soft PCF, basic and VSM run fine.
+ * The same GPU also resets on the obelisks' carved faces, whose bump maps
+ * under live shadows (the Hippodrome's racing chariots) take it down within
+ * seconds, so the lighter tier paints the carving without the bump.
  */
 
 function isModestDevice() {
@@ -35,6 +38,7 @@ const TIERS = {
     releaseDioramas: false,
     treeDensity: 1,
     crownBlobs: 3,
+    bumpMaps: true,
   },
   low: {
     tier: 'low',
@@ -46,6 +50,7 @@ const TIERS = {
     releaseDioramas: true,
     treeDensity: 0.5,
     crownBlobs: 2,
+    bumpMaps: false,
   },
 };
 
