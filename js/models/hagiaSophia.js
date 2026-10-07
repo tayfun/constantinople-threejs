@@ -50,7 +50,7 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   for (let i = 0; i < 40; i++) {
     const angle = (i / 40) * Math.PI * 2;
     church.add(placeOnCircle(box(1.1, 4.4, 1.8, M.brick), angle, 16.9, 40));
-    if (detail) church.add(placeOnCircle(mesh(drumWindow, M.opening), angle + Math.PI / 40, 16.63, 40.6));
+    church.add(placeOnCircle(mesh(drumWindow, M.opening), angle + Math.PI / 40, 16.63, 40.6));
   }
 
   // Cross on the summit.
@@ -87,9 +87,11 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   church.add(cylinder(6, 6, 9, M.brick, 36, 0, -46, 20));
   church.add(dome(6, M.lead, 36, 9, -46, { heightScale: 0.55 }));
 
+  // Windows and the atrium belong to both builds: the map draws the church seven times life size,
+  // so they read there too. Only the paving sheet and the trees are diorama dressing.
+  addWindows(church);
+  addAtrium(church);
   if (detail) {
-    addWindows(church);
-    addAtrium(church);
     church.add(box(150, 1, 116, M.paving, -25, -1, 0));
     for (const [x, z] of [[40, 30], [44, 18], [42, -26], [-20, 50], [-6, 50], [8, -52], [20, -52], [-60, 44], [-74, -44]]) {
       church.add(cypress(13, x, 0, z));

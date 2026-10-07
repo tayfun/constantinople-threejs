@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M, cloth } from './lib/materials.js';
 import {
-  archedWallGeometry, archGeometry, box, boxGeometry, colonnade, cone, crenellationGeometry, cylinder, cylinderGeometry,
+  archedWallGeometry, archGeometry, archShape, box, boxGeometry, cone, crenellationGeometry, cylinder, cylinderGeometry,
   hipRoof, mesh, placeOnCircle, regularOpenings, windowRow,
 } from './lib/primitives.js';
 import { createChariot, createHorse } from './lib/figures.js';
@@ -21,6 +21,10 @@ import { createWalledObelisk } from './walledObelisk.js';
  * Sources: Bardill's reconstruction for Byzantium 1200 / the Pera Museum
  * (2010); Robert de Clari's thirty or forty rows; Clavijo's columns on the
  * sphendone; the sphendone's 25 surviving vaults.
+ *
+ * The map build is the same stadium with fewer rows, coarser curves and
+ * six-sided columns, without the window galleries, the throne, the racing
+ * chariots and the small ornaments: everything that reads from the air.
  */
 
 const SPHENDONE_X = -160; // centre of the curved end
@@ -55,11 +59,11 @@ export function createHippodrome({ lod = 'detail' } = {}) {
   const stadium = new THREE.Group();
 
   stadium.add(box(520, 1, 190, M.paving, 30, -1, 0));
-  stadium.add(mesh(new THREE.ShapeGeometry(arenaShape(), 24).rotateX(-Math.PI / 2), M.sand, 0, 0.05, 0));
+  stadium.add(mesh(new THREE.ShapeGeometry(arenaShape(), detail ? 24 : 16).rotateX(-Math.PI / 2), M.sand, 0, 0.05, 0));
 
   addCavea(stadium, detail);
   addFacade(stadium, detail);
-  if (detail) addPortico(stadium);
+  addPortico(stadium, detail);
   addSpina(stadium, lod);
   addKathisma(stadium, detail);
   addCarceres(stadium, detail);
@@ -105,16 +109,17 @@ function band(inner, outer, y, height, material, segments = 24) {
  * the real ones; a landing halfway up divides the lower and upper tiers.
  */
 function addCavea(stadium, detail) {
-  const rows = detail ? 14 : 3;
+  const rows = detail ? 14 : 10;
+  const segments = detail ? 28 : 20;
   const run = (SEATS_TOP - ARENA) / rows;
   const rise = (CAVEA_HEIGHT - PODIUM) / rows;
   for (let k = 0; k < rows; k++) {
     const inner = ARENA + k * run;
-    const landing = detail && k === 7;
-    stadium.add(band(inner, inner + run, 0, PODIUM + (k + 1) * rise - (landing ? rise * 0.5 : 0), landing ? M.stone : M.marble, detail ? 28 : 16));
+    const landing = k === rows / 2;
+    stadium.add(band(inner, inner + run, 0, PODIUM + (k + 1) * rise - (landing ? rise * 0.5 : 0), landing ? M.stone : M.marble, segments));
   }
   // The upper walkway, which also caps the façade wall.
-  stadium.add(band(SEATS_TOP, OUTER + 2, CAVEA_HEIGHT, FACADE_HEIGHT + 0.5 - CAVEA_HEIGHT, M.stone, detail ? 28 : 16));
+  stadium.add(band(SEATS_TOP, OUTER + 2, CAVEA_HEIGHT, FACADE_HEIGHT + 0.5 - CAVEA_HEIGHT, M.stone, segments));
 }
 
 /** Arcaded outer walls, and the great vaulted sphendone at the curved end. */
@@ -122,17 +127,17 @@ function addFacade(stadium, detail) {
   const length = GATES_X - SPHENDONE_X;
   const centre = (GATES_X + SPHENDONE_X) / 2;
   for (const side of [-1, 1]) {
-    const wall = detail
-      ? mesh(archedWallGeometry({
-        length,
-        height: FACADE_HEIGHT,
-        thickness: 2,
-        openings: [
-          ...regularOpenings(length, 46, { width: 4.4, bottom: 0, spring: 5.5 }),
-          ...regularOpenings(length, 46, { width: 3.2, bottom: 9, spring: 13 }),
-        ],
-      }), M.banded)
-      : box(length, FACADE_HEIGHT, 2, M.banded);
+    // Two tiers of arches: the arcade at street level and the gallery above it.
+    const wall = mesh(archedWallGeometry({
+      length,
+      height: FACADE_HEIGHT,
+      thickness: 2,
+      openings: [
+        ...regularOpenings(length, 46, { width: 4.4, bottom: 0, spring: 5.5 }),
+        ...regularOpenings(length, 46, { width: 3.2, bottom: 9, spring: 13 }),
+      ],
+      curveSegments: detail ? 10 : 4,
+    }), M.banded);
     wall.position.set(centre, 0, side * (OUTER + 1));
     stadium.add(wall);
   }
@@ -143,61 +148,76 @@ function addFacade(stadium, detail) {
   ring.lineTo(SPHENDONE_X, -OUTER + 1);
   ring.absarc(SPHENDONE_X, 0, OUTER - 1, Math.PI * 1.5, Math.PI / 2, true);
   ring.lineTo(SPHENDONE_X, OUTER + 2);
-  const sphendone = new THREE.ExtrudeGeometry(ring, { depth: FACADE_HEIGHT, bevelEnabled: false, curveSegments: 32 });
+  const sphendone = new THREE.ExtrudeGeometry(ring, { depth: FACADE_HEIGHT, bevelEnabled: false, curveSegments: detail ? 32 : 20 });
   stadium.add(mesh(sphendone.rotateX(-Math.PI / 2), M.banded));
 
-  if (detail) {
-    // The twenty-five vaults of the sphendone, with a gallery of windows above.
-    const vaults = 25;
-    const lower = archGeometry(4.4, 7.5);
-    const upper = archGeometry(3, 5);
-    for (let i = 1; i <= vaults; i++) {
-      const angle = Math.PI / 2 + (i / (vaults + 1)) * Math.PI;
-      stadium.add(placeOnCircle(mesh(lower, M.opening), angle, OUTER + 2.05, 0, SPHENDONE_X, 0));
-      stadium.add(placeOnCircle(mesh(upper, M.opening), angle, OUTER + 2.05, 10, SPHENDONE_X, 0));
-    }
+  // The twenty-five vaults of the sphendone, with a gallery of windows above.
+  const vaults = 25;
+  const lower = detail ? archGeometry(4.4, 7.5) : new THREE.ShapeGeometry(archShape(4.4, 7.5), 3);
+  const upper = detail ? archGeometry(3, 5) : new THREE.ShapeGeometry(archShape(3, 5), 3);
+  for (let i = 1; i <= vaults; i++) {
+    const angle = Math.PI / 2 + (i / (vaults + 1)) * Math.PI;
+    stadium.add(placeOnCircle(mesh(lower, M.opening), angle, OUTER + 2.05, 0, SPHENDONE_X, 0));
+    stadium.add(placeOnCircle(mesh(upper, M.opening), angle, OUTER + 2.05, 10, SPHENDONE_X, 0));
   }
 }
 
+/**
+ * The parts of a classical column of the given radius and height: base, shaft
+ * and capital, with the proportions of primitives' colonnade(). `sides` sets
+ * how round the shaft is (ten on the diorama, six on the map).
+ */
+function columnParts(radius, height, sides) {
+  return {
+    radius,
+    height,
+    base: boxGeometry(radius * 2.4, radius * 0.6, radius * 2.4),
+    shaft: cylinderGeometry(radius * 0.85, radius, height - radius * 1.6, sides),
+    capital: cylinderGeometry(radius * 1.6, radius * 0.9, radius, sides),
+  };
+}
+
+/** Stands a column of the given parts with its foot at (x, y, z). */
+function addColumn(stadium, parts, x, y, z, capitalMaterial = M.marble) {
+  stadium.add(mesh(parts.base, M.marble, x, y, z));
+  stadium.add(mesh(parts.shaft, M.marble, x, y + parts.radius * 0.6, z));
+  stadium.add(mesh(parts.capital, capitalMaterial, x, y + parts.height - parts.radius, z));
+}
+
 /** The colonnade that crowned the stands, roofed with tiles, open towards the track. */
-function addPortico(stadium) {
+function addPortico(stadium, detail) {
   const y = FACADE_HEIGHT + 0.5;
   const radius = OUTER + 0.5;
   const spacing = 7.5;
   const length = GATES_X - SPHENDONE_X;
   const count = Math.round(length / spacing) + 1;
+  const parts = columnParts(0.5, PORTICO_HEIGHT, detail ? 10 : 6);
   for (const side of [-1, 1]) {
-    const columns = colonnade({ length, count, height: PORTICO_HEIGHT, radius: 0.5, capitalMaterial: M.marble });
-    columns.position.set((GATES_X + SPHENDONE_X) / 2, y, side * radius);
-    stadium.add(columns);
+    const step = length / (count - 1);
+    for (let i = 0; i < count; i++) addColumn(stadium, parts, SPHENDONE_X + step * i, y, side * radius);
   }
   const arcCount = Math.round((Math.PI * radius) / spacing);
-  const shaft = cylinderGeometry(0.425, 0.5, PORTICO_HEIGHT - 0.8, 10);
-  const base = boxGeometry(1.2, 0.3, 1.2);
-  const capital = cylinderGeometry(0.8, 0.45, 0.5, 10);
   for (let i = 1; i < arcCount; i++) {
     const angle = Math.PI / 2 + (i / arcCount) * Math.PI;
-    const x = SPHENDONE_X + Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    stadium.add(mesh(base, M.marble, x, y, z));
-    stadium.add(mesh(shaft, M.marble, x, y + 0.3, z));
-    stadium.add(mesh(capital, M.marble, x, y + PORTICO_HEIGHT - 0.5, z));
+    addColumn(stadium, parts, SPHENDONE_X + Math.cos(angle) * radius, y, Math.sin(angle) * radius);
   }
   const top = y + PORTICO_HEIGHT;
-  stadium.add(band(radius - 1.6, radius + 1.6, top, 1.0, M.marble, 32));
-  stadium.add(band(radius - 4.2, radius + 2.4, top + 1.0, 0.9, M.roof, 32));
+  const segments = detail ? 32 : 20;
+  stadium.add(band(radius - 1.6, radius + 1.6, top, 1.0, M.marble, segments));
+  stadium.add(band(radius - 4.2, radius + 2.4, top + 1.0, 0.9, M.roof, segments));
 }
 
 /** The central barrier: a marble platform with the turning posts, water basins and monuments. */
 function addSpina(stadium, lod) {
+  const detail = lod === 'detail';
   const [start, end] = META_X;
   const length = end - start - 8;
   const centre = (start + end) / 2;
   stadium.add(box(length, SPINA_TOP, 7, M.marble, centre, 0, 0));
   stadium.add(box(length, 0.35, 7.6, M.marble, centre, SPINA_TOP - 0.35, 0));
   for (const x of META_X) {
-    stadium.add(cylinder(3.8, 3.8, SPINA_TOP, M.marble, x, 0, 0, 20));
-    for (const z of [-2, 0, 2]) stadium.add(cone(0.8, 6, M.gold, x, SPINA_TOP, z, 10));
+    stadium.add(cylinder(3.8, 3.8, SPINA_TOP, M.marble, x, 0, 0, detail ? 20 : 10));
+    for (const z of [-2, 0, 2]) stadium.add(cone(0.8, 6, M.gold, x, SPINA_TOP, z, detail ? 10 : 6));
   }
 
   // The euripus: long basins of water between the monuments.
@@ -211,7 +231,7 @@ function addSpina(stadium, lod) {
   // On the map the monuments are separate, clickable landmarks standing on this spina. In the
   // diorama they are built in, but kept as separate, tagged objects so they can be picked and
   // opened from here too (finalizeModel leaves `dynamic` objects unmerged).
-  if (lod === 'detail') {
+  if (detail) {
     for (const [id, { x, create }] of Object.entries(SPINA_MONUMENTS)) {
       const monument = create({ lod });
       monument.position.set(x, SPINA_TOP, 0);
@@ -222,21 +242,56 @@ function addSpina(stadium, lod) {
   }
 
   // Columns crowned with bronze statues of charioteers and emperors.
+  const sides = detail ? 10 : 6;
   for (const x of [-96, -24, 46, 110]) {
     stadium.add(box(1.8, 0.5, 1.8, M.marble, x, SPINA_TOP, 0));
-    stadium.add(cylinder(0.6, 0.72, 8.5, M.marble, x, SPINA_TOP + 0.5, 0, 10));
-    stadium.add(cylinder(0.9, 0.6, 0.5, M.marble, x, SPINA_TOP + 9, 0, 10));
-    stadium.add(cylinder(0.35, 0.5, 2.2, M.bronze, x, SPINA_TOP + 9.5, 0, 8));
-    stadium.add(cylinder(0.3, 0.3, 0.6, M.bronze, x, SPINA_TOP + 11.7, 0, 8));
+    stadium.add(cylinder(0.6, 0.72, 8.5, M.marble, x, SPINA_TOP + 0.5, 0, sides));
+    stadium.add(cylinder(0.9, 0.6, 0.5, M.marble, x, SPINA_TOP + 9, 0, sides));
+    stadium.add(cylinder(0.35, 0.5, 2.2, M.bronze, x, SPINA_TOP + 9.5, 0, detail ? 8 : 6));
+    stadium.add(cylinder(0.3, 0.3, 0.6, M.bronze, x, SPINA_TOP + 11.7, 0, detail ? 8 : 6));
   }
   // Bronze horses among the trophies, like the pair from the temple of Artemis at Ephesus.
   for (const x of [-82, 122]) {
     stadium.add(box(3.2, 1.2, 2, M.marble, x, SPINA_TOP, 0));
-    const horse = createHorse(M.bronze);
+    const horse = detail ? createHorse(M.bronze) : coarseHorse(M.bronze);
     horse.scale.setScalar(1.2);
     horse.position.set(x, SPINA_TOP + 1.2, 0);
     stadium.add(horse);
   }
+}
+
+const coarseSphere = new THREE.SphereGeometry(1, 6, 4);
+
+/** A horse with the stance and proportions of figures' createHorse(), in a few dozen triangles for the map. Faces +x, hooves at y = 0. */
+function coarseHorse(material) {
+  const horse = new THREE.Group();
+  const body = mesh(coarseSphere, material, 0, 1.3, 0);
+  body.scale.set(0.85, 0.36, 0.3);
+  const neck = cylinder(0.17, 0.26, 0.95, material, 0.62, 1.38, 0, 4);
+  neck.rotation.z = -0.62;
+  const head = box(0.6, 0.24, 0.22, material, 1.1, 1.85, 0);
+  head.rotation.z = -0.5;
+  horse.add(body, neck, head);
+  for (const [x, z] of [[0.55, 0.16], [0.55, -0.16], [-0.55, 0.16], [-0.55, -0.16]]) horse.add(cylinder(0.06, 0.08, 1.1, material, x, 0, z, 3));
+  return horse;
+}
+
+/** The quadriga for the map: four coarse horses and the car, without the charioteer. Faces +x like createChariot(). */
+function coarseQuadriga({ horseMaterial, carMaterial }) {
+  const chariot = new THREE.Group();
+  for (const z of [-0.9, -0.3, 0.3, 0.9]) {
+    const horse = coarseHorse(horseMaterial);
+    horse.position.set(1.6, 0, z);
+    horse.scale.setScalar(0.9);
+    chariot.add(horse);
+  }
+  chariot.add(cylinder(0.75, 0.75, 1.0, carMaterial, -0.4, 0.35, 0, 6, { thetaStart: 0, thetaLength: Math.PI }));
+  for (const z of [-0.75, 0.65]) {
+    const wheel = cylinder(0.55, 0.55, 0.1, carMaterial, -0.4, 0.55, z, 8);
+    wheel.rotation.x = Math.PI / 2;
+    chariot.add(wheel);
+  }
+  return chariot;
 }
 
 /**
@@ -254,25 +309,23 @@ function addKathisma(stadium, detail) {
   stadium.add(hipRoof(31, 31, 6, M.lead, x, floor + 9.3, 65));
 
   // The private way to the palace: a round stair tower and a covered passage.
-  stadium.add(cylinder(4, 4, floor + 9, M.banded, x + 18, 0, 77, 12));
-  stadium.add(cone(4.6, 3.2, M.lead, x + 18, floor + 9, 77, 12));
+  stadium.add(cylinder(4, 4, floor + 9, M.banded, x + 18, 0, 77, detail ? 12 : 8));
+  stadium.add(cone(4.6, 3.2, M.lead, x + 18, floor + 9, 77, detail ? 12 : 8));
   stadium.add(box(8, 5, 12, M.banded, x, floor - 5, 86));
   stadium.add(box(9, 0.6, 13, M.lead, x, floor, 86));
 
   // Purple hangings mark the emperor's box from across the arena.
   stadium.add(box(28, 7.5, 0.3, cloth(0x5c1f63), x, floor + 0.6, 60.3));
   stadium.add(box(28, 2.2, 0.3, cloth(0x5c1f63), x, floor + 5.9, 51.2));
+
+  // The loggia's colonnade: seven columns across the front and two down each flank.
+  const parts = columnParts(0.4, 7.5, detail ? 10 : 6);
+  for (let i = 0; i < 7; i++) addColumn(stadium, parts, x - 13 + (26 / 6) * i, floor + 0.6, 51.5, M.gold);
+  for (const side of [-1, 1]) {
+    for (const z of [53, 59]) addColumn(stadium, parts, x + side * 13, floor + 0.6, z, M.gold);
+  }
   if (!detail) return;
 
-  const front = colonnade({ length: 26, count: 7, height: 7.5, radius: 0.4, capitalMaterial: M.gold });
-  front.position.set(x, floor + 0.6, 51.5);
-  stadium.add(front);
-  for (const side of [-1, 1]) {
-    const flank = colonnade({ length: 6, count: 2, height: 7.5, radius: 0.4, capitalMaterial: M.gold });
-    flank.position.set(x + side * 13, floor + 0.6, 56);
-    flank.rotation.y = Math.PI / 2;
-    stadium.add(flank);
-  }
   // The throne, gilded, at the centre of the loggia.
   stadium.add(box(2.4, 0.5, 2.4, M.marble, x, floor + 0.6, 57));
   stadium.add(box(1.4, 1.6, 1.2, M.gold, x, floor + 1.1, 57.4));
@@ -289,30 +342,33 @@ function addCarceres(stadium, detail) {
     stadium.add(mesh(crenellationGeometry(15), M.banded, x, 22, side * 66 + 7));
   }
 
-  if (!detail) return;
-
   // The quadriga: four gilded horses and their chariot, looking down the track.
-  const quadriga = createChariot({ horseMaterial: M.gildedBronze, carMaterial: M.gold, colorMaterial: M.gildedBronze });
+  const quadriga = detail
+    ? createChariot({ horseMaterial: M.gildedBronze, carMaterial: M.gold, colorMaterial: M.gildedBronze })
+    : coarseQuadriga({ horseMaterial: M.gildedBronze, carMaterial: M.gold });
   quadriga.scale.setScalar(1.8);
   quadriga.rotation.y = Math.PI;
   quadriga.position.set(x + 1, 20.8, 0);
   stadium.add(quadriga);
 
+  // The gates themselves, and the ceremonial gateway through the middle of the carceres.
   const gates = windowRow({ count: 12, spacing: 9.5, width: 5, height: 8, y: 0.5, skip: (z) => Math.abs(z) < 8 });
   gates.position.x = GATES_X - 0.05;
   gates.rotation.y = -Math.PI / 2;
   stadium.add(gates);
-  const gallery = windowRow({ count: 11, spacing: 9.5, width: 2.4, height: 3.2, y: 9, skip: (z) => Math.abs(z) < 8 });
-  gallery.position.x = GATES_X - 0.05;
-  gallery.rotation.y = -Math.PI / 2;
-  stadium.add(gallery);
-
-  // The ceremonial gateway through the middle of the carceres.
   for (const [dx, facing] of [[-7.05, -Math.PI / 2], [7.05, Math.PI / 2]]) {
     const arch = mesh(archGeometry(6, 11), M.opening, x + dx, 0.5, 0);
     arch.rotation.y = facing;
     stadium.add(arch);
   }
+
+  if (!detail) return;
+
+  // The gallery of windows over the gates, and the pair over the gateway.
+  const gallery = windowRow({ count: 11, spacing: 9.5, width: 2.4, height: 3.2, y: 9, skip: (z) => Math.abs(z) < 8 });
+  gallery.position.x = GATES_X - 0.05;
+  gallery.rotation.y = -Math.PI / 2;
+  stadium.add(gallery);
   const windows = windowRow({ count: 2, spacing: 8, width: 2, height: 4, y: 13.5 });
   windows.position.set(x - 7.05, 0, 0);
   windows.rotation.y = -Math.PI / 2;

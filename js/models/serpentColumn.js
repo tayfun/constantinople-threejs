@@ -41,7 +41,7 @@ export function createSerpentColumn({ lod = 'detail' } = {}) {
   const foot = plinth.height + capital.height;
 
   const turns = shaft.coils / 3; // each serpent makes a third of the coils
-  const samples = detail ? 520 : 180;
+  const samples = detail ? 520 : 300;
   for (let s = 0; s < 3; s++) {
     const phase = (s / 3) * Math.PI * 2;
     const points = [];
@@ -56,7 +56,7 @@ export function createSerpentColumn({ lod = 'detail' } = {}) {
     const at = (turn, radius, rise) => new THREE.Vector3(Math.cos(topAngle + turn) * radius, foot + shaft.height + rise, Math.sin(topAngle + turn) * radius);
     const neckPoints = [at(0.35, 0.2, 0.45), at(0.6, 0.3, 0.85), at(0.72, 0.55, 1.15), at(0.78, neck.reach, neck.rise)];
     const curve = new THREE.CatmullRomCurve3([...points, ...neckPoints], false, 'catmullrom', 0.5);
-    const tube = taperedTube(curve, detail ? 720 : 220, detail ? 10 : 6, (u) => {
+    const tube = taperedTube(curve, detail ? 720 : 360, detail ? 10 : 8, (u) => {
       const body = THREE.MathUtils.lerp(shaft.body[0], shaft.body[1], Math.min(1, u * 1.08));
       return body;
     });
@@ -88,7 +88,7 @@ function taperedTube(curve, segments, radial, radiusAt) {
   return geometry;
 }
 
-/** A serpent's head at `at`, snout pointing along `direction`: open jaws, brow ridges, inlaid eyes and a forked tongue. */
+/** A serpent's head at `at`, snout pointing along `direction`: open jaws and brow ridges, and at full detail the inlaid eyes and forked tongue. */
 function serpentHead(at, direction, scale, detail) {
   const head = new THREE.Group();
   head.position.copy(at);
@@ -109,17 +109,18 @@ function serpentHead(at, direction, scale, detail) {
   hinge.add(jaw);
   head.add(hinge);
 
-  if (!detail) return head;
-
   // Brow ridges, with the hollow eyes beneath, once set with glass.
   for (const side of [-1, 1]) {
     const brow = box(0.07, 0.022, 0.1, patina, side * 0.09, 0.072, 0.13);
     brow.rotation.z = -side * 0.45;
     head.add(brow);
+    if (!detail) continue;
     const eye = mesh(sphere, glassEye, side * 0.1, 0.055, 0.14);
     eye.scale.setScalar(0.03);
     head.add(eye);
   }
+  if (!detail) return head;
+
   // A bronze tongue flicks out between the jaws.
   const tongue = cylinder(0.008, 0.016, 0.3, M.bronze, 0, -0.02, 0.3, 5);
   tongue.rotation.x = Math.PI / 2;

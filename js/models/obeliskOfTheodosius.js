@@ -34,6 +34,9 @@ export const OBELISK = {
 
 const CORNERS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 
+// The bronze cubes under the shaft, green with sixteen centuries of weather.
+const weatheredBronze = new THREE.MeshStandardMaterial({ color: 0x5c7566, metalness: 0.55, roughness: 0.55 });
+
 export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const monument = new THREE.Group();
@@ -56,7 +59,7 @@ export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
   // The arcaded block, with a porphyry stone at each corner of the pedestal above.
   monument.add(detail ? sidedBox(arcade.width, arcade.height, y, stone.arcade) : box(arcade.width, arcade.height, arcade.width, M.marble, 0, y, 0));
   const inset = upper.width / 2 - porphyry / 2;
-  for (const [sx, sz] of CORNERS) monument.add(box(porphyry, arcade.height, porphyry, detail ? stone.porphyry : M.stoneDark, sx * inset, y, sz * inset));
+  for (const [sx, sz] of CORNERS) monument.add(box(porphyry, arcade.height, porphyry, detail ? stone.porphyry : M.porphyry, sx * inset, y, sz * inset));
   y += arcade.height;
 
   // The upper block with the imperial scenes, and its projecting cornice.
@@ -67,7 +70,7 @@ export function createObeliskOfTheodosius({ lod = 'detail' } = {}) {
   y += cornice;
 
   // The four bronze cubes on which the shaft rests.
-  for (const [sx, sz] of CORNERS) monument.add(box(cube.width, cube.height, cube.width, detail ? stone.bronze : M.bronze, sx * cube.inset, y, sz * cube.inset));
+  for (const [sx, sz] of CORNERS) monument.add(box(cube.width, cube.height, cube.width, weatheredBronze, sx * cube.inset, y, sz * cube.inset));
   y += cube.height;
 
   // The tapering shaft and its pyramidion.
@@ -104,7 +107,6 @@ function detailMaterials() {
     upper: sided(art.upper),
     arcade: [arcade, arcade, M.marble, M.marble, arcade, arcade],
     porphyry: new THREE.MeshStandardMaterial({ map: art.porphyry, roughness: 0.82 }),
-    bronze: new THREE.MeshStandardMaterial({ color: 0x5c7566, metalness: 0.55, roughness: 0.55 }),
     faces: art.faces.map(carvedGranite),
     pyramidion: new THREE.MeshStandardMaterial({ map: art.pyramidion, roughness: 0.52 }),
   };

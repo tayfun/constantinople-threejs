@@ -42,7 +42,7 @@ export function createForumOfConstantine({ lod = 'detail' } = {}) {
 
   // Paving: the oval plaza in Proconnesian marble, the Mese running straight through it.
   if (detail) forum.add(box(240, 1, 190, M.paving, 0, -1, 0));
-  forum.add(mesh(ellipseGeometry(a, b), M.marble, 0, 0.03, 0));
+  forum.add(mesh(ellipseGeometry(a, b, detail ? 48 : 32), M.marble, 0, 0.03, 0));
   forum.add(groundPlane(detail ? 240 : 2 * a + 20, 10, tinted('paving', 0xc9b48e), 0, 0.06, 0));
 
   // The ring of porticoes, broken by the two gates and the Senate's entrance.
@@ -54,23 +54,23 @@ export function createForumOfConstantine({ lod = 'detail' } = {}) {
     [Math.PI + gate, Math.PI * 2 - gate],
   ];
   const upperBase = LOWER_STOREY + FLOOR;
+  const segments = detail ? 40 : 24; // curve segments per sector of the portico rings
   for (const [start, end] of sectors) {
-    forum.add(ring(a - 1.2, b - 1.2, a, b, start, end, 0, WALL_HEIGHT, M.stone)); // back wall
-    forum.add(ring(inner[0] - 0.9, inner[1] - 0.9, a + 0.2, b + 0.2, start, end, LOWER_STOREY, FLOOR, M.marble)); // entablature and upper floor
-    forum.add(ring(inner[0] - 0.9, inner[1] - 0.9, inner[0] - 0.4, inner[1] - 0.4, start, end, upperBase, 1, M.marble)); // balustrade
-    forum.add(ring(inner[0] - 1.2, inner[1] - 1.2, a + 0.6, b + 0.6, start, end, upperBase + UPPER_STOREY, 0.7, M.marble)); // cornice
-    forum.add(ring(inner[0] - 1.4, inner[1] - 1.4, a + 0.9, b + 0.9, start, end, upperBase + UPPER_STOREY + 0.7, 0.8, M.roof)); // roof
-    if (detail) {
-      for (const [x, z] of ellipsePoints(...inner, 4.2, start, end)) {
-        forum.add(column(x, 0, z, LOWER_STOREY, 0.42));
-        forum.add(column(x, upperBase, z, UPPER_STOREY, 0.32));
-      }
+    forum.add(ring(a - 1.2, b - 1.2, a, b, start, end, 0, WALL_HEIGHT, M.stone, segments)); // back wall
+    forum.add(ring(inner[0] - 0.9, inner[1] - 0.9, a + 0.2, b + 0.2, start, end, LOWER_STOREY, FLOOR, M.marble, segments)); // entablature and upper floor
+    forum.add(ring(inner[0] - 0.9, inner[1] - 0.9, inner[0] - 0.4, inner[1] - 0.4, start, end, upperBase, 1, M.marble, segments)); // balustrade
+    forum.add(ring(inner[0] - 1.2, inner[1] - 1.2, a + 0.6, b + 0.6, start, end, upperBase + UPPER_STOREY, 0.7, M.marble, segments)); // cornice
+    forum.add(ring(inner[0] - 1.4, inner[1] - 1.4, a + 0.9, b + 0.9, start, end, upperBase + UPPER_STOREY + 0.7, 0.8, M.roof, segments)); // roof
+    // Both storeys of columns; on the map they are plain shafts and capitals of few sides.
+    for (const [x, z] of ellipsePoints(...inner, 4.2, start, end)) {
+      forum.add(column(x, 0, z, LOWER_STOREY, 0.42, M.marble, detail));
+      forum.add(column(x, upperBase, z, UPPER_STOREY, 0.32, M.marble, detail));
     }
   }
 
   addGates(forum, detail, a);
   addSenate(forum, detail, b);
-  if (detail) addNymphaeum(forum, b);
+  addNymphaeum(forum, detail, b);
   addColumn(forum, detail);
 
   if (detail) {
@@ -90,19 +90,19 @@ export function createForumOfConstantine({ lod = 'detail' } = {}) {
 function addGates(forum, detail, a) {
   for (const side of [-1, 1]) {
     const x = side * (a - 2);
-    const arch = detail
-      ? mesh(archedWallGeometry({ length: 24, height: 17, thickness: 9, openings: [{ x: 0, width: 9, bottom: 0, spring: 10 }] }), M.marble)
-      : box(24, 17, 9, M.marble);
+    const arch = mesh(archedWallGeometry({
+      length: 24, height: 17, thickness: 9, openings: [{ x: 0, width: 9, bottom: 0, spring: 10 }], curveSegments: detail ? 10 : 6,
+    }), M.marble);
     arch.rotation.y = Math.PI / 2;
     arch.position.x = x;
     forum.add(arch);
     forum.add(box(10, 1.4, 25.5, M.marble, x, 17, 0)); // cornice
     forum.add(box(8.5, 3.6, 22, M.marble, x, 18.4, 0)); // attic
     forum.add(box(9.5, 0.6, 23, M.marble, x, 22, 0));
-    if (!detail) continue;
     for (const dz of [-9.5, 9.5]) {
       for (const dx of [-3.5, 3.5]) forum.add(box(1.4, 15.5, 1.4, M.marble, x + dx, 0, dz)); // pilasters
     }
+    if (!detail) continue;
     for (const dz of [-7, 7]) forum.add(figure(x, 22.6, dz, 3.4, M.bronze)); // the bronze women of the arches
     forum.add(figure(x, 22.6, 0, 3.8, M.bronze));
   }
@@ -124,19 +124,20 @@ function addColumn(forum, detail) {
   }
   forum.add(box(8.4, 0.8, 8.4, M.marble, 0, y + 6.4, 0)); // cornice
   y += 7.2;
-  forum.add(cylinder(2.1, 2.5, 0.8, M.marble, 0, y, 0, 24)); // torus base
+  const sides = detail ? 24 : 12;
+  forum.add(cylinder(2.1, 2.5, 0.8, M.marble, 0, y, 0, sides)); // torus base
   y += 0.8;
 
-  const drums = detail ? 9 : 3;
+  const drums = 9;
   const drumHeight = 29.7 / drums;
-  const drum = cylinderGeometry(1.3, 1.45, drumHeight, 24);
+  const drum = cylinderGeometry(1.3, 1.45, drumHeight, sides, { open: true });
   const wreath = new THREE.TorusGeometry(1.5, 0.22, 8, 32).rotateX(Math.PI / 2);
   for (let i = 0; i < drums; i++) {
     forum.add(mesh(drum, porphyry, 0, y, 0));
     if (i > 0 && detail) forum.add(mesh(wreath, M.gildedBronze, 0, y, 0));
     y += drumHeight;
   }
-  forum.add(cylinder(1.9, 1.3, 1.6, M.marble, 0, y, 0, 24)); // capital
+  forum.add(cylinder(1.9, 1.3, 1.6, M.marble, 0, y, 0, sides)); // capital
   forum.add(box(3.8, 0.6, 3.8, M.marble, 0, y + 1.6, 0)); // abacus
   forum.add(createStatue(detail, y + 2.2));
 }
@@ -168,14 +169,15 @@ function porphyryMaterial() {
 /** Constantine as Helios: gilded, with a seven-point radiate crown, a spear and an orb. */
 function createStatue(detail, base) {
   const statue = new THREE.Group();
-  statue.add(cylinder(0.75, 1.0, 4.4, M.gold, 0, base, 0, 12));
-  statue.add(cylinder(1.3, 0.9, 1.3, M.gold, 0, base + 3.6, 0, 12)); // shoulders
-  statue.add(mesh(new THREE.SphereGeometry(0.6, 14, 10), M.gold, 0, base + 5.4, 0));
-  const spear = cylinder(0.08, 0.08, 7.5, M.gold, 1.25, base + 0.3, 0, 6);
+  const sides = detail ? 12 : 8;
+  statue.add(cylinder(0.75, 1.0, 4.4, M.gold, 0, base, 0, sides));
+  statue.add(cylinder(1.3, 0.9, 1.3, M.gold, 0, base + 3.6, 0, sides)); // shoulders
+  statue.add(mesh(detail ? new THREE.SphereGeometry(0.6, 14, 10) : new THREE.SphereGeometry(0.6, 8, 6), M.gold, 0, base + 5.4, 0));
+  const spear = cylinder(0.08, 0.08, 7.5, M.gold, 1.25, base + 0.3, 0, detail ? 6 : 4);
   spear.rotation.z = -0.06;
   statue.add(spear);
-  statue.add(cylinder(0.2, 0.25, 2.6, M.gold, -1.3, base + 2.6, 0.3, 8)); // arm holding the orb
-  statue.add(mesh(new THREE.SphereGeometry(0.45, 12, 8), M.gold, -1.3, base + 5.1, 0.3));
+  statue.add(cylinder(0.2, 0.25, 2.6, M.gold, -1.3, base + 2.6, 0.3, detail ? 8 : 6)); // arm holding the orb
+  statue.add(mesh(detail ? new THREE.SphereGeometry(0.45, 12, 8) : new THREE.SphereGeometry(0.45, 8, 6), M.gold, -1.3, base + 5.1, 0.3));
   if (detail) {
     for (let i = 0; i < 7; i++) {
       const angle = Math.PI * (0.05 + (0.9 * i) / 6); // a fan of rays over the brow
@@ -192,8 +194,8 @@ function addSenate(forum, detail, b) {
   const z = -(b + 13);
   forum.add(box(36, 16, 24, M.stone, 0, 0, z));
   forum.add(gableRoof(36, 24, 6, M.roof, 0, 16, z));
-  forum.add(faceToward(cylinder(6, 6, 14, M.stone, 0, 0, z - 12, 12, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, -1));
-  forum.add(faceToward(mesh(new THREE.SphereGeometry(6.2, 12, 6, 0, Math.PI, 0, Math.PI / 2).scale(1, 0.6, 1), M.lead, 0, 14, z - 12), 0, -1));
+  forum.add(faceToward(cylinder(6, 6, 14, M.stone, 0, 0, z - 12, detail ? 12 : 8, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, -1));
+  forum.add(faceToward(mesh(new THREE.SphereGeometry(6.2, detail ? 12 : 8, detail ? 6 : 4, 0, Math.PI, 0, Math.PI / 2).scale(1, 0.6, 1), M.lead, 0, 14, z - 12), 0, -1));
 
   // The porch, opening south onto the square.
   const porchZ = -(b - 1);
@@ -204,8 +206,8 @@ function addSenate(forum, detail, b) {
   forum.add(pediment);
   forum.add(box(25, 2.6, 0.4, M.marble, 0, 14, porchZ + 5)); // tympanum face
   forum.add(box(6, 9, 0.5, M.bronze, 0, 0.8, -(b + 1.1))); // the bronze doors from Ephesos
+  for (const x of [-9.75, -3.25, 3.25, 9.75]) forum.add(column(x, 0.8, porchZ + 3.6, 12, 0.6, M.porphyry, detail));
   if (detail) {
-    for (const x of [-9.75, -3.25, 3.25, 9.75]) forum.add(column(x, 0.8, porchZ + 3.6, 12, 0.6, M.porphyry));
     forum.add(windowed(-(b + 1.25)));
     // The colossal Athena from Lindos beside the entrance.
     forum.add(box(3, 3, 3, M.marble, -17, 0, -(b - 6)));
@@ -221,16 +223,19 @@ function windowed(z) {
 }
 
 /** The nymphaeum opposite the Senate: a screen of niches over a semicircular basin. */
-function addNymphaeum(forum, b) {
+function addNymphaeum(forum, detail, b) {
   const z = b - PORTICO - 2;
   forum.add(box(22, 9, 1.6, M.marble, 0, 0, z + 1.4));
-  for (let i = 0; i < 3; i++) {
-    const x = -7 + i * 7;
-    forum.add(box(2.4, 5, 0.6, M.opening, x, 2, z + 0.5));
-    forum.add(figure(x, 2.2, z + 0.5, 2.8, M.marble));
+  if (detail) {
+    for (let i = 0; i < 3; i++) {
+      const x = -7 + i * 7;
+      forum.add(box(2.4, 5, 0.6, M.opening, x, 2, z + 0.5));
+      forum.add(figure(x, 2.2, z + 0.5, 2.8, M.marble));
+    }
   }
   forum.add(box(22, 0.7, 2.2, M.marble, 0, 9, z + 1.4));
-  forum.add(faceToward(cylinder(7, 7, 1.2, M.marble, 0, 0, z - 0.2, 20, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, 1));
+  forum.add(faceToward(cylinder(7, 7, 1.2, M.marble, 0, 0, z - 0.2, detail ? 20 : 10, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, 1));
+  if (!detail) return;
   const basin = mesh(new THREE.CircleGeometry(6.2, 20, Math.PI, Math.PI).rotateX(-Math.PI / 2), M.water, 0, 0.9, z - 0.2);
   forum.add(basin);
 }
@@ -287,30 +292,33 @@ function figure(x, y, z, height, material) {
   return group;
 }
 
-function column(x, y, z, height, radius, material = M.marble) {
+/** Base, shaft and capital; the map keeps the same proportions with six-sided, open-ended shafts. */
+function column(x, y, z, height, radius, material = M.marble, detail = true) {
   const group = new THREE.Group();
+  const sides = detail ? 10 : 6;
+  const open = !detail;
   group.add(box(radius * 2.6, radius * 0.6, radius * 2.6, M.marble, 0, 0, 0));
-  group.add(cylinder(radius * 0.85, radius, height - radius * 1.6, material, 0, radius * 0.6, 0, 10));
-  group.add(cylinder(radius * 1.6, radius * 0.9, radius, M.marble, 0, height - radius, 0, 10));
+  group.add(cylinder(radius * 0.85, radius, height - radius * 1.6, material, 0, radius * 0.6, 0, sides, { open }));
+  group.add(cylinder(radius * 1.6, radius * 0.9, radius, M.marble, 0, height - radius, 0, sides, { open }));
   group.position.set(x, y, z);
   return group;
 }
 
 // ---------- ellipse helpers (shape angle 0 = east, PI/2 = north) ----------
 
-function ellipseGeometry(a, b) {
+function ellipseGeometry(a, b, segments = 48) {
   const shape = new THREE.Shape();
   shape.absellipse(0, 0, a, b, 0, Math.PI * 2, false);
-  return new THREE.ShapeGeometry(shape, 48).rotateX(-Math.PI / 2);
+  return new THREE.ShapeGeometry(shape, segments).rotateX(-Math.PI / 2);
 }
 
 /** A slab in the band between two ellipses, between two angles, `height` thick from `y`. */
-function ring(innerA, innerB, outerA, outerB, start, end, y, height, material) {
+function ring(innerA, innerB, outerA, outerB, start, end, y, height, material, curveSegments = 40) {
   const shape = new THREE.Shape();
   shape.absellipse(0, 0, outerA, outerB, start, end, false);
   shape.lineTo(innerA * Math.cos(end), innerB * Math.sin(end));
   shape.absellipse(0, 0, innerA, innerB, end, start, true);
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 40 });
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments });
   return mesh(geometry.rotateX(-Math.PI / 2), material, 0, y, 0);
 }
 

@@ -60,7 +60,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 537 },
     create: createHagiaSophia,
-    map: { at: [3.5, 2.5], rotation: -32, scale: 7 },
+    map: { at: [3.5, 2.5], rotation: -32, scale: 6 },
   },
   {
     id: 'hippodrome',
@@ -102,7 +102,7 @@ export const LANDMARKS = [
     region: 'constantinople',
     period: { from: 532 },
     create: createBasilicaCistern,
-    map: { at: [-5, 5.15], rotation: 0, scale: 4.3 },
+    map: { at: [-6.75, 5.15], rotation: 0, scale: 4.3, lift: 0.43 }, // lifted so the cutaway's floor sits on the map's solid ground, as the diorama shows it
   },
   {
     id: 'forum-of-constantine',

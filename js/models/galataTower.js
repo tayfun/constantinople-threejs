@@ -29,7 +29,7 @@ export function createGalataTower({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const tower = new THREE.Group();
   const radiusAt = (y) => BASE_RADIUS + (TOP_RADIUS - BASE_RADIUS) * (y / SHAFT);
-  const segments = detail ? 36 : 20;
+  const segments = detail ? 36 : 28;
 
   // Battered socle, the shaft and its string courses.
   tower.add(cylinder(BASE_RADIUS + 0.1, BASE_RADIUS + 1.4, 4, M.stoneDark, 0, 0, 0, segments));
@@ -37,14 +37,14 @@ export function createGalataTower({ lod = 'detail' } = {}) {
   for (const y of [11, 23, 35]) tower.add(cylinder(radiusAt(y) + 0.25, radiusAt(y) + 0.25, 0.5, M.stoneDark, 0, y, 0, segments));
 
   // Machicolation: corbels in two steps carrying the overhanging parapet, then the battlements.
-  const corbels = detail ? 36 : 18;
+  const corbels = detail ? 36 : 24;
   for (let i = 0; i < corbels; i++) {
     const angle = (i / corbels) * Math.PI * 2;
     tower.add(placeOnCircle(box(0.8, 1.2, 1.4, M.stoneDark), angle, TOP_RADIUS + 0.4, SHAFT - 1.2));
     tower.add(placeOnCircle(box(0.9, 1.1, 2, M.stoneDark), angle, TOP_RADIUS + 0.7, SHAFT));
   }
   tower.add(cylinder(TOP_RADIUS + 1.5, TOP_RADIUS + 1.5, PARAPET_TOP - SHAFT - 1.1, M.stone, 0, SHAFT + 1.1, 0, segments));
-  tower.add(mesh(crenelRingGeometry(TOP_RADIUS + 1.15, { count: detail ? 24 : 14, merlon: 1.1, height: 1.5, thickness: 0.7 }), M.stone, 0, PARAPET_TOP, 0));
+  tower.add(mesh(crenelRingGeometry(TOP_RADIUS + 1.15, { count: detail ? 24 : 18, merlon: 1.1, height: 1.5, thickness: 0.7 }), M.stone, 0, PARAPET_TOP, 0));
 
   // The conical cap, sitting inside the parapet, with a short drum under it.
   tower.add(cylinder(TOP_RADIUS + 0.2, TOP_RADIUS + 0.2, 1.8, M.stone, 0, PARAPET_TOP - 0.2, 0, segments));
@@ -62,17 +62,17 @@ export function createGalataTower({ lod = 'detail' } = {}) {
   const window = archGeometry(1.3, 2.6);
   const rows = detail
     ? [[8, 4, slit, 0.5], [15, 5, slit, 0.2], [20, 4, slit, 0], [27, 6, slit, 0.5], [32, 5, slit, 0.1], [39, 6, slit, 0.3], [42.5, 12, window, 0.25]]
-    : [[14, 4, slit, 0.5], [27, 5, slit, 0.2], [42.5, 10, window, 0.25]];
+    : [[14, 4, slit, 0.5], [27, 5, slit, 0.2], [39, 6, slit, 0.3], [42.5, 12, window, 0.25]];
   for (const [y, count, geometry, offset] of rows) {
     for (let i = 0; i < count; i++) {
       tower.add(placeOnCircle(mesh(geometry, M.opening), ((i + offset) / count) * Math.PI * 2, radiusAt(y) + 0.06, y));
     }
   }
 
-  // The colony walls leave the keep to either side and step down the hill.
-  const runs = detail
-    ? [[Math.PI * 0.8, [[0, 16, 13], [-5, 14, 12], [-10, 10, 11]]], [Math.PI * 0.2, [[0, 16, 13], [-5, 14, 12], [-10, 10, 11]]]]
-    : [[Math.PI * 0.8, [[0, 22, 12]]], [Math.PI * 0.2, [[0, 22, 12]]]];
+  // The colony walls leave the keep to either side and step down the hill. The map
+  // has no hill under the keep, so there the same stretch runs level in two steps.
+  const steps = detail ? [[0, 16, 13], [-5, 14, 12], [-10, 10, 11]] : [[0, 9, 13], [0, 10, 12]];
+  const runs = [[Math.PI * 0.8, steps], [Math.PI * 0.2, steps]];
   for (const [angle, steps] of runs) {
     const wall = new THREE.Group();
     let x = BASE_RADIUS - 1;

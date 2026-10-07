@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M, tinted } from './lib/materials.js';
 import {
-  archGeometry, archedWallGeometry, box, colonnade, crenelRingGeometry, crenellationGeometry, cylinder, cypress, dome,
+  archGeometry, archedWallGeometry, box, colonnade, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, cypress, dome,
   faceToward, gableRoof, groundPlane, hipRoof, mesh, regularOpenings, roundTree, windowRow,
 } from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
@@ -60,11 +60,12 @@ export function createBlachernae({ lod = 'detail' } = {}) {
   addTekfurSaray(quarter, detail, masonry);
   addChurch(quarter, detail);
 
-  for (const [x, z] of [[-100, 86], [-20, 70], [2, 84], [-112, 30], [8, 10], [-60, 84]]) quarter.add(cypress(12, x, TERRACE, z));
-  for (const [x, z] of [[-100, -28], [-80, -28], [-10, -28], [10, -28]]) quarter.add(cypress(9, x, LOWER_TERRACE, z));
-  for (const [x, z] of [[40, 20], [60, 30], [90, -10], [20, 50], [100, 40]]) quarter.add(roundTree(9, x, 0, z));
-
-  if (detail) quarter.add(groundPlane(320, 70, M.water, 5, -0.4, -125));
+  if (detail) {
+    for (const [x, z] of [[-100, 86], [-20, 70], [2, 84], [-112, 30], [8, 10], [-60, 84]]) quarter.add(cypress(12, x, TERRACE, z));
+    for (const [x, z] of [[-100, -28], [-80, -28], [-10, -28], [10, -28]]) quarter.add(cypress(9, x, LOWER_TERRACE, z));
+    for (const [x, z] of [[40, 20], [60, 30], [90, -10], [20, 50], [100, 40]]) quarter.add(roundTree(9, x, 0, z));
+    quarter.add(groundPlane(320, 70, M.water, 5, -0.4, -125));
+  }
   return finalizeModel(quarter);
 }
 
@@ -80,7 +81,7 @@ function addWalls(quarter, detail, masonry) {
     }
   }
   for (const [i, z] of [-30, 6, 42, 78].entries()) {
-    const sides = i % 2 ? 8 : 20;
+    const sides = i % 2 ? 8 : detail ? 20 : 12;
     quarter.add(cylinder(6.2, 6.5, 28, masonry, WALL_X - 3, 0, z, sides));
     quarter.add(cylinder(6.8, 6.8, 0.5, M.stone, WALL_X - 3, 27.5, z, sides));
     quarter.add(mesh(crenelRingGeometry(6.2, { count: 16, merlon: 1.3, height: 1.9, thickness: 0.9 }), masonry, WALL_X - 3, 28, z));
@@ -101,6 +102,11 @@ function addWalls(quarter, detail, masonry) {
     quarter.add(box(14, height, 14, masonry, WALL_X + 2, 0, z));
     quarter.add(box(14.6, 0.5, 14.6, M.stone, WALL_X + 2, height - 0.5, z));
     quarter.add(squareBattlements(14, WALL_X + 2, height, z, masonry));
+    if (residential) {
+      quarter.add(box(2, 0.5, 9, M.marble, WALL_X - 6, height - 9, z)); // the balcony looking west
+      quarter.add(box(0.4, 1.2, 9, M.marble, WALL_X - 6.8, height - 8.5, z));
+      for (const dz of [-4.3, 4.3]) quarter.add(box(2, 1.2, 0.4, M.marble, WALL_X - 6, height - 8.5, z + dz));
+    }
     if (!detail) continue;
     if (residential) {
       for (const dz of [-4, 0, 4]) {
@@ -108,9 +114,6 @@ function addWalls(quarter, detail, masonry) {
         window.rotation.y = -Math.PI / 2;
         quarter.add(window);
       }
-      quarter.add(box(2, 0.5, 9, M.marble, WALL_X - 6, height - 9, z)); // the balcony looking west
-      quarter.add(box(0.4, 1.2, 9, M.marble, WALL_X - 6.8, height - 8.5, z));
-      for (const dz of [-4.3, 4.3]) quarter.add(box(2, 1.2, 0.4, M.marble, WALL_X - 6, height - 8.5, z + dz));
     } else {
       for (const dz of [-3.5, 3.5]) {
         const slit = mesh(archGeometry(0.9, 1.8), M.opening, WALL_X - 5.03, height - 8, z + dz);
@@ -155,19 +158,25 @@ function addPalace(quarter, detail, masonry) {
   // The palace chapel: a domed cross-in-square beside the hall.
   quarter.add(box(16, 12, 16, M.brick, -8, y, 20));
   quarter.add(box(16.6, 0.5, 16.6, M.lead, -8, y + 12, 20));
+  const segments = detail ? 24 : 12;
   quarter.add(cylinder(4, 4, 4, M.brick, -8, y + 12, 20, 12));
-  quarter.add(dome(4, M.lead, -8, y + 16, 20, { heightScale: 0.8 }));
+  quarter.add(dome(4, M.lead, -8, y + 16, 20, { heightScale: 0.8, segments }));
   quarter.add(faceToward(cylinder(3, 3, 9, M.brick, -8, y, 10, 10, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 0, -1));
-  quarter.add(faceToward(dome(3, M.lead, -8, y + 9, 10, { phiLength: Math.PI, heightScale: 0.7 }), 0, -1));
+  quarter.add(faceToward(dome(3, M.lead, -8, y + 9, 10, { phiLength: Math.PI, heightScale: 0.7, segments }), 0, -1));
 
   // Loggia facing the Horn.
-  const loggia = detail
-    ? mesh(archedWallGeometry({ length: 50, height: 11, thickness: 1.2, openings: regularOpenings(50, 7, { width: 4.4, bottom: 0, spring: 6.5 }) }), M.marble)
-    : box(50, 11, 1.2, M.marble);
+  const loggia = mesh(archedWallGeometry({
+    length: 50, height: 11, thickness: 1.2, openings: regularOpenings(50, 7, { width: 4.4, bottom: 0, spring: 6.5 }), curveSegments: detail ? 10 : 4,
+  }), M.marble);
   loggia.position.set(-45, y, 2.5);
   quarter.add(loggia);
   quarter.add(box(50, 0.6, 6, M.lead, -45, y + 11, 4.5));
   quarter.add(box(50, 1, 0.5, M.marble, -45, y + 11.6, 2.5));
+  // A marble colonnade along the garden terrace below: full columns in the diorama, six-sided shafts on the map.
+  const walk = detail ? colonnade({ length: 100, count: 18, height: 6, radius: 0.4 }) : plainColonnade(100, 18, 6, 0.4);
+  walk.position.set(-45, LOWER_TERRACE, -30);
+  quarter.add(walk);
+  quarter.add(box(102, 0.5, 4, M.lead, -45, LOWER_TERRACE + 6, -29));
   if (detail) {
     const upper = windowRow({ count: 9, spacing: 5.2, width: 2.2, height: 4, y: 12 });
     upper.position.set(-45, y, 7.05);
@@ -178,12 +187,16 @@ function addPalace(quarter, detail, masonry) {
     const wing = windowRow({ count: 6, spacing: 5, width: 1.8, height: 3, y: 7.5 });
     wing.position.set(-6, y, 64.05);
     quarter.add(wing);
-    // A marble colonnade along the garden terrace below.
-    const walk = colonnade({ length: 100, count: 18, height: 6, radius: 0.4 });
-    walk.position.set(-45, LOWER_TERRACE, -30);
-    quarter.add(walk);
-    quarter.add(box(102, 0.5, 4, M.lead, -45, LOWER_TERRACE + 6, -29));
   }
+}
+
+/** Shafts only, for a colonnade seen from the map. */
+function plainColonnade(length, count, height, radius) {
+  const group = new THREE.Group();
+  const shaft = cylinderGeometry(radius * 0.85, radius, height, 6, { open: true });
+  const step = length / (count - 1);
+  for (let i = 0; i < count; i++) group.add(mesh(shaft, M.marble, -length / 2 + step * i, 0, 0));
+  return group;
 }
 
 function squareBattlements(size, x, y, z, material) {
@@ -207,23 +220,28 @@ function addTekfurSaray(quarter, detail, masonry) {
   quarter.add(box(length, height, depth, masonry, x, y, z));
   quarter.add(box(length + 0.8, 0.5, depth + 0.8, M.marble, x, y + 19.5, z)); // cornice
   quarter.add(gableRoof(length, depth, 3.6, M.roof, x, y + height, z, 0.4));
+  // The courtyard façade: diaper brickwork pierced by the arcade and its two rows of windows.
+  const facade = mesh(archedWallGeometry({
+    length,
+    height,
+    thickness: 1,
+    openings: [
+      ...regularOpenings(length, 4, { width: 6, bottom: 0, spring: 4.6, margin: 1.5 }),
+      ...regularOpenings(length, 5, { width: 2.4, bottom: 8.2, spring: 10.8, margin: 1.5 }),
+      ...regularOpenings(length, 7, { width: 1.9, bottom: 14.2, spring: 16.6, margin: 1.2 }),
+    ],
+    curveSegments: detail ? 10 : 4,
+  }), diaperMaterial());
+  facade.position.set(x, y, front - 0.5);
+  quarter.add(facade);
+  // Marble columns carrying the arcade, and marble sills under the windows.
+  for (let i = 1; i < 4; i++) quarter.add(cylinder(0.5, 0.55, 4.6, M.marble, x - 13.5 + i * 6.75, y, front - 0.4, detail ? 10 : 6));
+  quarter.add(box(length, 0.4, 1.4, M.marble, x, y + 7.8, front - 0.5));
+  quarter.add(box(length, 0.4, 1.4, M.marble, x, y + 13.8, front - 0.5));
+  // The courtyard walls to the south (paved in the diorama).
+  quarter.add(box(length + 2, 5, 1.2, masonry, x, y, front + 22));
+  for (const side of [-1, 1]) quarter.add(box(1.2, 5, 22, masonry, x + side * (length / 2 + 0.4), y, front + 11));
   if (detail) {
-    const facade = mesh(archedWallGeometry({
-      length,
-      height,
-      thickness: 1,
-      openings: [
-        ...regularOpenings(length, 4, { width: 6, bottom: 0, spring: 4.6, margin: 1.5 }),
-        ...regularOpenings(length, 5, { width: 2.4, bottom: 8.2, spring: 10.8, margin: 1.5 }),
-        ...regularOpenings(length, 7, { width: 1.9, bottom: 14.2, spring: 16.6, margin: 1.2 }),
-      ],
-    }), diaperMaterial());
-    facade.position.set(x, y, front - 0.5);
-    quarter.add(facade);
-    // Marble columns carrying the arcade, and marble sills under the windows.
-    for (let i = 1; i < 4; i++) quarter.add(cylinder(0.5, 0.55, 4.6, M.marble, x - 13.5 + i * 6.75, y, front - 0.4, 10));
-    quarter.add(box(length, 0.4, 1.4, M.marble, x, y + 7.8, front - 0.5));
-    quarter.add(box(length, 0.4, 1.4, M.marble, x, y + 13.8, front - 0.5));
     // The top floor has windows on every side; a balcony looks east over the city.
     const north = windowRow({ count: 7, spacing: 4, width: 1.9, height: 4.3, y: 14.2 });
     north.position.set(x, y, z - depth / 2 - 0.03);
@@ -237,12 +255,7 @@ function addTekfurSaray(quarter, detail, masonry) {
     }
     quarter.add(box(2.4, 0.5, 8, M.marble, x + length / 2 + 1.2, y + 13.7, z));
     quarter.add(box(0.4, 1.1, 8, M.marble, x + length / 2 + 2.2, y + 14.2, z));
-    // The courtyard, walled, to the south.
     quarter.add(groundPlane(length, 22, M.paving, x, y + 0.05, front + 11));
-    quarter.add(box(length + 2, 5, 1.2, masonry, x, y, front + 22));
-    for (const side of [-1, 1]) quarter.add(box(1.2, 5, 22, masonry, x + side * (length / 2 + 0.4), y, front + 11));
-  } else {
-    quarter.add(box(length, height, 1, diaperMaterial(), x, y, front - 0.5));
   }
 }
 
@@ -253,14 +266,15 @@ function addChurch(quarter, detail) {
   quarter.add(box(40, 16, 13, M.brick, x, 0, z));
   quarter.add(gableRoof(40, 13, 4, M.roof, x, 16, z));
   quarter.add(box(40.6, 0.5, 26.6, M.lead, x, 10, z));
+  const segments = detail ? 24 : 12;
   quarter.add(cylinder(4.5, 4.5, 3.5, M.brick, x, 18.5, z, 16));
-  quarter.add(dome(4.5, M.lead, x, 22, z, { heightScale: 0.7 }));
+  quarter.add(dome(4.5, M.lead, x, 22, z, { heightScale: 0.7, segments }));
   quarter.add(faceToward(cylinder(6, 6, 13, M.brick, x + 20, 0, z, 14, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
-  quarter.add(faceToward(dome(6, M.lead, x + 20, 13, z, { phiLength: Math.PI, heightScale: 0.8 }), 1, 0));
+  quarter.add(faceToward(dome(6, M.lead, x + 20, 13, z, { phiLength: Math.PI, heightScale: 0.8, segments }), 1, 0));
   // The narthex, arcaded, at the west end.
-  const narthex = detail
-    ? mesh(archedWallGeometry({ length: 26, height: 8, thickness: 6, openings: regularOpenings(26, 5, { width: 3, bottom: 0, spring: 4.5 }) }), M.brick)
-    : box(26, 8, 6, M.brick);
+  const narthex = mesh(archedWallGeometry({
+    length: 26, height: 8, thickness: 6, openings: regularOpenings(26, 5, { width: 3, bottom: 0, spring: 4.5 }), curveSegments: detail ? 10 : 4,
+  }), M.brick);
   narthex.rotation.y = Math.PI / 2;
   narthex.position.set(x - 23, 0, z);
   quarter.add(narthex);
@@ -268,11 +282,11 @@ function addChurch(quarter, detail) {
 
   // The round chapel of the Holy Soros, which held the Virgin's robe.
   quarter.add(cylinder(7.5, 7.5, 11, M.brick, x - 36, 0, z + 14, 16));
-  quarter.add(dome(7.5, M.lead, x - 36, 11, z + 14, { heightScale: 0.65 }));
+  quarter.add(dome(7.5, M.lead, x - 36, 11, z + 14, { heightScale: 0.65, segments }));
 
   // The holy spring (hagiasma) under its own small dome.
   quarter.add(box(7, 4, 7, M.marble, x + 8, 0, z + 24));
-  quarter.add(dome(3.4, M.lead, x + 8, 4, z + 24));
+  quarter.add(dome(3.4, M.lead, x + 8, 4, z + 24, { segments }));
   if (detail) {
     for (const side of [-1, 1]) {
       const windows = windowRow({ count: 7, spacing: 5, width: 1.5, height: 2.8, y: 11.5 });

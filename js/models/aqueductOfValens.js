@@ -42,7 +42,7 @@ export function createAqueductOfValens({ lod = 'detail' } = {}) {
   aqueduct.add(structure);
 
   const bays = Math.round((HALF * 2) / SPAN);
-  const wall = new THREE.ExtrudeGeometry(arcadeShape(ground, bays), { depth: WIDTH, bevelEnabled: false, curveSegments: 8 });
+  const wall = new THREE.ExtrudeGeometry(arcadeShape(ground, bays), { depth: WIDTH, bevelEnabled: false, curveSegments: detail ? 8 : 6 });
   structure.add(mesh(wall.translate(0, 0, -WIDTH / 2), M.stone));
 
   // String course between the orders, cornice, and the channel with its parapets on top.
@@ -52,8 +52,8 @@ export function createAqueductOfValens({ lod = 'detail' } = {}) {
   structure.add(box(HALF * 2, 0.4, WIDTH - 3.2, M.stone, 0, TOP + 0.7, 0)); // channel bed
   structure.add(groundPlane(HALF * 2, 2.2, M.water, 0, TOP + 2.3, 0)); // the water in the specus
 
+  addDetails(structure, bays, ground, detail);
   if (detail) {
-    addDetails(structure, bays);
     structure.add(createValleyGround());
     structure.add(groundPlane(8, 160, M.paving, -28, valley(-28) + 0.08, 0));
     const rnd = createRandom(368);
@@ -73,27 +73,36 @@ export function createAqueductOfValens({ lod = 'detail' } = {}) {
   return finalizeModel(aqueduct);
 }
 
-/** Brick arch rings, imposts and pier footings that give the ashlar its rhythm. */
-function addDetails(structure, bays) {
-  const upperRing = archRingGeometry(UPPER_RADIUS, UPPER_SPRING - UPPER_BOTTOM, 0.42);
+/**
+ * Brick arch rings, imposts and pier footings that give the ashlar its
+ * rhythm. The map keeps all of them (they are what makes the bridge read as
+ * an aqueduct from above), drawn with fewer curve segments.
+ */
+function addDetails(structure, bays, ground, detail) {
+  const segments = detail ? 8 : 4;
+  const upperRing = archRingGeometry(UPPER_RADIUS, UPPER_SPRING - UPPER_BOTTOM, 0.42, segments);
+  const lowerRings = new Map(); // by jamb height, shared between bays on level ground
   for (let i = 0; i < bays; i++) {
     const centre = -HALF + (i + 0.5) * SPAN;
-    const deep = valley(centre) < LOWER_SPRING - 2;
+    const deep = ground(centre) < LOWER_SPRING - 2;
     for (const side of [-1, 1]) {
       const ring = mesh(upperRing, M.brick, centre, UPPER_BOTTOM, side * (WIDTH / 2 + 0.02));
       if (side < 0) ring.rotation.y = Math.PI;
       structure.add(ring);
       if (!deep) continue;
-      const foot = valley(centre);
-      const lower = mesh(archRingGeometry(RADIUS, LOWER_SPRING - foot, 0.5), M.brick, centre, foot, side * (WIDTH / 2 + 0.02));
+      const foot = ground(centre);
+      const jamb = +(LOWER_SPRING - foot).toFixed(3);
+      if (!lowerRings.has(jamb)) lowerRings.set(jamb, archRingGeometry(RADIUS, jamb, 0.5, segments));
+      const lower = mesh(lowerRings.get(jamb), M.brick, centre, foot, side * (WIDTH / 2 + 0.02));
       if (side < 0) lower.rotation.y = Math.PI;
       structure.add(lower);
     }
-    // Pier footings where the piers stand deep in the valley, and imposts at the springing.
+    // Pier footings where the piers stand deep in the valley, and imposts at the springing
+    // (the map, on level ground, keeps the imposts; its footings would lie buried in the terrain).
     const pierX = -HALF + i * SPAN;
-    const foot = valley(pierX);
-    if (foot < LOWER_SPRING - 3) {
-      structure.add(box(SPAN - RADIUS * 2 + 1.2, 1.6, WIDTH + 1.4, M.stone, pierX, foot - 0.3, 0));
+    const foot = ground(pierX);
+    if (foot < LOWER_SPRING - 3 && Math.abs(pierX) < HALF - 1) {
+      if (detail) structure.add(box(SPAN - RADIUS * 2 + 1.2, 1.6, WIDTH + 1.4, M.stone, pierX, foot - 0.3, 0));
       structure.add(box(SPAN - RADIUS * 2 + 0.6, 0.5, WIDTH + 0.6, M.stone, pierX, LOWER_SPRING - 0.5, 0));
     }
   }
@@ -104,10 +113,10 @@ function addDetails(structure, bays) {
  * y = 0 to `spring` (the arch crown is then at spring + radius), as a thin
  * plate facing +z.
  */
-function archRingGeometry(radius, spring, thickness) {
+function archRingGeometry(radius, spring, thickness, segments = 8) {
   const outer = archShape((radius + thickness) * 2, spring + radius + thickness, 0, 0);
   outer.holes.push(archShape(radius * 2, spring + radius, 0, 0));
-  return new THREE.ShapeGeometry(outer, 8);
+  return new THREE.ShapeGeometry(outer, segments);
 }
 
 /** Elevation of the arcade: ground-following foot, lower arches, upper arches as holes. */

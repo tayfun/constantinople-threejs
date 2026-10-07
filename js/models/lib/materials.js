@@ -17,14 +17,16 @@ export const materials = {
   plasterOchre: standard({ map: textures.plaster(), color: 0xf0c49a }),
   granite: standard({ map: textures.granite(), roughness: 0.5 }),
   hieroglyphs: standard({ map: textures.hieroglyphs(), roughness: 0.5 }),
-  porphyry: standard({ color: 0x6e2438, roughness: 0.4 }),
+  porphyry: standard({ color: 0x7a2a44, roughness: 0.45 }),
 
   // roofs and metal
   roof: standard({ map: textures.roofTiles(), roughness: 0.75 }),
   lead: standard({ map: textures.lead(), roughness: 0.5, metalness: 0.4 }),
-  gold: standard({ color: 0xe0b04a, metalness: 1, roughness: 0.28 }),
-  bronze: standard({ color: 0x86592f, metalness: 0.9, roughness: 0.42 }),
-  gildedBronze: standard({ map: textures.bronzePlates(), metalness: 0.75, roughness: 0.35 }),
+  // The scenes have no environment map, and a fully metallic surface with nothing to reflect
+  // renders near-black; the metals keep enough dielectric response to shade in the sunlight.
+  gold: standard({ color: 0xf0c552, metalness: 0.6, roughness: 0.3 }),
+  bronze: standard({ color: 0x8a5c30, metalness: 0.55, roughness: 0.45 }),
+  gildedBronze: standard({ map: textures.bronzePlates(), metalness: 0.5, roughness: 0.38 }),
   iron: standard({ color: 0x38373b, metalness: 0.85, roughness: 0.5 }),
 
   // timber, cloth, ships

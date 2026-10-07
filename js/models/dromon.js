@@ -37,7 +37,7 @@ function createShip(detail) {
   const ship = new THREE.Group();
   const { geometry, deck, halfBeamAtX } = createHull({
     length: LENGTH, beam: BEAM, depth: 2.2, bowRise: 1, sternRise: 3,
-    segments: detail ? 44 : 20, ribs: detail ? 12 : 8,
+    segments: detail ? 44 : 28, ribs: detail ? 12 : 10,
   });
   ship.add(mesh(geometry, M.hull, 0, GUNWALE, 0));
   ship.add(mesh(deck, M.wood, 0, DECK, 0));
@@ -78,15 +78,11 @@ function createShip(detail) {
   ship.add(mesh(cylinderGeometry(0.3, 0.2, 0.4, 10).rotateZ(-Math.PI / 2), M.gold, LENGTH / 2 + 1.9, DECK + 0.95, 0)); // lion's-head nozzle
 
   // Wooden castles for archers, one each side between the masts.
-  if (detail) {
-    for (const side of [-1, 1]) {
-      const z = side * (halfBeamAtX(2) - 1);
-      ship.add(box(2.4, 2.2, 1.6, M.wood, 2, DECK, z));
-      ship.add(box(2.7, 0.2, 1.9, M.wood, 2, DECK + 2.2, z));
-      for (let i = 0; i < 3; i++) ship.add(box(0.5, 0.5, 0.15, M.wood, 2 - 1 + i, DECK + 2.4, z + side * 0.9));
-    }
-  } else {
-    ship.add(box(2.4, 2.2, 3.4, M.wood, 2, DECK, 0));
+  for (const side of [-1, 1]) {
+    const z = side * (halfBeamAtX(2) - 1);
+    ship.add(box(2.4, 2.2, 1.6, M.wood, 2, DECK, z));
+    ship.add(box(2.7, 0.2, 1.9, M.wood, 2, DECK + 2.2, z));
+    for (let i = 0; i < 3; i++) ship.add(box(0.5, 0.5, 0.15, M.wood, 2 - 1 + i, DECK + 2.4, z + side * 0.9));
   }
 
   // The stern: the captain's tent, the standard, and the quarter rudders.
@@ -104,11 +100,11 @@ function createShip(detail) {
     ship.add(tiller);
   }
 
-  // The pavesade: shields hung along the deck between the oarsmen.
-  const shield = cylinderGeometry(0.42, 0.42, 0.08, 12).rotateX(Math.PI / 2);
+  // The pavesade: shields hung along the deck between the oarsmen (without their bosses on the map).
+  const shield = cylinderGeometry(0.42, 0.42, 0.08, detail ? 12 : 8).rotateX(Math.PI / 2);
   const boss = cylinderGeometry(0.1, 0.1, 0.14, 8).rotateX(Math.PI / 2);
   const shieldColours = [cloth(0xa3202a), cloth(0xd8a933), cloth(0x2a4d8f), cloth(0xe6dcc6)];
-  const shields = detail ? 16 : 8;
+  const shields = detail ? 16 : 12;
   for (let i = 0; i < shields; i++) {
     const x = -9.5 + i * (19.5 / (shields - 1));
     for (const side of [-1, 1]) {
@@ -131,7 +127,7 @@ function createShip(detail) {
     const fore = new THREE.Vector3(x + Math.cos(tilt) * half, GUNWALE + height - 1.5 - Math.sin(tilt) * half, 0.5);
     const peak = new THREE.Vector3(x - Math.cos(tilt) * half, GUNWALE + height - 1.5 + Math.sin(tilt) * half, 0.5);
     const clew = new THREE.Vector3(x - half * 0.55, GUNWALE + 1.4, 0.5);
-    ship.add(mesh(triangleSailGeometry(fore, peak, clew, 0.9, detail ? 10 : 5), M.sail));
+    ship.add(mesh(triangleSailGeometry(fore, peak, clew, 0.9, detail ? 10 : 6), M.sail));
   }
 
   finalizeModel(ship);
@@ -154,13 +150,12 @@ function createShip(detail) {
   return ship;
 }
 
-/** Two banks of 25 oars a side (one bank on the map), pivoting at their oarports. */
+/** Two banks of 25 oars a side (11 a side on the map), pivoting at their oarports. */
 function createOars(detail, halfBeamAtX) {
   const group = new THREE.Group();
   group.userData.dynamic = true;
-  const banks = detail
-    ? [{ y: 0.6, count: 25, length: 7, phase: 0 }, { y: GUNWALE + 0.15, count: 25, length: 9.5, phase: 0.35 }]
-    : [{ y: 0.9, count: 14, length: 8, phase: 0 }];
+  const count = detail ? 25 : 11;
+  const banks = [{ y: 0.6, count, length: 7, phase: 0 }, { y: GUNWALE + 0.15, count, length: 9.5, phase: 0.35 }];
 
   const pivots = [];
   for (const [b, bank] of banks.entries()) {

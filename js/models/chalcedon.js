@@ -27,6 +27,11 @@ import { pointInPolygon, distanceToPolyline } from '../util/geo.js';
  * rotunda holding the martyr's silver coffin. A pair of eagles wheel above
  * the town, the birds that, legend says, carried Constantine's builders'
  * cords across to Byzantium. The sea lies to the west (-x) and south (+z).
+ *
+ * The map build is the same town pared down: the walls, agora, theatre,
+ * shrine, temple and harbour keep their massing and materials, but lose the
+ * windows, tower parapets, boats, eagles, ground planes and most of the
+ * scattered houses (the map supplies its own).
  */
 
 const GROUND = 3;
@@ -52,27 +57,38 @@ const THEATRE = [36, -30];
 const EUPHEMIA = [14, -83];
 const TEMPLE = [-62, 28];
 const PLASTER = [0xf4e9d4, 0xf7f1e3, 0xe9d3ae, 0xf1dcbf, 0xdcb98e, 0xf5eee0, 0xe6c8a0];
+const MAP_MERLONS = { merlon: 1.8, gap: 1.4 }; // coarser battlements, for the map build
+
+/** Square posts standing in for a colonnade on the map: the same rhythm and height at a tenth of the triangles. */
+function posts({ length, count, height, radius = 0.4, material = M.marble }) {
+  const group = new THREE.Group();
+  const step = count > 1 ? length / (count - 1) : 0;
+  for (let i = 0; i < count; i++) group.add(box(radius * 2, height, radius * 2, material, -length / 2 + step * i, 0, 0));
+  return group;
+}
 
 export function createChalcedon({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
   const city = new THREE.Group();
   const rnd = createRandom(685);
-  const elevation = detail ? hillHeight : () => GROUND;
+  const elevation = hillHeight;
 
   if (detail) {
     city.add(mesh(landGeometry(COAST, GROUND, 6), M.grass));
     // Sea only beyond the shore: the plane's landward edges meet the land's bounds (x 130, z ±110).
     city.add(groundPlane(300, 220, M.water, -20, 0.6, 0));
-    const outline = [];
-    for (let i = 0; i < 28; i++) {
-      const a = (i / 28) * Math.PI * 2;
-      const wobble = 1 + 0.06 * Math.sin(a * 3 + 1) + 0.04 * Math.sin(a * 5);
-      outline.push([ACROPOLIS.x + Math.cos(a) * ACROPOLIS.rx * wobble, ACROPOLIS.z + Math.sin(a) * ACROPOLIS.rz * wobble]);
-    }
-    city.add(mesh(landGeometry(outline, HILL, HILL - GROUND + 0.5), tinted('grass', 0xd8cf9c)));
   } else {
     city.position.y = -GROUND; // stand directly on the map's land
   }
+  // The acropolis rise, in both builds, so the theatre has its hill to lean on.
+  const outline = [];
+  const sides = detail ? 28 : 18;
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * Math.PI * 2;
+    const wobble = 1 + 0.06 * Math.sin(a * 3 + 1) + 0.04 * Math.sin(a * 5);
+    outline.push([ACROPOLIS.x + Math.cos(a) * ACROPOLIS.rx * wobble, ACROPOLIS.z + Math.sin(a) * ACROPOLIS.rz * wobble]);
+  }
+  city.add(mesh(landGeometry(outline, HILL, HILL - GROUND + 0.5), tinted('grass', 0xd8cf9c)));
 
   addWalls(city, detail, rnd);
   addStreets(city);
@@ -99,6 +115,7 @@ export function createChalcedon({ lod = 'detail' } = {}) {
 /** The circuit of walls with its towers and gates; the north-east stretch is still the stumps Valens left. */
 function addWalls(city, detail, rnd) {
   const { height, thickness } = WALL;
+  const merlons = detail ? {} : MAP_MERLONS;
   const n = CIRCUIT.length;
   const tower = (x, z, size, h, angle) => {
     const block = box(size, h, size, M.stone, x, GROUND, z);
@@ -143,11 +160,9 @@ function addWalls(city, detail, rnd) {
       const curtain = box(b - a, height, thickness, M.stone, x, GROUND, z);
       curtain.rotation.y = angle;
       city.add(curtain);
-      if (detail) {
-        const parapet = mesh(crenellationGeometry(b - a), M.stone, x, GROUND + height, z);
-        parapet.rotation.y = angle;
-        city.add(parapet);
-      }
+      const parapet = mesh(crenellationGeometry(b - a, merlons), M.stone, x, GROUND + height, z);
+      parapet.rotation.y = angle;
+      city.add(parapet);
       // Interval towers along the longer spans.
       for (let t = a + 30; t < b - 12; t += 30) tower(...at(t), 6, height + 3, angle);
     }
@@ -161,11 +176,9 @@ function addWalls(city, detail, rnd) {
       way.rotation.y = angle;
       city.add(way);
       for (const side of [-1, 1]) tower(...at(t + side * 9), 6, height + 4.5, angle);
-      if (detail) {
-        const parapet = mesh(crenellationGeometry(12), M.stone, x, GROUND + height + 3, z);
-        parapet.rotation.y = angle;
-        city.add(parapet);
-      }
+      const parapet = mesh(crenellationGeometry(12, merlons), M.stone, x, GROUND + height + 3, z);
+      parapet.rotation.y = angle;
+      city.add(parapet);
     }
     // A corner tower at each angle of the circuit.
     tower(x0, z0, 7.5, height + 4.5, angle);
@@ -223,27 +236,25 @@ function halfDiscGeometry(radius, height, segments = 16) {
 /** The theatre, its cavea stepping up against the acropolis and looking west over the town to the strait. */
 function addTheatre(city, detail) {
   const [x, z] = THEATRE;
-  const rings = detail ? 6 : 4;
+  const rings = 6;
   for (let k = 0; k < rings; k++) {
     const r = 9 + (k + 1) * (12 / rings);
-    const tier = mesh(halfDiscGeometry(r, 1.1 * (k + 1), detail ? 18 : 10), k === rings - 1 ? M.stoneDark : M.stone, x, GROUND, z);
+    const tier = mesh(halfDiscGeometry(r, 1.1 * (k + 1), detail ? 18 : 12), k === rings - 1 ? M.stoneDark : M.stone, x, GROUND, z);
     tier.rotation.y = -Math.PI / 2; // curve towards +x, the open side west
     city.add(tier);
   }
-  const orchestra = mesh(halfDiscGeometry(8.6, 0.15, 16), M.paving, x, GROUND, z);
+  const orchestra = mesh(halfDiscGeometry(8.6, 0.15, detail ? 16 : 12), M.paving, x, GROUND, z);
   orchestra.rotation.y = -Math.PI / 2;
   city.add(orchestra);
   // The stage building (skene) across the open side, with its columned front.
   city.add(box(4, 1.3, 22, M.stone, x - 10.5, GROUND, z));
   city.add(box(5, 8, 28, M.stone, x - 15, GROUND, z));
   city.add(gableRoof(28, 5, 1.6, M.roof, x - 15, GROUND + 8, z, 0.4).rotateY(Math.PI / 2));
-  if (detail) {
-    const front = colonnade({ length: 20, count: 6, height: 4.5, radius: 0.3 });
-    front.rotation.y = Math.PI / 2;
-    front.position.set(x - 12, GROUND + 1.3, z);
-    city.add(front);
-    for (let i = 0; i < 2; i++) city.add(box(2, 4.5, 3, M.stone, x - 11.5, GROUND + 1.3, z + (i ? 12.5 : -12.5)));
-  }
+  const front = (detail ? colonnade : posts)({ length: 20, count: 6, height: 4.5, radius: 0.3 });
+  front.rotation.y = Math.PI / 2;
+  front.position.set(x - 12, GROUND + 1.3, z);
+  city.add(front);
+  for (let i = 0; i < 2; i++) city.add(box(2, 4.5, 3, M.stone, x - 11.5, GROUND + 1.3, z + (i ? 12.5 : -12.5)));
 }
 
 // ---------- St Euphemia ----------
@@ -392,9 +403,9 @@ function addHarbour(city, detail) {
   const beacon = [-24, 104];
   city.add(cylinder(2.4, 2.8, 6.5, M.stone, beacon[0], GROUND - 0.4, beacon[1], 10));
   city.add(cylinder(2.9, 2.9, 0.6, M.stoneDark, beacon[0], GROUND + 6.1, beacon[1], 10));
+  city.add(cylinder(1.3, 1.3, 0.9, M.iron, beacon[0], GROUND + 6.7, beacon[1], 8));
+  city.add(mesh(new THREE.IcosahedronGeometry(1, 0), M.fire, beacon[0], GROUND + 8, beacon[1]));
   if (detail) {
-    city.add(cylinder(1.3, 1.3, 0.9, M.iron, beacon[0], GROUND + 6.7, beacon[1], 8));
-    city.add(mesh(new THREE.IcosahedronGeometry(1, 0), M.fire, beacon[0], GROUND + 8, beacon[1]));
     for (const [bx, bz] of [[-62, 60], [-48, 62.3], [-36, 64], [-21, 69.2], [-7, 75.6], [5, 81]]) city.add(cylinder(0.45, 0.5, 1.1, M.stoneDark, bx, GROUND + 0.35, bz, 8));
   }
   // Warehouses between the south wall and the quay, doors to the water.
@@ -423,7 +434,7 @@ function scatterTown(city, rnd, { detail, elevation }) {
       if (pointInPolygon([x, z], CIRCUIT) !== inside || distanceToPolyline([x, z], CIRCUIT, true) < r + 4) continue;
       if (!pointInPolygon([x, z], COAST) || distanceToPolyline([x, z], COAST, true) < r + 3) continue;
       if (inside && (Math.abs(x - 10) < r + 4 || Math.abs(z - 30) < r + 4)) continue; // the streets
-      if (detail && Math.abs(acropolisRadius(x, z) - 1) * Math.min(ACROPOLIS.rx, ACROPOLIS.rz) < r + 3) continue;
+      if (Math.abs(acropolisRadius(x, z) - 1) * Math.min(ACROPOLIS.rx, ACROPOLIS.rz) < r + 3) continue;
       if (avoid.some(([ax, az, ar]) => Math.hypot(x - ax, z - az) < ar)) continue;
       const tall = rnd.chance(0.3);
       const house = createHouse({
@@ -437,30 +448,30 @@ function scatterTown(city, rnd, { detail, elevation }) {
       placed++;
     }
   };
-  place(detail ? 48 : 22, [-34, -62, 114, 48], true);
-  if (detail) {
-    place(7, [40, -104, 104, -74], false);
-    place(4, [-70, 36, -44, 54], false);
-  }
+  place(detail ? 48 : 28, [-34, -62, 114, 48], true);
+  place(detail ? 7 : 3, [40, -104, 104, -74], false);
+  if (detail) place(4, [-70, 36, -44, 54], false);
 }
 
 /** Cypresses about the town, and olives on the acropolis and the headland. */
 function addPlanting(city, rnd, detail, elevation) {
-  for (let i = 0; i < (detail ? 26 : 8); i++) {
+  for (let i = 0; i < (detail ? 26 : 14); i++) {
     const x = rnd.range(-88, 126);
     const z = rnd.range(-104, 104);
     if (!pointInPolygon([x, z], COAST) || distanceToPolyline([x, z], COAST, true) < 4 || distanceToPolyline([x, z], CIRCUIT, true) < 5) continue;
     if (Math.hypot(x - AGORA[0], z - AGORA[1]) < 24 || Math.hypot(x - THEATRE[0], z - THEATRE[1]) < 26) continue;
     if (Math.hypot(x - EUPHEMIA[0], z - EUPHEMIA[1]) < 26 || Math.hypot(x - TEMPLE[0], z - TEMPLE[1]) < 24) continue;
-    if (Math.abs(x - 10) < 6 || Math.abs(z - 30) < 6 || (detail && Math.abs(acropolisRadius(x, z) - 1) * 30 < 3)) continue;
+    if (Math.abs(x - 10) < 6 || Math.abs(z - 30) < 6 || Math.abs(acropolisRadius(x, z) - 1) * 30 < 3) continue;
     if (z > 52 && x > -40 && x < 20) continue; // the harbour strip
     const y = elevation(x, z);
     city.add(rnd.chance(0.5) ? cypress(rnd.range(9, 13), x, y, z) : roundTree(rnd.range(5, 8), x, y, z));
   }
-  if (!detail) return;
-  // Olive groves in rows on the open ground south-east of the walls.
+  // Olive groves in rows on the open ground south-east of the walls; the map thins them to every other tree.
   for (let row = 0; row < 5; row++) {
-    for (let k = 0; k < 5; k++) city.add(roundTree(4.5, 72 + row * 9 + (k % 2) * 3, GROUND, 64 + k * 8 + row * 1.5));
+    for (let k = 0; k < 5; k++) {
+      if (!detail && (row + k) % 2) continue;
+      city.add(roundTree(4.5, 72 + row * 9 + (k % 2) * 3, GROUND, 64 + k * 8 + row * 1.5));
+    }
   }
 }
 

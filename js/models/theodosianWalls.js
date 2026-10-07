@@ -1,12 +1,16 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
-  archGeometry, archedWallGeometry, box, crenelRingGeometry, crenellationGeometry, cylinder, flag, groundPlane, mesh, stairs,
+  archGeometry, archedWallGeometry, box, boxGeometry, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, flag,
+  groundPlane, mesh, stairs,
 } from './lib/primitives.js';
 import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
+import { createWaterMaterial } from './lib/water.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
 import { createRandom } from '../util/random.js';
+import { offsetPolyline, samplePolyline } from '../util/geo.js';
 import { GOLDEN_GATE, LAND_HEIGHT, LAND_WALLS } from '../data/geography.js';
 
 /**
@@ -23,7 +27,12 @@ import { GOLDEN_GATE, LAND_HEIGHT, LAND_WALLS } from '../data/geography.js';
  *    towers set between the inner ones;
  *  - the parateichion terrace, then the moat, 20 m wide and 7–10 m deep,
  *    crossed by dams, its scarp crowned by a crenellated breastwork.
- * Map: the whole circuit traced along LAND_WALLS in map units (absolute).
+ * Map: the whole circuit traced along LAND_WALLS in map units (absolute),
+ * with the same three lines — crenellated inner wall with square and
+ * octagonal towers, lower outer wall with its smaller towers set between
+ * them, and the stone-lined moat behind its breastwork — in the same banded
+ * masonry, everything about six times taller than true scale like the other
+ * landmarks on the map.
  *
  * Sources: Wikipedia, Walls of Constantinople; Turkish Archaeological News,
  * Theodosian Land Walls.
@@ -175,10 +184,22 @@ function battlements(width, depth, x, y, z, material) {
  * by bands of five brick courses, seven to eleven bands in the 12 m of the
  * inner wall. Painted locally so the bands keep their real 1.5 m rhythm.
  */
-let masonryCache = null;
-function wallMasonry() {
-  if (masonryCache) return masonryCache;
-  const tile = 3; // metres: two bands per tile
+const masonryCache = new Map();
+let masonryCanvas = null;
+function wallMasonry(tile = 3) { // two bands per tile; 3 m in the diorama
+  if (masonryCache.has(tile)) return masonryCache.get(tile);
+  if (!masonryCanvas) masonryCanvas = paintMasonry();
+  const texture = new THREE.CanvasTexture(masonryCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1 / tile, 1 / tile);
+  texture.anisotropy = 8;
+  const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0 });
+  masonryCache.set(tile, material);
+  return material;
+}
+
+function paintMasonry() {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -214,26 +235,75 @@ function wallMasonry() {
     const s = 0.6 + rnd.next() * 1.4;
     ctx.fillRect(rnd.next() * size, rnd.next() * size, s, s);
   }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1 / tile, 1 / tile);
-  texture.anisotropy = 8;
-  masonryCache = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0 });
-  return masonryCache;
+  return canvas;
 }
 
 // ---------- map circuit ----------
 
-const moatMaterial = new THREE.MeshStandardMaterial({ color: 0x2f5f6a, roughness: 0.3 });
+/**
+ * Map proportions, derived from the diorama at about six times true scale:
+ * the 12 m inner wall becomes 0.75 units, its towers (11 m wide, 20 m high,
+ * 55 m apart) 0.56 wide and 1.25 high; the outer wall, 17 m out, stands at
+ * 0.9; the moat, 20 m wide at 33–54 m, becomes 1.1 wide at 2.1. Offsets are
+ * to the west (left of travel, since the line runs south → north), which is
+ * the field side.
+ */
+const MAP = {
+  inner: { height: 0.75, thickness: 0.3, towerSpacing: 2.75, towerWidth: 0.56, towerDepth: 0.78, towerHeight: 1.25 },
+  outer: { height: 0.5, thickness: 0.16, offset: 0.9, towerWidth: 0.4, towerHeight: 0.8 },
+  moat: { offset: 2.1, width: 1.1 },
+  merlon: { pitch: 0.2, width: 0.1, height: 0.1, thickness: 0.08 },
+  bandTile: 0.1875, // two masonry bands: eight bands up the inner wall, as in the diorama
+};
+
+const moatMaterial = createWaterMaterial({ scale: 5 });
 
 function createMapCircuit() {
   const walls = new THREE.Group();
   const y = LAND_HEIGHT;
-  // Offsets are to the west (left of travel, since the line runs south → north).
-  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.75, thickness: 0.3, y, towerSpacing: 2.6, towerWidth: 0.62, towerHeight: 1.25 }), mapStone));
-  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.5, thickness: 0.16, y, offset: 0.9, towerSpacing: 2.6, towerWidth: 0.4, towerHeight: 0.75 }), mapStone));
-  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.04, thickness: 1.1, y: y - 0.02, offset: 2.1 }), moatMaterial));
+  const masonry = wallMasonry(MAP.bandTile);
+  const { inner, outer, moat, merlon } = MAP;
+
+  // Inner wall: the curtain with its battlements along the field side, and the great towers.
+  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: inner.height, thickness: inner.thickness, y }), masonry));
+  walls.add(mesh(merlonsAlong(LAND_WALLS, { ...merlon, offset: inner.thickness / 2 - merlon.thickness / 2, y: y + inner.height }), masonry));
+  const towers = [];
+  const caps = [];
+  samplePolyline(LAND_WALLS, inner.towerSpacing / 2).forEach(({ point, dir }, i) => {
+    const angle = Math.atan2(dir[1], dir[0]);
+    const place = (geometry, out) => geometry.rotateY(angle).translate(point[0] - dir[1] * out, y, -point[1] - dir[0] * out);
+    if (i % 2 === 0) {
+      // Square and octagonal towers in turn, projecting towards the field like the diorama's.
+      const octagon = i % 4 === 2;
+      const out = octagon ? inner.thickness * 0.7 : inner.towerDepth / 2 - inner.thickness / 2 + 0.03;
+      const radius = inner.towerWidth * 0.58;
+      towers.push(place(octagon
+        ? cylinderGeometry(radius, radius * 1.03, inner.towerHeight, 8).rotateY(Math.PI / 8)
+        : boxGeometry(inner.towerWidth, inner.towerHeight, inner.towerDepth), out));
+      caps.push(place((octagon
+        ? cylinderGeometry(radius + 0.03, radius + 0.03, 0.03, 8).rotateY(Math.PI / 8)
+        : boxGeometry(inner.towerWidth + 0.06, 0.03, inner.towerDepth + 0.06)).translate(0, inner.towerHeight - 0.03, 0), out));
+    } else {
+      // The outer wall's smaller towers, square and round in turn, set between the inner ones.
+      const round = i % 4 === 3;
+      const out = outer.offset + (round ? 0.08 : outer.towerWidth / 2 - outer.thickness / 2 + 0.02);
+      towers.push(place(round
+        ? cylinderGeometry(outer.towerWidth * 0.55, outer.towerWidth * 0.55, outer.towerHeight, 10)
+        : boxGeometry(outer.towerWidth, outer.towerHeight, outer.towerWidth), out));
+    }
+  });
+  walls.add(mesh(mergeGeometries(towers), masonry));
+  walls.add(mesh(mergeGeometries(caps), mapStone));
+
+  // Outer wall, lower and thinner, across the peribolos terrace.
+  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: outer.height, thickness: outer.thickness, y, offset: outer.offset }), masonry));
+
+  // The moat: water between stone-lined scarps, the inner one crowned by its breastwork.
+  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.04, thickness: moat.width, y: y - 0.02, offset: moat.offset }), moatMaterial));
+  for (const edge of [-1, 1]) {
+    walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.05, thickness: 0.06, y, offset: moat.offset + edge * (moat.width / 2 + 0.02) }), mapStone));
+  }
+  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.12, thickness: 0.07, y, offset: moat.offset - moat.width / 2 - 0.1 }), mapStone));
 
   // The Golden Gate: a triumphal marble gateway between two great towers.
   const golden = new THREE.Group();
@@ -248,4 +318,14 @@ function createMapCircuit() {
   golden.rotation.y = Math.atan2(e0 - e1, n1 - n0);
   walls.add(golden);
   return finalizeModel(walls);
+}
+
+/** Merlons at a regular pitch along a polyline of [east, north] points, offset to its left, as one geometry. */
+function merlonsAlong(points, { pitch, width, height, thickness, offset = 0, y = 0 }) {
+  const line = offset ? offsetPolyline(points, offset) : points;
+  const parts = [];
+  for (const { point, dir } of samplePolyline(line, pitch)) {
+    parts.push(boxGeometry(width, height, thickness).rotateY(Math.atan2(dir[1], dir[0])).translate(point[0], y, -point[1]));
+  }
+  return mergeGeometries(parts);
 }

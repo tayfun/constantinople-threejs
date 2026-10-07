@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M } from '../models/lib/materials.js';
 import {
-  boxGeometry, coneGeometry, cylinder, cylinderGeometry, domeGeometry, hipRoofGeometry, mesh,
+  box, boxGeometry, coneGeometry, cylinder, cylinderGeometry, domeGeometry, hipRoofGeometry, mesh, crenelRingGeometry, pyramid,
 } from '../models/lib/primitives.js';
 import { mapStone, wallAlongGeometry } from '../models/lib/mapWalls.js';
 import { createRandom } from '../util/random.js';
@@ -9,7 +9,7 @@ import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
-  ARKLA_ISLET, ASIA, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, GALATA, GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT,
+  ARKLA_ISLET, ASIA, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, GALATA, GALATA_SHORE, GALATA_WALLS, LAND_HEIGHT, METERS_TO_MAP,
   EUROPE, LAND_WALLS, MESE, MESE_NORTH, SEA_WALLS, magnify,
 } from '../data/geography.js';
 
@@ -289,11 +289,29 @@ function createSeaWalls() {
   return mesh(geometry, mapStone);
 }
 
-/** The islet of Arkla off Chrysopolis, with its small tower. */
+/**
+ * The islet of Damalis (Arkla) off Chrysopolis: the rock ringed by the Komnenian
+ * curtain wall and crowned by the tower that became the Maiden's Tower. Built
+ * in metres to the same design as the Chrysopolis diorama (addDamalis there),
+ * then scaled like the landmarks so the two views match.
+ */
 function createArkla() {
   const [east, north] = ARKLA_ISLET;
-  const group = new THREE.Group();
-  group.add(cylinder(0.75, 0.9, 0.5, M.stoneDark, east, -0.1, -north, 14));
-  group.add(cylinder(0.22, 0.22, 0.9, M.stone, east, 0.4, -north, 10));
-  return group;
+  const islet = new THREE.Group();
+  islet.add(cylinder(12, 15, 3.4, M.stoneDark, 0, -1, 0, 14));
+  islet.add(cylinder(11.5, 11.5, 1.4, M.stone, 0, 2.4, 0, 14));
+  islet.add(cylinder(10.6, 10.6, 3.2, M.stone, 0, 3.8, 0, 14, { open: true }));
+  islet.add(cylinder(9.6, 9.6, 3.2, M.stone, 0, 3.8, 0, 14, { open: true }));
+  islet.add(mesh(new THREE.RingGeometry(9.6, 10.6, 14).rotateX(-Math.PI / 2), M.stone, 0, 7, 0));
+  islet.add(mesh(crenelRingGeometry(10.1, { count: 16, merlon: 1.2, height: 0.9, thickness: 0.7 }), M.stone, 0, 7, 0));
+  islet.add(box(6, 4.2, 4, M.stone, 10, 0, 2)); // landing stage towards the shore
+  islet.add(cylinder(4.2, 4.6, 9, M.stone, 0, 3.8, 0, 10));
+  islet.add(cylinder(4.6, 4.6, 0.8, M.stoneDark, 0, 12.8, 0, 10));
+  islet.add(cylinder(3.9, 3.9, 5.5, M.wood, 0, 13.6, 0, 10));
+  islet.add(cylinder(4.5, 4.5, 0.8, M.wood, 0, 19.1, 0, 10));
+  islet.add(pyramid(6.6, 6.6, 4.8, M.lead, 0, 19.9, 0));
+  islet.scale.setScalar(6 * METERS_TO_MAP);
+  islet.position.set(east, 0, -north);
+  islet.rotation.y = Math.PI; // the landing stage faces the Chrysopolis shore to the east
+  return islet;
 }

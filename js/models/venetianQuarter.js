@@ -53,10 +53,8 @@ export function createVenetianQuarter({ lod = 'detail' } = {}) {
 
   addFondaco(quarter, detail);
   addChurch(quarter, detail);
-  if (detail) {
-    addEmbolos(quarter);
-    addMarket(quarter);
-  }
+  addEmbolos(quarter, detail);
+  if (detail) addMarket(quarter);
 
   if (detail) {
     quarter.add(groundPlane(280, 70, M.water, 0, 0, -80));
@@ -91,13 +89,18 @@ export function createVenetianQuarter({ lod = 'detail' } = {}) {
 function addFondaco(quarter, detail) {
   quarter.add(box(70, 12, 14, M.plaster, 0, 0, -10));
   quarter.add(hipRoof(70, 14, 4, M.roof, 0, 12, -10));
-  const arcade = detail
-    ? mesh(archedWallGeometry({ length: 70, height: 6.5, thickness: 1.2, openings: regularOpenings(70, 10, { width: 4.4, bottom: 0, spring: 3.6 }) }), M.banded)
-    : box(70, 6.5, 1.2, M.banded);
+  const arcade = mesh(archedWallGeometry({
+    length: 70, height: 6.5, thickness: 1.2, openings: regularOpenings(70, 10, { width: 4.4, bottom: 0, spring: 3.6 }), curveSegments: detail ? 10 : 4,
+  }), M.banded);
   arcade.position.set(0, 0, -19.5);
   quarter.add(arcade);
   quarter.add(box(70, 0.5, 3.4, M.stone, 0, 6.5, -18.4));
   quarter.add(box(70, 0.5, 14.6, M.stone, 0, 11.8, -10)); // cornice
+  // Two wings enclosing the yard behind, with a well.
+  for (const x of [-32, 32]) {
+    quarter.add(box(6, 7, 20, M.plaster, x, 0, 7));
+    quarter.add(gableRoof(6, 20, 2.4, M.roof, x, 7, 7, 0.3));
+  }
   if (detail) {
     const windows = windowRow({ count: 12, spacing: 5.5, width: 1.4, height: 2.6, y: 8 });
     windows.position.set(0, 0, -17.05);
@@ -107,11 +110,6 @@ function addFondaco(quarter, detail) {
     back.position.set(0, 0, -2.95);
     quarter.add(back);
     for (const x of [-25, 0, 25]) quarter.add(mesh(new THREE.ShapeGeometry(doorShape(3, 4)), M.opening, x, 0, -2.95)); // doors to the yard
-    // Two wings enclosing the yard behind, with a well.
-    for (const x of [-32, 32]) {
-      quarter.add(box(6, 7, 20, M.plaster, x, 0, 7));
-      quarter.add(gableRoof(6, 20, 2.4, M.roof, x, 7, 7, 0.3));
-    }
     quarter.add(cylinder(1.2, 1.2, 1, M.marble, 0, 0, 8, 12));
   }
 }
@@ -173,44 +171,50 @@ function addChurch(quarter, detail) {
   quarter.add(pyramid(5.6, 5.6, 7, M.roof, tx, 28.6, tz));
   quarter.add(cylinder(0.08, 0.08, 1.6, M.gold, tx, 35.4, tz, 6));
   quarter.add(dome(0.45, M.gold, tx, 36.5, tz, { segments: 8 }));
-  if (detail) {
-    for (let i = 0; i < 4; i++) {
-      const angle = (i * Math.PI) / 2;
-      const belfry = windowRow({ count: 2, spacing: 2, width: 1.2, height: 3, y: 24.7 });
-      belfry.rotation.y = angle;
-      belfry.position.set(tx + Math.sin(angle) * 2.73, 0, tz + Math.cos(angle) * 2.73);
-      quarter.add(belfry);
-      const slits = windowRow({ count: 1, spacing: 0, width: 0.5, height: 1.4, y: 14 });
-      slits.rotation.y = angle;
-      slits.position.set(tx + Math.sin(angle) * 2.73, 0, tz + Math.cos(angle) * 2.73);
-      quarter.add(slits);
-    }
+  // The belfry's twin lights on each face; the slits of the storeys below only in the diorama.
+  const standOff = detail ? 2.73 : 2.8;
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const belfry = windowRow({ count: 2, spacing: 2, width: 1.2, height: 3, y: 24.7 });
+    belfry.rotation.y = angle;
+    belfry.position.set(tx + Math.sin(angle) * standOff, 0, tz + Math.cos(angle) * standOff);
+    quarter.add(belfry);
+    if (!detail) continue;
+    const slits = windowRow({ count: 1, spacing: 0, width: 0.5, height: 1.4, y: 14 });
+    slits.rotation.y = angle;
+    slits.position.set(tx + Math.sin(angle) * 2.73, 0, tz + Math.cos(angle) * 2.73);
+    quarter.add(slits);
   }
 }
 
 /**
  * The embolos: the market street running the length of the quarter, with
  * arcaded houses on both sides — shops under the arches, lodgings above —
- * and the traders' stalls under their awnings in the roadway.
+ * and the traders' stalls under their awnings in the roadway. The map keeps
+ * the two arcaded ranges and leaves out the windows and the stalls.
  */
-function addEmbolos(quarter) {
+function addEmbolos(quarter, detail) {
   const street = 12;
   const awnings = [0xa3202a, 0xd8a933, 0x2a4d8f, 0x3a7a3c, 0xe8e0cc];
   for (const side of [-1, 1]) {
     const z = 12 + side * (street / 2 + 4.5);
     const length = side < 0 ? 56 : 120; // the fondaco's wings stand on the north side
     const x = side < 0 ? 54 : 22;
-    const arcade = mesh(archedWallGeometry({ length, height: 4.6, thickness: 1, openings: regularOpenings(length, Math.round(length / 5), { width: 3.4, bottom: 0, spring: 2.6 }) }), M.stone);
+    const arcade = mesh(archedWallGeometry({
+      length, height: 4.6, thickness: 1, openings: regularOpenings(length, Math.round(length / 5), { width: 3.4, bottom: 0, spring: 2.6 }), curveSegments: detail ? 10 : 4,
+    }), M.stone);
     arcade.position.set(x, 0, z - side * 4);
     quarter.add(arcade);
     quarter.add(box(length, 8.4, 9, M.plasterOchre, x, 0, z));
     quarter.add(box(length + 0.4, 0.4, 9.4, M.stone, x, 4.6, z));
     quarter.add(gableRoof(length, 9, 2.8, M.roof, x, 8.4, z, 0.4));
+    if (!detail) continue;
     const windows = windowRow({ count: Math.round(length / 4), spacing: 4, width: 0.9, height: 1.6, y: 5.8 });
     windows.position.set(x, 0, z - side * 4.53);
     windows.rotation.y = side < 0 ? 0 : Math.PI;
     quarter.add(windows);
   }
+  if (!detail) return;
   for (let i = 0; i < 9; i++) {
     const x = -32 + i * 12;
     const z = 12 + (i % 2 ? 2.5 : -2.5);
