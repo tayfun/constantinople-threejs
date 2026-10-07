@@ -155,7 +155,7 @@ function addColumns(cistern, { columnsAlong, columnsAcross, columnX, columnZ, de
       for (let j = 0; j < columnsAcross; j++) {
         const isHenEye = henEye && i === henEye.i && j === henEye.j;
         const onMedusa = medusa.some(([mi, mj]) => mi === i && mj === j);
-        matrix.makeTranslation(columnX(i), FLOOR + y + (onMedusa && index > 0 ? 1.4 : 0), columnZ(j));
+        matrix.makeTranslation(columnX(i), FLOOR + y + (onMedusa && index > 0 ? MEDUSA_SIZE : 0), columnZ(j));
         if (isHenEye || (onMedusa && index === 0)) matrix.scale(new THREE.Vector3(0, 0, 0));
         columns.setMatrixAt(n, matrix);
         columns.setColorAt(n, index === 1 ? colours[n] : colours[n].clone().lerp(new THREE.Color(0xffffff), 0.6));
@@ -176,29 +176,44 @@ function addColumns(cistern, { columnsAlong, columnsAcross, columnX, columnZ, de
     cistern.add(placeOnCircle(mesh(tear, tinted('marble', 0xa8b7a6)), angle, 0.45, y, columnX(henEye.i), columnZ(henEye.j)));
   }
 
-  // The two Medusa heads reused as column bases in the north-west corner: one on its side, one upside down.
+  // The two Medusa heads reused as column bases in the north-west corner: one on its side, one upside
+  // down, their faces turned east into the open hall, as the visitor sees them from the walkway today.
   [[0, 0, Math.PI / 2], [1, 0, Math.PI]].forEach(([i, j, roll]) => {
     const head = createMedusaHead();
-    head.position.set(columnX(i), FLOOR + 1.1, columnZ(j));
+    head.position.set(columnX(i), FLOOR + MEDUSA_SIZE / 2, columnZ(j));
     head.rotation.x = roll;
     cistern.add(head);
   });
 }
 
+/** Size of each Medusa block: the originals are about 1.5 m, drawn larger so they read from across the cistern. */
+const MEDUSA_SIZE = 3.2;
+
+/** A Medusa block, centred on its own middle, with the face carved on the +x side. */
 function createMedusaHead() {
   const head = new THREE.Group();
-  head.add(box(2.2, 2.2, 2.2, M.stoneDark, 0, -1.1, 0));
-  const face = mesh(new THREE.SphereGeometry(0.95, 16, 12), M.marble, 0, 0, 1.0);
-  face.scale.set(0.9, 1, 0.5);
+  const half = MEDUSA_SIZE / 2;
+  const stone = tinted('marble', 0xd9d2c4);
+  const carved = tinted('marble', 0xb9b0a0);
+  head.add(box(MEDUSA_SIZE, MEDUSA_SIZE, MEDUSA_SIZE, stone, 0, -half, 0));
+  // The face in relief: cheeks, brow and the open mouth.
+  const face = mesh(new THREE.SphereGeometry(half * 0.78, 16, 12), carved, half - 0.1, 0, 0);
+  face.scale.set(0.45, 1, 0.9);
   head.add(face);
-  const snake = new THREE.TorusGeometry(0.17, 0.06, 6, 10);
-  for (let k = 0; k < 11; k++) {
-    const angle = (k / 11) * Math.PI * 2;
-    const curl = mesh(snake, M.marble, Math.cos(angle) * 0.85, Math.sin(angle) * 0.85, 1.1);
-    curl.rotation.y = 0.4;
+  head.add(mesh(new THREE.SphereGeometry(0.18, 8, 6), M.opening, half + 0.45, -0.35, 0));
+  for (const side of [-1, 1]) {
+    head.add(mesh(new THREE.SphereGeometry(0.17, 8, 6), M.opening, half + 0.5, 0.3, side * 0.42));
+    head.add(box(0.2, 0.12, 0.6, carved, half + 0.5, 0.55, side * 0.42)); // brows
+  }
+  // Snakes for hair: a ring of coils round the face, knotted under the chin.
+  const snake = new THREE.TorusGeometry(0.22, 0.08, 6, 12);
+  for (let k = 0; k < 13; k++) {
+    const angle = (k / 13) * Math.PI * 2;
+    const curl = mesh(snake, carved, half + 0.15, Math.sin(angle) * (half * 0.82), Math.cos(angle) * (half * 0.82));
+    curl.rotation.y = Math.PI / 2;
+    curl.rotation.x = angle;
     head.add(curl);
   }
-  for (const side of [-1, 1]) head.add(mesh(new THREE.SphereGeometry(0.1, 6, 5), M.opening, side * 0.3, 0.15, 1.42));
   return head;
 }
 
