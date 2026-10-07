@@ -69,7 +69,7 @@ export class MapView {
     this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut) }));
     this.scene.add(createShipping());
 
-    this.labelRenderer = createLabelRenderer(container);
+    this.labelRenderer = createLabelRenderer(container, { canvas: renderer.domElement });
     this.addLabels(regions, onSelectRegion);
 
     this.animated = [];

@@ -2,9 +2,20 @@ import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer
 
 /** HTML labels pinned to points in the 3D map. */
 
-export function createLabelRenderer(container) {
+/**
+ * canvas: the WebGL canvas under the labels. Labels take pointer events for
+ * clicks and hover, which would otherwise swallow the wheel; scrolling over a
+ * label is passed on to the canvas so the map still zooms.
+ */
+export function createLabelRenderer(container, { canvas = null } = {}) {
   const renderer = new CSS2DRenderer();
   renderer.domElement.className = 'label-layer';
+  if (canvas) {
+    renderer.domElement.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      canvas.dispatchEvent(new WheelEvent('wheel', event));
+    }, { passive: false });
+  }
   container.appendChild(renderer.domElement);
   return renderer;
 }
