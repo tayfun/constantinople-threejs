@@ -86,26 +86,33 @@ function courses(ctx, size, rnd, { top, bottom, courseHeight, minLength, maxLeng
 
 // ---------- building surfaces ----------
 
-/** Byzantine banded masonry: limestone courses with a band of red brick. */
+/**
+ * Byzantine banded masonry: pale limestone courses with a band of red brick.
+ * Seen from the map the textures blur to their average colour, so the stone
+ * is kept cooler and the brick deeper than the sandy ground and the cream
+ * houses, and the landmarks read as masonry rather than melting into the town.
+ */
 export const bandedMasonry = () =>
   paintTexture('banded', { tile: 6 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [196, 182, 154]);
-    courses(ctx, w, rnd, { top: 0, bottom: 176, courseHeight: 22, minLength: 34, maxLength: 72, mortar: 3, color: [216, 201, 170], amount: 0.14 });
-    courses(ctx, w, rnd, { top: 176, bottom: 256, courseHeight: 10, minLength: 22, maxLength: 30, mortar: 3.5, color: [172, 88, 60], amount: 0.22 });
+    fill(ctx, w, h, [176, 170, 152]);
+    courses(ctx, w, rnd, { top: 0, bottom: 176, courseHeight: 22, minLength: 34, maxLength: 72, mortar: 3, color: [206, 200, 182], amount: 0.14 });
+    courses(ctx, w, rnd, { top: 176, bottom: 256, courseHeight: 10, minLength: 22, maxLength: 30, mortar: 3.5, color: [158, 66, 44], amount: 0.3 });
     speckle(ctx, w, h, rnd, { count: 2500, color: [110, 90, 70], amount: 0.4, size: 1.4, alpha: 0.18 });
   });
 
 export const ashlar = () =>
   paintTexture('ashlar', { tile: 4 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [178, 166, 142]);
-    courses(ctx, w, rnd, { top: 0, bottom: h, courseHeight: 32, minLength: 40, maxLength: 96, mortar: 3, color: [208, 194, 164], amount: 0.13 });
+    // Küfeki limestone: creamy grey, cooler than the earth of the streets.
+    fill(ctx, w, h, [166, 162, 150]);
+    courses(ctx, w, rnd, { top: 0, bottom: h, courseHeight: 32, minLength: 40, maxLength: 96, mortar: 3, color: [198, 194, 180], amount: 0.13 });
     speckle(ctx, w, h, rnd, { count: 3000, color: [120, 105, 85], amount: 0.4, size: 1.5, alpha: 0.2 });
   });
 
+/** Byzantine brickwork: thin bricks in thick beds of rosy, brick-dust mortar. */
 export const brick = () =>
   paintTexture('brick', { tile: 2 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [205, 191, 163]);
-    courses(ctx, w, rnd, { top: 0, bottom: h, courseHeight: 12.8, minLength: 38, maxLength: 48, mortar: 4, color: [168, 84, 56], amount: 0.25 });
+    fill(ctx, w, h, [196, 158, 132]);
+    courses(ctx, w, rnd, { top: 0, bottom: h, courseHeight: 12.8, minLength: 38, maxLength: 48, mortar: 4, color: [160, 70, 46], amount: 0.3 });
   });
 
 export const plaster = () =>
@@ -118,8 +125,8 @@ export const plaster = () =>
 
 export const marble = () =>
   paintTexture('marble', { tile: 3 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [238, 233, 224]);
-    blotches(ctx, w, h, rnd, { count: 20, color: [220, 214, 204], radius: 50, alpha: 0.5 });
+    fill(ctx, w, h, [246, 243, 236]);
+    blotches(ctx, w, h, rnd, { count: 20, color: [228, 224, 216], radius: 50, alpha: 0.5 });
     ctx.lineWidth = 1.2;
     for (let i = 0; i < 16; i++) {
       ctx.strokeStyle = `rgba(120, 112, 104, ${0.08 + rnd.next() * 0.14})`;
@@ -263,11 +270,11 @@ export const mosaic = () =>
 
 // Map-scale ground (1 unit = 100 m): near-flat colour with faint, broad variation, like a painted map.
 
-/** Streets and open ground of the towns: plain, dusty earth. */
+/** Streets and open ground of the towns: plain, dusty earth, a shade darker than the marble and limestone that stand on it. */
 export const cityGround = () =>
   paintTexture('cityGround', { tile: 10 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [226, 210, 174]);
-    blotches(ctx, w, h, rnd, { count: 20, color: [214, 194, 152], radius: 60, alpha: 0.18 });
+    fill(ctx, w, h, [212, 194, 156]);
+    blotches(ctx, w, h, rnd, { count: 20, color: [198, 178, 138], radius: 60, alpha: 0.2 });
   });
 
 /** Countryside meadow: fresh green with soft, broad patches. */

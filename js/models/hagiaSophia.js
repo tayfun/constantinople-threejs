@@ -16,25 +16,25 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   const church = new THREE.Group();
 
   // Nave block (aisles + galleries) and the central tower carrying the dome.
-  church.add(box(62, 28, 72, M.plaster, 0, 0, 0));
+  church.add(box(62, 28, 72, M.brick, 0, 0, 0));
   church.add(box(62.8, 0.7, 72.8, M.lead, 0, 28, 0));
-  church.add(box(34, 12, 37, M.plaster, 0, 28, 0));
+  church.add(box(34, 12, 37, M.brick, 0, 28, 0));
 
   // The four great buttress piers on the north and south flanks.
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) {
-      church.add(box(9, 38, 9, M.plaster, sx * 14, 0, sz * 38));
+      church.add(box(9, 38, 9, M.brick, sx * 14, 0, sz * 38));
       church.add(box(9.6, 0.6, 9.6, M.lead, sx * 14, 38, sz * 38));
     }
   }
 
   // Drum with 40 windows separated by small buttresses, and the shallow dome.
-  church.add(cylinder(16.6, 16.6, 4, M.plaster, 0, 40, 0, 40));
+  church.add(cylinder(16.6, 16.6, 4, M.brick, 0, 40, 0, 40));
   church.add(dome(16.5, M.lead, 0, 44, 0, { heightScale: 0.52, segments: 40 }));
   const drumWindow = archGeometry(1.5, 2.8);
   for (let i = 0; i < 40; i++) {
     const angle = (i / 40) * Math.PI * 2;
-    church.add(placeOnCircle(box(1.1, 4.4, 1.8, M.plaster), angle, 16.9, 40));
+    church.add(placeOnCircle(box(1.1, 4.4, 1.8, M.brick), angle, 16.9, 40));
     if (detail) church.add(placeOnCircle(mesh(drumWindow, M.opening), angle + Math.PI / 40, 16.63, 40.6));
   }
 
@@ -51,17 +51,17 @@ export function createHagiaSophia({ lod = 'detail' } = {}) {
   }
 
   // Eastern apse with its own semi-dome.
-  church.add(faceToward(cylinder(7.5, 7.5, 22, M.plaster, 31, 0, 0, 20, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
+  church.add(faceToward(cylinder(7.5, 7.5, 22, M.brick, 31, 0, 0, 20, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
   church.add(faceToward(dome(7.5, M.lead, 31, 22, 0, { heightScale: 0.8, phiLength: Math.PI, segments: 16 }), 1, 0));
 
   // Inner and outer narthex on the west front.
-  church.add(box(10, 22, 66, M.plaster, -36, 0, 0));
+  church.add(box(10, 22, 66, M.brick, -36, 0, 0));
   church.add(box(10.8, 0.6, 66.8, M.lead, -36, 22, 0));
-  church.add(box(7, 14, 66, M.plaster, -44.5, 0, 0));
+  church.add(box(7, 14, 66, M.brick, -44.5, 0, 0));
   church.add(box(7.8, 0.6, 66.8, M.lead, -44.5, 14, 0));
 
   // Skeuophylakion: the round treasury north-east of the church.
-  church.add(cylinder(6, 6, 9, M.plaster, 36, 0, -46, 20));
+  church.add(cylinder(6, 6, 9, M.brick, 36, 0, -46, 20));
   church.add(dome(6, M.lead, 36, 9, -46, { heightScale: 0.55 }));
 
   if (detail) {
@@ -118,13 +118,13 @@ function addAtrium(church) {
   const east = -48;
   const depth = east - west;
   for (const side of [-1, 1]) {
-    church.add(box(depth, 9, 1.5, M.plaster, (west + east) / 2, 0, side * 33));
+    church.add(box(depth, 9, 1.5, M.brick, (west + east) / 2, 0, side * 33));
     church.add(box(depth, 0.5, 8.5, M.lead, (west + east) / 2, 8.5, side * 29.5));
     const columns = colonnade({ length: depth - 4, count: 11, height: 8.5, radius: 0.45 });
     columns.position.set((west + east) / 2, 0, side * 25.8);
     church.add(columns);
   }
-  church.add(box(1.5, 9, 67.5, M.plaster, west, 0, 0));
+  church.add(box(1.5, 9, 67.5, M.brick, west, 0, 0));
   church.add(box(8.5, 0.5, 58, M.lead, west + 3.5, 8.5, 0));
   const westColumns = colonnade({ length: 50, count: 12, height: 8.5, radius: 0.45 });
   westColumns.rotation.y = Math.PI / 2;
