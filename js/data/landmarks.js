@@ -33,6 +33,9 @@ import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from '
  *                 units, so small monuments don't crowd their host's label
  * map.erguvans    how many Judas trees in flower to plant just outside the clearing
  *
+ * maps            where the title's Google Maps link goes: the place's name, searched
+ *                 for, if it still stands; else [latitude, longitude] of where it stood
+ *
  * period.from     year it was built or founded (negative = BC)
  * period.to       year it was demolished or ceased to exist (absent if it still stands)
  * period.ending   'demolished' or 'ended' (a quarter, a ship type, the chain)
@@ -81,6 +84,7 @@ export const LANDMARKS = [
     period: { from: 537 },
     create: createHagiaSophia,
     map: { at: [3.5, 2.5], rotation: -32, scale: 6, erguvans: 6 },
+    maps: 'Hagia Sophia, Istanbul',
   },
   {
     id: 'hippodrome',
@@ -88,6 +92,7 @@ export const LANDMARKS = [
     period: { from: 203, fromApprox: true, to: 1600, toApprox: true, ending: 'demolished' },
     create: createHippodrome,
     map: HIPPODROME,
+    maps: [41.00639, 28.97583], // Sultanahmet Square
   },
   {
     id: 'obelisk-of-theodosius',
@@ -95,6 +100,7 @@ export const LANDMARKS = [
     period: { from: 390 },
     create: SPINA_MONUMENTS['obelisk-of-theodosius'].create,
     map: onSpina('obelisk-of-theodosius', 3),
+    maps: 'Obelisk of Theodosius, Istanbul',
   },
   {
     id: 'serpent-column',
@@ -102,6 +108,7 @@ export const LANDMARKS = [
     period: { from: 330, fromApprox: true },
     create: SPINA_MONUMENTS['serpent-column'].create,
     map: onSpina('serpent-column', 3),
+    maps: 'Serpent Column, Istanbul',
   },
   {
     id: 'walled-obelisk',
@@ -109,6 +116,7 @@ export const LANDMARKS = [
     period: { from: 400, fromApprox: true },
     create: SPINA_MONUMENTS['walled-obelisk'].create,
     map: onSpina('walled-obelisk', 3),
+    maps: 'Walled Obelisk, Istanbul',
   },
   {
     id: 'great-palace',
@@ -116,6 +124,7 @@ export const LANDMARKS = [
     period: { from: 330, to: 1453, toApprox: true, ending: 'demolished' },
     create: createGreatPalace,
     map: GREAT_PALACE,
+    maps: [41.00583, 28.97722],
   },
   {
     id: 'judas-tree',
@@ -123,6 +132,7 @@ export const LANDMARKS = [
     period: { from: 330, fromApprox: true }, // with the palace gardens it flowers in
     create: createJudasTree,
     map: inPalaceGardens(JUDAS_TREES[0], 4),
+    maps: [41.00583, 28.97722], // the gardens of the Great Palace
   },
   {
     id: 'basilica-cistern',
@@ -130,6 +140,7 @@ export const LANDMARKS = [
     period: { from: 532 },
     create: createBasilicaCistern,
     map: { at: [-6.75, 5.15], rotation: 0, scale: 4.3, lift: 0.43, erguvans: 3 }, // lifted so the cutaway's floor sits on the map's solid ground, as the diorama shows it
+    maps: 'Basilica Cistern, Istanbul',
   },
   {
     id: 'forum-of-constantine',
@@ -137,6 +148,7 @@ export const LANDMARKS = [
     period: { from: 330, fromApprox: true },
     create: createForumOfConstantine,
     map: { at: FORUM_OF_CONSTANTINE, rotation: -4, scale: 4.9, erguvans: 4 },
+    maps: 'Column of Constantine, Istanbul',
   },
   {
     id: 'aqueduct-of-valens',
@@ -144,6 +156,7 @@ export const LANDMARKS = [
     period: { from: 368 },
     create: createAqueductOfValens,
     map: { at: [-21, 9.5], rotation: -25, scale: 4.2, clearance: 0.9, erguvans: 5 },
+    maps: 'Valens Aqueduct, Istanbul',
   },
   {
     id: 'blachernae',
@@ -151,6 +164,7 @@ export const LANDMARKS = [
     period: { from: 500, fromApprox: true },
     create: createBlachernae,
     map: { at: [-30.8, 27.6], rotation: -10, scale: 2.9, erguvans: 5 },
+    maps: 'Tekfur Palace Museum, Istanbul',
   },
   {
     id: 'theodosian-walls',
@@ -158,6 +172,7 @@ export const LANDMARKS = [
     period: { from: 413 },
     create: createTheodosianWalls,
     map: { absolute: true },
+    maps: 'Theodosian Walls, Istanbul',
   },
   {
     id: 'venetian-quarter',
@@ -165,6 +180,7 @@ export const LANDMARKS = [
     period: { from: 1082, to: 1453, ending: 'ended' },
     create: createVenetianQuarter,
     map: { at: [-7.46, 10.4], rotation: -16, scale: 4.2 },
+    maps: [41.0186, 28.968], // the Golden Horn waterfront at Zindankapı, the Porta Peramatis
   },
   {
     id: 'horn-chain',
@@ -172,6 +188,7 @@ export const LANDMARKS = [
     period: { from: 717, to: 1453, ending: 'ended' },
     create: createHornChain,
     map: { absolute: true },
+    maps: [41.02246, 28.9767], // the Kastellion of Galata, its northern anchor, now the Yeraltı Mosque
   },
   {
     id: 'dromon',
@@ -179,6 +196,7 @@ export const LANDMARKS = [
     period: { from: 500, fromApprox: true, to: 1150, toApprox: true, ending: 'ended' },
     create: createDromon,
     map: { route: HORN_PATROL, speed: 0.9, scale: 8 },
+    maps: [41.00612, 28.9523], // the Harbour of Theodosius at Yenikapı, where war galleys were excavated
   },
   {
     id: 'galata-tower',
@@ -186,6 +204,7 @@ export const LANDMARKS = [
     period: { from: 1348 },
     create: createGalataTower,
     map: { at: GALATA_TOWER, rotation: 0, scale: 8.4, erguvans: 4 },
+    maps: 'Galata Tower, Istanbul',
   },
   {
     id: 'genoese-quarter',
@@ -193,6 +212,7 @@ export const LANDMARKS = [
     period: { from: 1267, to: 1453, ending: 'ended' },
     create: createGenoeseQuarter,
     map: { absolute: true },
+    maps: [41.02278, 28.97361], // Galata
   },
   {
     id: 'chrysopolis',
@@ -200,6 +220,7 @@ export const LANDMARKS = [
     period: { from: -500, fromApprox: true },
     create: createChrysopolis,
     map: { at: [26.3, 15.6], rotation: -42, scale: 3.6 },
+    maps: 'Üsküdar, Istanbul',
   },
   {
     id: 'chalcedon',
@@ -207,6 +228,7 @@ export const LANDMARKS = [
     period: { from: -685, fromApprox: true },
     create: createChalcedon,
     map: { at: [39.5, -21], rotation: 0, scale: 4.2 },
+    maps: 'Kadıköy, Istanbul',
   },
 ];
 

@@ -38,6 +38,7 @@ export default {
     today: 'Bugün:',
     areaOfMap: 'Haritadaki bölge',
     explore: '3B olarak keşfedin',
+    openInMaps: 'Google Haritalar\'da aç',
     close: 'Kapat',
     settings: 'Ayarlar',
     language: 'Dil',

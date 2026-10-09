@@ -38,6 +38,7 @@ export default {
     today: 'Today:',
     areaOfMap: 'Area of the map',
     explore: 'Explore in 3D',
+    openInMaps: 'Open in Google Maps',
     close: 'Close',
     settings: 'Settings',
     language: 'Language',
