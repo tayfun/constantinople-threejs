@@ -1,13 +1,13 @@
 import { h } from './dom.js';
 import { SourcesDialog } from './sources.js';
+import { CONTROL_KEYS, introSkipped, setIntroSkipped } from './intro.js';
 import { LANGUAGES, getLanguage, setLanguage, sourcesText, ui } from '../i18n/index.js';
-
-const CONTROL_KEYS = ['controlRotate', 'controlPan', 'controlZoom', 'controlSelect', 'controlTouch'];
 
 /**
  * The gear button and the settings dialog it opens: the language choice,
- * a reminder of how to steer the map, a link to the sources page and the
- * switch for the developers' debug readout.
+ * a reminder of how to steer the map, a link to the sources page, whether
+ * the introduction greets the visitor and the switch for the developers'
+ * debug readout.
  * A native <dialog> gives the modal its backdrop, focus trapping and
  * Escape handling.
  */
@@ -59,6 +59,17 @@ export class SettingsMenu {
       h('section', { class: 'settings__section' },
         h('h3', { class: 'settings__heading' }, ui('sources')),
         h('button', { class: 'settings__option sources__open', type: 'button', onClick: (event) => this.sources.open(event.currentTarget) }, sourcesText().title)),
+      h('section', { class: 'settings__section' },
+        h('h3', { class: 'settings__heading' }, ui('introduction')),
+        h('button', {
+          class: 'settings__option',
+          type: 'button',
+          'aria-pressed': String(!introSkipped()),
+          onClick: (event) => {
+            setIntroSkipped(!introSkipped());
+            event.currentTarget.setAttribute('aria-pressed', String(!introSkipped()));
+          },
+        }, ui('introShow'))),
       h('section', { class: 'settings__section' },
         h('h3', { class: 'settings__heading' }, ui('debug')),
         h('button', {

@@ -98,8 +98,9 @@ export class App {
    * ships are always moving. With reduced motion they stand still, so a
    * frame is drawn only when the camera or the scene changed, with an
    * occasional redraw in case something slipped by unflagged.
+   * `onReady` is called once the first frame is drawn.
    */
-  start() {
+  start(onReady) {
     const clock = new THREE.Clock();
     let firstFrame = true;
     let lastDrawn = -Infinity;
@@ -117,7 +118,7 @@ export class App {
       this.debug.frame({ mode: this.mode, view, renderer: this.renderer, drawn });
       if (firstFrame) {
         firstFrame = false;
-        this.root.querySelector('#loading').classList.add('is-done');
+        onReady();
       }
     });
   }
