@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
-  archGeometry, archedWallGeometry, box, boxGeometry, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, flag,
+  archGeometry, archedWallGeometry, archShape, box, boxGeometry, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, flag,
   groundPlane, mesh, stairs,
 } from './lib/primitives.js';
 import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
@@ -168,12 +168,12 @@ function createSection() {
 }
 
 /** Merlons around the four edges of a flat tower roof. */
-function battlements(width, depth, x, y, z, material) {
+function battlements(width, depth, x, y, z, material, options = { ...MERLONS, merlon: 1.2 }) {
   const group = new THREE.Group();
-  const options = { ...MERLONS, merlon: 1.2 };
+  const inset = options.thickness / 2;
   for (const side of [-1, 1]) {
-    group.add(mesh(crenellationGeometry(width, options), material, x, y, z + side * (depth / 2 - 0.45)));
-    const flank = mesh(crenellationGeometry(depth - 1.8, options), material, x + side * (width / 2 - 0.45), y, z);
+    group.add(mesh(crenellationGeometry(width, options), material, x, y, z + side * (depth / 2 - inset)));
+    const flank = mesh(crenellationGeometry(depth - 4 * inset, options), material, x + side * (width / 2 - inset), y, z);
     flank.rotation.y = Math.PI / 2;
     group.add(flank);
   }
@@ -271,6 +271,8 @@ function createMapCircuit() {
   const towers = [];
   const caps = [];
   samplePolyline(LAND_WALLS, inner.towerSpacing / 2).forEach(({ point, dir }, i) => {
+    // The Golden Gate's pylons and its outer gate take the place of the ordinary towers there.
+    if (Math.hypot(point[0] - GOLDEN_GATE[0], point[1] - GOLDEN_GATE[1]) < (i % 2 === 0 ? 1.85 : 1.1)) return;
     const angle = Math.atan2(dir[1], dir[0]);
     const place = (geometry, out) => geometry.rotateY(angle).translate(point[0] - dir[1] * out, y, -point[1] - dir[0] * out);
     if (i % 2 === 0) {
@@ -306,19 +308,264 @@ function createMapCircuit() {
   }
   walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.12, thickness: 0.07, y, offset: moat.offset - moat.width / 2 - 0.1 }), mapStone));
 
-  // The Golden Gate: a triumphal marble gateway between two great towers.
-  const golden = new THREE.Group();
-  golden.add(box(1.0, 1.7, 1.0, M.marble, 0, 0, -1.1));
-  golden.add(box(1.0, 1.7, 1.0, M.marble, 0, 0, 1.1));
-  golden.add(box(0.8, 1.2, 1.4, M.marble, 0, 0, 0));
-  golden.add(box(0.82, 0.12, 1.42, M.gold, 0, 1.2, 0));
-  // Set in the wall beside Yedikule, turned to run along it.
-  const [east, north] = GOLDEN_GATE;
-  const [[e0, n0], [e1, n1]] = LAND_WALLS.slice(2, 4);
-  golden.position.set(east, y, -north);
-  golden.rotation.y = Math.atan2(e0 - e1, n1 - n0);
-  walls.add(golden);
-  return finalizeModel(walls);
+  walls.add(createGoldenGate(y));
+  finalizeModel(walls);
+  walls.userData.keepOut = [[...GOLDEN_GATE, 1.9]]; // no houses against the pylons
+  return walls;
+}
+
+// ---------- the Golden Gate ----------
+
+/**
+ * The Golden Gate in map units, at the same exaggeration as the walls:
+ * Theodosius' triumphal arch of polished marble, its three arches between
+ * two great square pylons that stand out towards the field; the gilded doors
+ * in the middle arch, the dedication in gilded letters above it, and on the
+ * attic the emperor's chariot drawn by four elephants. In front of it, the
+ * smaller outer gate between its own towers, faced with marble reliefs, and
+ * a bridge over the moat.
+ *
+ * Each part is set square to the line it belongs to (the inner wall, the
+ * outer wall, the moat). Local x points to the city and z along the wall.
+ *
+ * Sources: Wikipedia, Golden Gate (Constantinople); Bardill, "The Golden
+ * Gate in Constantinople: a triumphal arch of Theodosius I" (AJA 103, 1999).
+ */
+function createGoldenGate(y) {
+  const gate = new THREE.Group();
+  const marble = goldenGateMarble();
+  const along = (offset, part) => {
+    const line = offset ? offsetPolyline(LAND_WALLS, offset) : LAND_WALLS;
+    const [[e0, n0], [e1, n1]] = line.slice(2, 4);
+    const [de, dn] = [e1 - e0, n1 - n0];
+    const t = ((GOLDEN_GATE[0] - e0) * de + (GOLDEN_GATE[1] - n0) * dn) / (de * de + dn * dn);
+    part.position.set(e0 + de * t, y, -(n0 + dn * t));
+    part.rotation.y = Math.atan2(-de, dn);
+    gate.add(part);
+  };
+  along(0, innerGoldenGate(marble));
+  along(MAP.outer.offset, outerGoldenGate(marble));
+  along(MAP.moat.offset, moatBridge());
+  return gate;
+}
+
+/** An arched panel (a door, a window) facing local -x (the field) or +x (the city). */
+function archPanel(width, height, material, x, y, z, facing) {
+  const panel = mesh(archGeometry(width, height), material, x, y, z);
+  panel.rotation.y = facing * Math.PI / 2;
+  return panel;
+}
+
+/** A wall along z pierced by arches: archedWallGeometry turned to run along the gate. */
+function arcadeAlongZ(options, material, x, y, z) {
+  return mesh(archedWallGeometry({ ...options, curveSegments: 8 }).rotateY(Math.PI / 2), material, x, y, z);
+}
+
+const GATE_MERLONS = { merlon: 0.07, gap: 0.05, height: 0.07, thickness: 0.05 };
+
+function innerGoldenGate(marble) {
+  const group = new THREE.Group();
+  // Square pylons projecting to the field, each on a plinth, belted at the wall-walk and crowned by a cornice and battlements.
+  const pylon = { size: 0.9, height: 1.5, x: -0.1, z: 1.0 };
+  for (const side of [-1, 1]) {
+    const z = side * pylon.z;
+    group.add(box(pylon.size + 0.08, 0.08, pylon.size + 0.08, marble, pylon.x, 0, z));
+    group.add(box(pylon.size, pylon.height + 0.02, pylon.size, marble, pylon.x, 0, z)); // runs into the cornice
+    group.add(box(pylon.size + 0.05, 0.04, pylon.size + 0.05, marble, pylon.x, MAP.inner.height, z));
+    group.add(box(pylon.size + 0.08, 0.06, pylon.size + 0.08, marble, pylon.x, pylon.height, z));
+    group.add(battlements(pylon.size + 0.04, pylon.size + 0.04, pylon.x, pylon.height + 0.06, z, marble, GATE_MERLONS));
+    // Two windows to the field and to the city, one to the outer flank, high in the upper chamber.
+    const face = pylon.size / 2 + 0.012;
+    for (const facing of [-1, 1]) {
+      for (const dz of [-0.2, 0.2]) group.add(archPanel(0.1, 0.18, M.opening, pylon.x + facing * face, 1.12, z + dz, facing));
+    }
+    const flank = mesh(archGeometry(0.1, 0.18), M.opening, pylon.x, 1.12, z + side * face);
+    flank.rotation.y = side > 0 ? 0 : Math.PI;
+    group.add(flank);
+  }
+
+  // The triumphal arch between them: a great middle arch and two lesser ones, cut through to the doors.
+  const arch = { x: -0.05, thickness: 0.6, length: 1.2, height: 0.92 };
+  const middle = { width: 0.36, spring: 0.5 };
+  const lesser = { width: 0.16, spring: 0.28, z: 0.35 };
+  const field = arch.x - arch.thickness / 2;
+  group.add(arcadeAlongZ({
+    length: arch.length, height: arch.height, thickness: arch.thickness, openings: [
+      { x: -lesser.z, width: lesser.width, bottom: 0, spring: lesser.spring },
+      { x: 0, width: middle.width, bottom: 0, spring: middle.spring },
+      { x: lesser.z, width: lesser.width, bottom: 0, spring: lesser.spring },
+    ],
+  }, marble, arch.x, 0, 0));
+  // The curtain wall runs on through the gate: the doors close the passages in front of it on both sides.
+  const curtain = MAP.inner.thickness / 2 + 0.05;
+  for (const facing of [-1, 1]) {
+    const doors = facing < 0 ? M.gold : M.bronze;
+    group.add(archPanel(middle.width, middle.spring + middle.width / 2, doors, facing * curtain, 0, 0, facing));
+    for (const side of [-1, 1]) group.add(archPanel(lesser.width, lesser.spring + lesser.width / 2, M.bronze, facing * curtain, 0, side * lesser.z, facing));
+  }
+  // On the field face: pilasters between the arches, a gilded archivolt round the middle one, the dedication above.
+  for (const z of [-0.485, -0.235, 0.235, 0.485]) {
+    group.add(box(0.03, 0.7, 0.04, marble, field - 0.015, 0, z));
+    group.add(box(0.045, 0.03, 0.06, marble, field - 0.0225, 0.7, z));
+  }
+  const archivolt = new THREE.Shape(archShape(middle.width + 0.04, middle.spring + middle.width / 2 + 0.02).getPoints(12));
+  archivolt.holes.push(new THREE.Path(archShape(middle.width, middle.spring + middle.width / 2).getPoints(12).reverse()));
+  group.add(mesh(new THREE.ExtrudeGeometry(archivolt, { depth: 0.02, bevelEnabled: false }).rotateY(-Math.PI / 2), M.gold, field, 0, 0));
+  const inscription = mesh(new THREE.PlaneGeometry(0.82, 0.1), goldenGateInscription(), field - 0.012, 0.79, 0);
+  inscription.rotation.y = -Math.PI / 2;
+  group.add(inscription);
+  // Cornice and attic, running into the pylons.
+  group.add(box(arch.thickness + 0.08, 0.05, arch.length - 0.06, marble, arch.x, arch.height - 0.02, 0));
+  group.add(box(arch.thickness - 0.1, 0.15, arch.length - 0.06, marble, arch.x, arch.height + 0.02, 0));
+
+  // On the attic, the emperor in a chariot drawn by four elephants, all gilded, facing the field.
+  const top = arch.height + 0.17;
+  group.add(box(0.22, 0.05, 0.32, marble, arch.x, top - 0.01, 0));
+  const quadriga = new THREE.Group();
+  for (const z of [-0.105, -0.035, 0.035, 0.105]) {
+    quadriga.add(box(0.07, 0.035, 0.04, M.gold, -0.02, 0, z)); // legs
+    quadriga.add(box(0.1, 0.05, 0.05, M.gold, -0.02, 0.03, z)); // body
+    quadriga.add(box(0.035, 0.045, 0.042, M.gold, -0.08, 0.05, z)); // head
+    quadriga.add(box(0.014, 0.05, 0.014, M.gold, -0.1, 0.01, z)); // trunk
+  }
+  quadriga.add(box(0.05, 0.05, 0.16, M.gold, 0.07, 0, 0)); // chariot
+  quadriga.add(cylinder(0.02, 0.024, 0.08, M.gold, 0.07, 0.04, 0, 8)); // the emperor
+  quadriga.add(box(0.03, 0.03, 0.03, M.gold, 0.07, 0.12, 0));
+  quadriga.position.set(arch.x - 0.01, top + 0.04, 0);
+  group.add(quadriga);
+  return group;
+}
+
+function outerGoldenGate(marble) {
+  const group = new THREE.Group();
+  const { height, thickness } = MAP.outer;
+  // The gatehouse straddles the outer wall, its arch closed by bronze doors on either face of the curtain.
+  const house = { length: 0.64, height: 0.58, thickness: 0.26 };
+  const opening = { width: 0.2, spring: 0.24 };
+  group.add(arcadeAlongZ({ length: house.length, height: house.height, thickness: house.thickness, openings: [{ x: 0, width: opening.width, bottom: 0, spring: opening.spring }] }, marble, 0, 0, 0));
+  for (const facing of [-1, 1]) group.add(archPanel(opening.width, opening.spring + opening.width / 2, M.bronze, facing * (thickness / 2 + 0.03), 0, 0, facing));
+  group.add(box(house.thickness + 0.04, 0.03, house.length + 0.04, marble, 0, house.height - 0.01, 0));
+  group.add(mesh(crenellationGeometry(house.length - 0.04, GATE_MERLONS).rotateY(Math.PI / 2), marble, -house.thickness / 2 + 0.025, house.height + 0.02, 0));
+  // A frieze of marble reliefs over the arch, on the field face.
+  const reliefs = goldenGateReliefs();
+  for (const z of [-0.21, -0.07, 0.07, 0.21]) group.add(box(0.015, 0.09, 0.12, reliefs, -house.thickness / 2 - 0.0075, 0.4, z));
+  // Square towers flanking it, a little taller, standing out to the field.
+  const tower = { size: 0.28, height: 0.7, x: -0.04, z: 0.45 };
+  for (const side of [-1, 1]) {
+    const z = side * tower.z;
+    group.add(box(tower.size, tower.height + 0.01, tower.size, marble, tower.x, 0, z));
+    group.add(box(tower.size + 0.04, 0.03, tower.size + 0.04, marble, tower.x, tower.height, z));
+    group.add(battlements(tower.size, tower.size, tower.x, tower.height + 0.03, z, marble, GATE_MERLONS));
+    group.add(archPanel(0.06, 0.11, M.opening, tower.x - tower.size / 2 - 0.012, 0.42, z, -1));
+  }
+  return group;
+}
+
+/** A stone bridge on two arches over the moat, with low parapets; the water runs under it. */
+function moatBridge() {
+  const group = new THREE.Group();
+  const { width } = MAP.moat;
+  const length = width + 0.4;
+  const deck = { width: 0.22, height: 0.18 };
+  group.add(mesh(archedWallGeometry({ length, height: deck.height, thickness: deck.width, curveSegments: 8, openings: [
+    { x: -0.24, width: 0.3, bottom: 0, spring: 0 }, { x: 0.24, width: 0.3, bottom: 0, spring: 0 },
+  ] }), mapStone, 0, -0.04, 0));
+  for (const side of [-1, 1]) group.add(box(length, 0.04, 0.025, mapStone, 0, deck.height - 0.04, side * (deck.width / 2 - 0.0125)));
+  return group;
+}
+
+/**
+ * The gate's own marble: large, close-jointed blocks of white Proconnesian
+ * marble, eight courses to the tile, faintly veined.
+ */
+let goldenMarble = null;
+function goldenGateMarble() {
+  if (goldenMarble) return goldenMarble;
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const rnd = createRandom(388);
+  ctx.fillStyle = 'rgb(214, 207, 194)';
+  ctx.fillRect(0, 0, size, size);
+  const course = size / 8;
+  for (let row = 0; row < 8; row++) {
+    let x = -rnd.next() * 90;
+    while (x < size) {
+      const length = 52 + rnd.next() * 52;
+      const k = 1 + (rnd.next() - 0.5) * 0.06;
+      ctx.fillStyle = `rgb(${(240 * k) | 0}, ${(236 * k) | 0}, ${(226 * k) | 0})`;
+      for (const shift of [0, size]) ctx.fillRect(x + 1 - shift, row * course + 1, length - 2, course - 2);
+      x += length;
+    }
+  }
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 14; i++) {
+    ctx.strokeStyle = `rgba(130, 122, 112, ${0.08 + rnd.next() * 0.1})`;
+    ctx.beginPath();
+    const y = rnd.next() * size;
+    ctx.moveTo(0, y);
+    ctx.bezierCurveTo(size * 0.3, y + (rnd.next() - 0.5) * 60, size * 0.6, y + (rnd.next() - 0.5) * 60, size, y);
+    ctx.stroke();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1 / 0.32, 1 / 0.32);
+  texture.anisotropy = 8;
+  goldenMarble = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.45, metalness: 0 });
+  return goldenMarble;
+}
+
+/** The dedication in gilded bronze letters, in two lines over the middle arch. */
+function goldenGateInscription() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgb(236, 231, 220)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 40px "Times New Roman", serif';
+  ctx.fillStyle = 'rgb(176, 128, 32)';
+  ctx.fillText('HAEC LOCA THEVDOSIVS DECORAT POST FATA TYRANNI', 512, 38, 1000);
+  ctx.fillText('AVREA SAECLA GERIT QVI PORTAM CONSTRVIT AVRO', 512, 92, 1000);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.4, metalness: 0.15 });
+}
+
+/** A marble relief panel: figures in a moulded frame, lit from above. */
+function goldenGateReliefs() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  const rnd = createRandom(447);
+  ctx.fillStyle = 'rgb(196, 188, 172)';
+  ctx.fillRect(0, 0, 128, 96);
+  ctx.fillStyle = 'rgb(226, 220, 206)';
+  ctx.fillRect(10, 10, 108, 76);
+  for (let i = 0; i < 4; i++) {
+    const x = 26 + i * 25 + (rnd.next() - 0.5) * 6;
+    ctx.fillStyle = 'rgb(160, 150, 134)';
+    ctx.beginPath();
+    ctx.ellipse(x + 2, 34, 6, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 5, 42, 14, 34);
+    ctx.fillStyle = 'rgb(246, 241, 230)';
+    ctx.beginPath();
+    ctx.ellipse(x, 32, 6, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 7, 40, 14, 34);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  // A box's faces carry UVs in their own size; this panel's face is 0.12 × 0.09.
+  texture.repeat.set(1 / 0.12, 1 / 0.09);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5 });
 }
 
 /** Merlons at a regular pitch along a polyline of [east, north] points, offset to its left, as one geometry. */

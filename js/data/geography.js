@@ -61,8 +61,13 @@ export const LAND_WALLS = line([
   [-48.8, 6.1], [-46.9, 11.8], [-42.9, 17.3], [-38.6, 22.6], [-34, 27.4],
 ]);
 
-/** The Golden Gate, where the Mese leaves the city through the land walls. */
-export const GOLDEN_GATE = magnify([-48.7, -17.4]);
+/**
+ * The Golden Gate, where the Mese leaves the city through the land walls: on
+ * the straight run just north of the bend, so its outer gate and the bridge
+ * over the moat stand square to the walls.
+ */
+const GOLDEN_GATE_SITE = [-48.69, -16.85];
+export const GOLDEN_GATE = magnify(GOLDEN_GATE_SITE);
 
 /** Later walls around the Blachernae quarter, closing the circuit at the Horn. */
 export const BLACHERNAE_WALLS = line([[-34, 27.4], [-34.5, 29.3], [-34.4, 32], [-32.7, 33.6], [-32.3, 34.6], [-31.9, 36.6]]);
@@ -245,7 +250,7 @@ export const ISLANDS = [
  * Hippodrome and the Basilica Cistern at their exaggerated size.
  */
 const FORUM_SITE = [-12, 1.25];
-export const MESE = line([[-1.5, 0.3], FORUM_SITE, [-19.5, 4], [-27, 1], [-36.3, -5.7], [-43, -12], [-48.7, -17.4]]);
+export const MESE = line([[-1.5, 0.3], FORUM_SITE, [-19.5, 4], [-27, 1], [-36.3, -5.7], [-43, -12], GOLDEN_GATE_SITE]);
 export const MESE_NORTH = line([[-19.5, 4], [-25.8, 11.5], [-32, 17], [-38.4, 22.8]]);
 
 export const FORUM_OF_CONSTANTINE = magnify(FORUM_SITE);

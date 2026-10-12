@@ -187,12 +187,12 @@ export class MapView {
     }
     this.updateLabelVisibility();
 
-    // Districts float high over their area; waters lie on the surface and the Mese sits just above its hills.
+    // Districts float high over their area; waters lie on the surface, the Mese just above its hills and the Golden Gate over its towers.
     const lift = { water: 0.3, place: 1.8 };
     for (const region of regions.filter((r) => r.labelAt)) {
       const kind = region.labelKind ?? 'region';
       const read = () => ({ text: regionText(region.id).name, sub: regionText(region.id).subtitle });
-      const height = kind === 'region' ? 3 : lift[kind] + this.ground.heightAt(region.labelAt);
+      const height = kind === 'region' ? 3 : (region.labelLift ?? lift[kind]) + this.ground.heightAt(region.labelAt);
       add(this.scene, toWorld(region.labelAt, height), read, { kind, onClick: () => onSelectRegion(region.id) });
     }
   }

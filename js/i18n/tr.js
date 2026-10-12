@@ -147,6 +147,15 @@ export default {
         'Revaklar ve dükkânlarla çevrili, sütunlu ve heykelli büyük forumlara açılan cadde imparatorluk zaferlerinin güzergâhıydı: muzaffer imparator Altın Kapı\'dan girer, Mese boyunca Ayasofya\'ya ve Büyük Saray\'a at sürerdi. Güzergâhı bugün Divan Yolu olarak yaşar.',
       ],
     },
+    'golden-gate': {
+      name: 'Altın Kapı',
+      subtitle: 'Χρυσεία Πύλη · Porta Aurea — imparatorların zafer kapısı',
+      paragraphs: [
+        'Altın Kapı, Roma\'dan gelen Via Egnatia\'nın Mese\'ye dönüştüğü yerde, Konstantinopolis\'in tören kapısıydı. Cilalı beyaz mermerden, tek başına duran bir zafer takı olarak yapıldı — büyük olasılıkla I. Theodosios tarafından, 388\'de gaspçı Magnus Maximus\'a karşı kazandığı zaferden sonra; kimi araştırmacılar onu II. Theodosios dönemine tarihler — ve ardından iki büyük mermer kule arasında kara surlarına katıldı.',
+        'Üç kemerinden daha yüksek ve geniş olan ortadaki yalnızca imparator için açılırdı. Kanatları yaldızlıydı; üstlerinde, tutturma delikleri bugün de izlenebilen yaldızlı tunç harfler şöyle diyordu: HAEC LOCA THEUDOSIUS DECORAT POST FATA TYRANNI / AUREA SAECLA GERIT QUI PORTAM CONSTRUIT AURO — "Theodosios, gaspçının ölümünden sonra burayı süsler; kapıyı altınla kuran, altın bir çağ getirir." Tepesini heykeller taçlandırırdı; aralarında dört filin çektiği bir araba da vardı. Önünde, dış suru geçen daha küçük dış kapı mitolojik sahneli mermer kabartmalarla kaplıydı.',
+        'Muzaffer imparatorlar buradan zaferle girer, Mese boyunca Ayasofya\'ya ilerlerdi. 971\'de Bulgaristan seferinden dönen İoannes Tzimiskes zafer arabasına Meryem ikonasını koyup arkasından at sürdü; 15 Ağustos 1261\'de, şehir Latinlerden geri alındığında, VIII. Mikhael Palaiologos Hodegetria ikonasının ardından yaya olarak girdi. Sonraki yüzyıllarda kapı örülerek kapatıldı; 1453\'ten sonra II. Mehmed onu Yedikule Hisarı\'nın içine aldı. Kapı bugün de orada durur.',
+      ],
+    },
   },
   landmarks: {
     'hagia-sophia': {

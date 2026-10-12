@@ -3,14 +3,15 @@
  * clickable label and a page in the sidebar. `labelAt` places the region's
  * name on the map (surveyed [east, north] in map units, magnified like the
  * geography); `view` frames it when selected; `labelKind` draws the label as
- * a sea ('water') or a street ('place') instead of a district; `group` files
+ * a sea ('water') or a street or gate ('place') instead of a district, and
+ * `labelLift` raises it higher over the ground than its kind does; `group` files
  * it under one of the sidebar's folding headings (REGION_GROUPS). Names and
  * descriptions live in the locale files (js/i18n/), keyed by id.
  */
 
 /** The sidebar's headings, in order; their titles are ui strings groupCity, groupShores, groupWaters. */
 export const REGION_GROUPS = ['city', 'shores', 'waters'];
-import { magnify } from './geography.js';
+import { GOLDEN_GATE, magnify } from './geography.js';
 
 export const REGIONS = [
   { id: 'constantinople', group: 'city', labelAt: magnify([-32, -2]), view: { target: magnify([-20, 6]), distance: 62 } },
@@ -22,4 +23,5 @@ export const REGIONS = [
   { id: 'propontis', group: 'waters', labelKind: 'water', labelAt: magnify([-18, -25]), view: { target: magnify([-4, -38]), distance: 110 } },
   { id: 'princes-islands', group: 'waters', labelKind: 'water', labelAt: magnify([88.2, -120.8]), view: { target: magnify([92, -148]), distance: 130 } },
   { id: 'mese', group: 'city', labelKind: 'place', labelAt: magnify([-44, -10]), view: { target: magnify([-24, -2]), distance: 60 } },
+  { id: 'golden-gate', group: 'city', labelKind: 'place', labelAt: GOLDEN_GATE, labelLift: 2.3, view: { target: GOLDEN_GATE, distance: 14 } },
 ];

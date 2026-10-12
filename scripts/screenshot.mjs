@@ -129,7 +129,8 @@ if (opts.views) {
   for (const spec of opts.views.split(';')) {
     const [name, nums] = spec.split(':');
     const [x, y, z, tx, ty, tz] = nums.split(',').map(Number);
-    await evaluate(`const view = window.__app.mapView; view.camera.position.set(${x}, ${y}, ${z}); view.controls.target.set(${tx}, ${ty}, ${tz}); view.controls.update(); view.dirty = true; true`);
+    // A block of its own: a second top-level `const view` would throw, and the camera would stay put.
+    await evaluate(`{ const view = window.__app.mapView; view.camera.position.set(${x}, ${y}, ${z}); view.controls.target.set(${tx}, ${ty}, ${tz}); view.controls.update(); view.dirty = true; } true`);
     await sleep(settle);
     await shot(name);
   }

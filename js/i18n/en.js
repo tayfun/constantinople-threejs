@@ -147,6 +147,15 @@ export default {
         'Lined with porticoes and shops and opening into the great fora with their columns and statues, it was the route of imperial triumphs: a victorious emperor entered by the Golden Gate and rode along the Mese to Hagia Sophia and the Great Palace. Its course survives as the Divan Yolu.',
       ],
     },
+    'golden-gate': {
+      name: 'The Golden Gate',
+      subtitle: 'Χρυσεία Πύλη · Porta Aurea — the emperors\' triumphal entrance',
+      paragraphs: [
+        'The Golden Gate was the ceremonial entrance of Constantinople, where the Via Egnatia from Rome became the Mese. It was raised as a free-standing triumphal arch of polished white marble — most likely by Theodosius I after his victory over the usurper Magnus Maximus in 388, though some date it to Theodosius II — and was then built into the land walls between two great marble pylons.',
+        'Of its three arches the middle one, taller and wider, was opened only for the emperor. Its doors were gilded, and above them gilded bronze letters, whose fixing holes can still be traced, read: HAEC LOCA THEUDOSIUS DECORAT POST FATA TYRANNI / AUREA SAECLA GERIT QUI PORTAM CONSTRUIT AURO — "Theodosius adorns this place after the doom of the usurper; he brings a golden age who builds a gate of gold." Statues crowned it, among them a chariot drawn by four elephants. In front, a smaller outer gate in the outer wall was faced with marble reliefs of mythological scenes.',
+        'Victorious emperors entered here in triumph and rode along the Mese to Hagia Sophia. John Tzimiskes, returning from Bulgaria in 971, set an icon of the Virgin on his triumphal chariot and rode behind it; on 15 August 1261, when the city was won back from the Latins, Michael VIII Palaiologos came in on foot behind the icon of the Hodegetria. In later centuries the gate was walled up, and after 1453 Mehmed II enclosed it in the fortress of Yedikule, the Seven Towers, where it still stands.',
+      ],
+    },
   },
   landmarks: {
     'hagia-sophia': {

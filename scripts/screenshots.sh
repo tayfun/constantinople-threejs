@@ -19,7 +19,8 @@ trap 'kill ${PREVIEW_PID:-} 2>/dev/null || true; rm -rf "$BUILD"' EXIT
 
 cd "$PROJECT"
 SENTRY_AUTH_TOKEN= npx vite build --outDir "$BUILD" --emptyOutDir --logLevel warn 2>&1 | grep -v sentry-vite-plugin || true
-npx vite preview --outDir "$BUILD" --port "$PORT" --strictPort --logLevel silent >/dev/null 2>&1 &
+# vite itself, not through npx, so that the trap above stops the server and not just its wrapper.
+"$PROJECT/node_modules/.bin/vite" preview --outDir "$BUILD" --port "$PORT" --strictPort --logLevel silent >/dev/null 2>&1 &
 PREVIEW_PID=$!
 for i in $(seq 1 50); do curl -s -o /dev/null "http://localhost:$PORT/" && break; sleep 0.2; done
 node "$HERE/screenshot.mjs" "$OUT" "$@" "--url=http://localhost:$PORT/" "--port=$((PORT + 5000))"
