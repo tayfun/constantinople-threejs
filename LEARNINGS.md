@@ -26,6 +26,13 @@ Android). Most of the time went into fixes that did nothing.
   material in a scene whose shadow map redraws every frame reset the GPU
   within seconds. Here that was the obelisks' carving next to the animated
   chariots. Leave out bump and normal maps on the low tier.
+- **Root cause 3: an environment map.** `scene.environment` from a
+  `PMREMGenerator` reset the GPU on the 35th frame, every run, with the GPU
+  process segfaulting in the driver's `LoadTextureState` during a draw. The
+  same build without it ran thousands of frames. An LDR cube map is no
+  escape: three.js converts any environment into the same cube-UV PMREM for
+  `MeshStandardMaterial`. The lighter tier has no environment map, and the
+  metals are shaded (metalness ≤ 0.6) to read without one.
 - **Disabling shadows is not the same as skipping the shadow pass.** Skipping
   only the depth-pass draws still crashed. `shadowMap.enabled = false` fixed
   it. The fault was in *sampling* the shadow map in the main shader.
@@ -46,6 +53,7 @@ Android). Most of the time went into fixes that did nothing.
   (`quality.js`):
   - shadow filter type and map size
   - bump/normal maps
+  - environment map
   - pixel ratio cap (1 on phones)
   - texture scale
   - vegetation density
@@ -82,7 +90,14 @@ the root cause took about 40 minutes, after hours of guessing.
   every run.
 - Run the three.js examples on the device as a control.
 - `adb logcat` (filter for gpu/context) and `adb shell dumpsys gpu --gpumem`
-  for GPU memory.
+  for GPU memory. A driver fault shows up there as a `CrGpuMain` tombstone
+  with a `libGLESv2_powervr.so` backtrace; `THREE.WebGLProgram: Shader Error
+  … VALIDATE_STATUS false` with an empty log in the console is the context
+  dying, not a shader bug.
+- Serve a static build of each candidate commit on its own port (`adb
+  reverse` each), with the current `node_modules` symlinked into a
+  `git worktree` of the old commit, and run the same probe against all of
+  them. Bisecting by commit took minutes; bisecting by guess took days.
 
 ## Rendering and performance
 

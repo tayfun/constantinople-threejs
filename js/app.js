@@ -42,7 +42,8 @@ export class App {
     this.renderer.toneMappingExposure = 1.05;
     viewport.appendChild(this.renderer.domElement);
     this.watchContext(this.renderer.domElement);
-    const environment = createEnvironmentMap(this.renderer);
+    // Not on the lighter tier: sampling it resets the Pixel 10's PowerVR GPU (see quality.js).
+    const environment = QUALITY.environmentMap ? createEnvironmentMap(this.renderer) : null;
 
     this.mapView = new MapView({
       renderer: this.renderer,
@@ -54,7 +55,7 @@ export class App {
     });
     this.detailView = new DetailView({ renderer: this.renderer, container: viewport, onSelectLandmark: (id) => this.openLandmark(id) });
     // The baked sky lights the materials softly from all round, and gives the metals something to reflect.
-    for (const view of [this.mapView, this.detailView]) {
+    if (environment) for (const view of [this.mapView, this.detailView]) {
       view.scene.environment = environment;
       view.scene.environmentIntensity = 0.45;
     }

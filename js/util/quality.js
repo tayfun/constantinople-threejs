@@ -17,7 +17,11 @@ import * as THREE from 'three';
  * three.js's own shadow example too; soft PCF, basic and VSM run fine.
  * The same GPU also resets on the obelisks' carved faces, whose bump maps
  * under live shadows (the Hippodrome's racing chariots) take it down within
- * seconds, so the lighter tier paints the carving without the bump.
+ * seconds, so the lighter tier paints the carving without the bump. And a
+ * PMREM environment map on the scenes (scene.environment, sampled through
+ * three's cube-UV lookup) resets it on the 35th frame, every time, while the
+ * same scene without one runs for thousands; so the lighter tier has no
+ * environment map, and its metals keep enough dielectric shading to read.
  */
 
 function isModestDevice() {
@@ -39,6 +43,7 @@ const TIERS = {
     treeDensity: 1,
     crownBlobs: 3,
     bumpMaps: true,
+    environmentMap: true,
   },
   low: {
     tier: 'low',
@@ -51,6 +56,7 @@ const TIERS = {
     treeDensity: 0.5,
     crownBlobs: 2,
     bumpMaps: false,
+    environmentMap: false,
   },
 };
 
