@@ -61,3 +61,32 @@ export function wallAlongGeometry(points, {
   }
   return mergeGeometries(parts);
 }
+
+/**
+ * A level band of constant width along a polyline of [east, north] points (a moat, the stone
+ * edging of its banks), mitred at the bends. The boxes of wallAlongGeometry overlap there, and
+ * a wide band would show their corners poking out past its edges on the inside of each turn.
+ * Returns a single geometry in world coordinates.
+ */
+export function bandAlongGeometry(points, { width, height, y = 0, offset = 0 }) {
+  const left = offsetPolyline(points, offset + width / 2);
+  const right = offsetPolyline(points, offset - width / 2);
+  const corner = ([east, north], up) => [east, y + up, -north];
+  const positions = [];
+  // Each quad is wound counter-clockwise as seen from outside the band.
+  const quad = (...corners) => positions.push(...[0, 1, 2, 0, 2, 3].flatMap((k) => corners[k]));
+  for (let i = 1; i < points.length; i++) {
+    const [l0, l1, r0, r1] = [left[i - 1], left[i], right[i - 1], right[i]];
+    quad(corner(r0, height), corner(r1, height), corner(l1, height), corner(l0, height));
+    quad(corner(l0, 0), corner(l1, 0), corner(r1, 0), corner(r0, 0));
+    quad(corner(r0, 0), corner(r1, 0), corner(r1, height), corner(r0, height));
+    quad(corner(l1, 0), corner(l0, 0), corner(l0, height), corner(l1, height));
+  }
+  const [l0, r0, l1, r1] = [left[0], right[0], left.at(-1), right.at(-1)];
+  quad(corner(l0, 0), corner(r0, 0), corner(r0, height), corner(l0, height));
+  quad(corner(r1, 0), corner(l1, 0), corner(l1, height), corner(r1, height));
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}

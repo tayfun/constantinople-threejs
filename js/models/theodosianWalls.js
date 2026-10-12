@@ -5,7 +5,7 @@ import {
   archGeometry, archedWallGeometry, archShape, box, boxGeometry, crenelRingGeometry, crenellationGeometry, cylinder, cylinderGeometry, flag,
   groundPlane, mesh, stairs,
 } from './lib/primitives.js';
-import { mapStone, wallAlongGeometry } from './lib/mapWalls.js';
+import { bandAlongGeometry, mapStone, wallAlongGeometry } from './lib/mapWalls.js';
 import { createWaterMaterial } from './lib/water.js';
 import { scatterHouses } from './lib/buildings.js';
 import { finalizeModel } from './lib/merge.js';
@@ -302,11 +302,11 @@ function createMapCircuit() {
   walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: outer.height, thickness: outer.thickness, y, offset: outer.offset }), masonry));
 
   // The moat: water between stone-lined scarps, the inner one crowned by its breastwork.
-  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.04, thickness: moat.width, y: y - 0.02, offset: moat.offset }), moatMaterial));
+  walls.add(mesh(bandAlongGeometry(LAND_WALLS, { height: 0.04, width: moat.width, y: y - 0.02, offset: moat.offset }), moatMaterial));
   for (const edge of [-1, 1]) {
-    walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.05, thickness: 0.06, y, offset: moat.offset + edge * (moat.width / 2 + 0.02) }), mapStone));
+    walls.add(mesh(bandAlongGeometry(LAND_WALLS, { height: 0.05, width: 0.06, y, offset: moat.offset + edge * (moat.width / 2 + 0.02) }), mapStone));
   }
-  walls.add(mesh(wallAlongGeometry(LAND_WALLS, { height: 0.12, thickness: 0.07, y, offset: moat.offset - moat.width / 2 - 0.1 }), mapStone));
+  walls.add(mesh(bandAlongGeometry(LAND_WALLS, { height: 0.12, width: 0.07, y, offset: moat.offset - moat.width / 2 - 0.1 }), mapStone));
 
   walls.add(createGoldenGate(y));
   finalizeModel(walls);
@@ -334,18 +334,30 @@ function createMapCircuit() {
 function createGoldenGate(y) {
   const gate = new THREE.Group();
   const marble = goldenGateMarble();
-  const along = (offset, part) => {
+  // Where the gate's axis crosses a line, and the direction (local +x) towards the city there.
+  const frame = (offset) => {
     const line = offset ? offsetPolyline(LAND_WALLS, offset) : LAND_WALLS;
     const [[e0, n0], [e1, n1]] = line.slice(2, 4);
     const [de, dn] = [e1 - e0, n1 - n0];
     const t = ((GOLDEN_GATE[0] - e0) * de + (GOLDEN_GATE[1] - n0) * dn) / (de * de + dn * dn);
-    part.position.set(e0 + de * t, y, -(n0 + dn * t));
-    part.rotation.y = Math.atan2(-de, dn);
+    return { at: [e0 + de * t, n0 + dn * t], city: [dn / Math.hypot(de, dn), -de / Math.hypot(de, dn)] };
+  };
+  const along = (offset, part) => {
+    const { at, city } = frame(offset);
+    part.position.set(at[0], y, -at[1]);
+    part.rotation.y = Math.atan2(city[1], city[0]);
     gate.add(part);
   };
   along(0, innerGoldenGate(marble));
   along(MAP.outer.offset, outerGoldenGate(marble));
-  along(MAP.moat.offset, moatBridge());
+  // The gate stands just past a bend, where the moat's field bank still runs at the angle of the stretch
+  // before it, so the bridge is measured out to each bank along its own line rather than across the moat.
+  const { at, city } = frame(MAP.moat.offset);
+  const bank = (side) => {
+    const line = offsetPolyline(LAND_WALLS, MAP.moat.offset - side * (MAP.moat.width / 2 + 0.02));
+    return rayToPolyline(at, [city[0] * side, city[1] * side], line) ?? MAP.moat.width / 2;
+  };
+  along(MAP.moat.offset, moatBridge(-bank(-1), bank(1)));
   // A part of its own on the map: clicked or hovered, it stands for the Golden Gate's region, not the
   // walls. Merged here and kept out of the walls' merge (dynamic) so it can be picked and glow alone.
   finalizeModel(gate);
@@ -466,17 +478,37 @@ function outerGoldenGate(marble) {
   return group;
 }
 
-/** A stone bridge on two arches over the moat, with low parapets; the water runs under it. */
-function moatBridge() {
+/**
+ * A stone bridge on two arches over the moat, with low parapets; the water runs under it. `field`
+ * and `city` are where the banks lie along local x (the moat's middle at 0); it rests on both, its arches
+ * centred over the water between them.
+ */
+function moatBridge(field, city) {
   const group = new THREE.Group();
-  const { width } = MAP.moat;
-  const length = width + 0.4;
+  const [from, to] = [field - 0.18, city + 0.18];
+  const [length, middle] = [to - from, (from + to) / 2];
   const deck = { width: 0.22, height: 0.18 };
   group.add(mesh(archedWallGeometry({ length, height: deck.height, thickness: deck.width, curveSegments: 8, openings: [
     { x: -0.24, width: 0.3, bottom: 0, spring: 0 }, { x: 0.24, width: 0.3, bottom: 0, spring: 0 },
-  ] }), mapStone, 0, -0.04, 0));
-  for (const side of [-1, 1]) group.add(box(length, 0.04, 0.025, mapStone, 0, deck.height - 0.04, side * (deck.width / 2 - 0.0125)));
+  ] }), mapStone, middle, -0.04, 0));
+  for (const side of [-1, 1]) group.add(box(length, 0.04, 0.025, mapStone, middle, deck.height - 0.04, side * (deck.width / 2 - 0.0125)));
   return group;
+}
+
+/** How far a ray from `from` along `direction` ([east, north]) runs before it meets a polyline, or null if it never does. */
+function rayToPolyline(from, direction, line) {
+  let nearest = null;
+  for (let i = 1; i < line.length; i++) {
+    const [[ax, an], [bx, bn]] = [line[i - 1], line[i]];
+    const [ex, en] = [bx - ax, bn - an];
+    const denominator = direction[0] * en - direction[1] * ex;
+    if (Math.abs(denominator) < 1e-9) continue;
+    const [px, pn] = [ax - from[0], an - from[1]];
+    const distance = (px * en - pn * ex) / denominator;
+    const along = (px * direction[1] - pn * direction[0]) / denominator;
+    if (distance >= 0 && along >= 0 && along <= 1 && (nearest === null || distance < nearest)) nearest = distance;
+  }
+  return nearest;
 }
 
 /**

@@ -60,15 +60,27 @@ export function samplePolyline(line, spacing) {
   return samples;
 }
 
-/** Shifts a polyline sideways; positive distance moves it to the left of travel. */
+/**
+ * Shifts a polyline sideways; positive distance moves it to the left of travel. Each bend goes
+ * to the mitre, where the two shifted segments meet, so every segment stays parallel to its
+ * original at exactly `distance` (and things placed square to one offset line line up with
+ * the others). The mitre is capped at twice the distance for hairpin turns.
+ */
 export function offsetPolyline(line, distance) {
+  const normal = ([ax, ay], [bx, by]) => {
+    const length = Math.hypot(bx - ax, by - ay) || 1;
+    return [-(by - ay) / length, (bx - ax) / length];
+  };
   return line.map((point, i) => {
-    const prev = line[Math.max(0, i - 1)];
-    const next = line[Math.min(line.length - 1, i + 1)];
-    const dx = next[0] - prev[0];
-    const dy = next[1] - prev[1];
-    const length = Math.hypot(dx, dy) || 1;
-    return [point[0] - (dy / length) * distance, point[1] + (dx / length) * distance];
+    const before = i > 0 ? normal(line[i - 1], point) : null;
+    const after = i < line.length - 1 ? normal(point, line[i + 1]) : null;
+    const [a, b] = [before ?? after, after ?? before];
+    if (!a) return [...point];
+    const [mx, my] = [a[0] + b[0], a[1] + b[1]];
+    const length = Math.hypot(mx, my);
+    if (length < 1e-9) return [point[0] + a[0] * distance, point[1] + a[1] * distance];
+    const reach = distance * Math.min(length / (mx * a[0] + my * a[1]), 2);
+    return [point[0] + (mx / length) * reach, point[1] + (my / length) * reach];
   });
 }
 
