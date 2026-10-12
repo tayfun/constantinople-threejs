@@ -421,7 +421,7 @@ function distanceOutside(holder, footprint) {
 
 // ---------- hover highlight ----------
 
-/** A warm emissive copy of a material, created once and shared. */
+/** Glows the landmark and its label together. */
 function highlight(entry, on) {
   entry.label.element.classList.toggle('is-hover', on);
   setGlow(entry.holder, on);

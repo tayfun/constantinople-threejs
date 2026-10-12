@@ -1,16 +1,35 @@
 import * as THREE from 'three';
 
-/** Hover highlight for pickable objects: a warm emissive glow on every mesh, swapped back when the pointer leaves. */
+/**
+ * Hover highlight for pickable objects, swapped onto every mesh and back when the pointer leaves.
+ * A flat emissive wash would add the same light everywhere and drown the shading that carries a
+ * model's detail, so the glow is a warm rim instead: faces turned towards the camera only take a
+ * slight warm lift (a multiply, which keeps light and shadow in proportion), while silhouettes and
+ * steeply viewed faces glow amber.
+ */
+
+const uniforms = {
+  glowColor: { value: new THREE.Color(0xffb84a).multiplyScalar(0.5) },
+  glowLift: { value: new THREE.Color(1.1, 1.03, 0.86) },
+};
+
+function addRim(shader) {
+  Object.assign(shader.uniforms, uniforms);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('void main() {', 'uniform vec3 glowColor;\nuniform vec3 glowLift;\nvoid main() {')
+    .replace('#include <opaque_fragment>', `
+      vec3 towardsCamera = isOrthographic ? vec3(0.0, 0.0, 1.0) : normalize(vViewPosition);
+      float rim = pow(1.0 - abs(dot(normal, towardsCamera)), 2.0);
+      outgoingLight = outgoingLight * glowLift + glowColor * rim;
+      #include <opaque_fragment>`);
+}
 
 const glowing = new Map();
 
 function glowingVersion(material) {
   if (!glowing.has(material)) {
     const copy = material.clone();
-    if (copy.emissive) {
-      copy.emissive = new THREE.Color(0xffb84a);
-      copy.emissiveIntensity = 0.42;
-    }
+    if (copy.isMeshStandardMaterial) copy.onBeforeCompile = addRim;
     glowing.set(material, copy);
   }
   return glowing.get(material);
