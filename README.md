@@ -56,6 +56,34 @@ flags, chariots) is on stage. Visitors whose system asks for reduced motion
 see a still scene (no sailing ships, water or turning dioramas) that is only
 redrawn when the camera or the scene changes.
 
+## Screenshots
+
+`scripts/screenshots.sh <outDir> [map | all | landmark ids…]` builds the site
+into a temporary folder, serves it and photographs the map and the chosen
+dioramas with headless Chrome (SwiftShader, so a picture takes a few seconds).
+It prints anything the page throws. `--width=390 --height=844` checks the
+phone layout, and `--views=name:x,y,z,tx,ty,tz` adds map views from a given
+camera position and target. Use it before and after changing a model, and look
+at the pictures: a model that is right in code can still be wrong on screen.
+
+## Coplanar faces
+
+Two faces of different parts lying in one plane, facing the same way, flicker
+on a real GPU as the model turns (z-fighting), however the camera is set: a
+cornice whose top is flush with the top of the wall it wraps, a plinth flush
+with its mass, paving a centimetre above its slab. `scripts/coplanar.mjs`
+builds each model in Node and lists such pairs, worst first:
+
+```sh
+node --import ./scripts/coplanar-register.mjs scripts/coplanar.mjs --lod=detail blachernae
+node --import ./scripts/coplanar-register.mjs scripts/coplanar.mjs --lod=map        # every model
+```
+
+Fix a pair by stopping the mass short under its band, sinking a part into the
+one below, or stepping the faces at least 5 cm apart (the stage scales the
+big models to a tenth, and phones have little depth precision). Run it on any
+new or changed model; the headless screenshots cannot show flicker.
+
 ## Mobile Bugs
 
 - three.js's default `PCFShadowMap` resets the GPU of the Pixel 10's PowerVR

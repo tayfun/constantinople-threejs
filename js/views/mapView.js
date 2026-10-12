@@ -8,7 +8,7 @@ import { createShipping } from '../world/shipping.js';
 import { createRouteFollower } from '../world/motion.js';
 import { createLabel, createLabelRenderer, setLabelText } from '../world/labels.js';
 import { landmarkText, regionText } from '../i18n/index.js';
-import { ease, tween } from '../util/tween.js';
+import { breathe, ease, tween } from '../util/tween.js';
 import { setGlow } from '../util/glow.js';
 import { standsIn } from '../data/timeline.js';
 import { toWorld } from '../util/geo.js';
@@ -35,7 +35,7 @@ export class MapView {
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(HORIZON, 100, 340);
-    this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 3000);
+    this.camera = new THREE.PerspectiveCamera(40, 1, 0.5, 3000); // the near plane stands out for depth precision; see DetailView
     this.camera.position.copy(HOME.position);
 
     this.controls = new OrbitControls(this.camera, renderer.domElement);
@@ -51,8 +51,51 @@ export class MapView {
 
     this.sky = createSky({ horizon: HORIZON });
     this.scene.add(this.sky, createLights({ extent: 70, mapSize: QUALITY.mapShadowSize, distance: 180 }).group);
-    // Landmarks first: their footprints become level terraces in the hilly ground.
-    this.entries = landmarks.map((landmark) => this.placeLandmark(landmark));
+
+    // The city itself is raised by build(), stage by stage, so the page stays responsive meanwhile.
+    this.landmarks = landmarks;
+    this.regions = regions;
+    this.onSelectRegion = onSelectRegion;
+    this.entries = [];
+    this.labels = [];
+    this.animated = [];
+    this.labelRenderer = createLabelRenderer(container, { canvas: renderer.domElement });
+
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
+    this.pointerDirty = false;
+    this.listen(renderer.domElement);
+  }
+
+  // ---------- building ----------
+
+  /**
+   * Raises the city in stages, yielding to the browser between them so that
+   * the loading screen keeps painting and its button answers a click at once.
+   * `onProgress(done, total)` is told as each stage finishes.
+   */
+  async build(onProgress = () => {}) {
+    const stages = [
+      // Landmarks first: their footprints become level terraces in the hilly ground. One at a time, each with a breath after it.
+      ...this.landmarks.map((landmark) => () => { this.entries.push(this.placeLandmark(landmark)); }),
+      () => this.buildGround(),
+      () => this.scene.add(createTerrain(this.ground)),
+      () => this.buildFabric(),
+      () => this.scene.add(createShipping()),
+      () => this.addLabels(this.regions, this.onSelectRegion),
+      () => this.collectAnimated(),
+    ];
+    for (const [index, stage] of stages.entries()) {
+      stage();
+      onProgress(index + 1, stages.length);
+      await breathe();
+    }
+    this.dirty = true;
+    this.shadowDirty = true;
+  }
+
+  /** The hilly ground, with a terrace levelled under each landmark, and the landmarks set down on it. */
+  buildGround() {
     const grounded = this.entries.filter((entry) => entry.footprint);
     // Landmarks standing on another (map.on) ride on their host's terrace rather than levelling one of their own.
     const terraced = grounded.filter((entry) => !entry.landmark.map.on);
@@ -65,32 +108,25 @@ export class MapView {
     const climbing = [];
     for (const { holder } of this.entries) holder.traverse((object) => { if (object.userData.onGround) climbing.push(object); });
     for (const object of climbing) object.userData.onGround(this.ground);
+  }
 
-    this.scene.add(createTerrain(this.ground));
-    // Judas trees ring the great landmarks, just outside their clearings.
+  /** The towns and countryside, with Judas trees ringing the great landmarks just outside their clearings. */
+  buildFabric() {
+    const grounded = this.entries.filter((entry) => entry.footprint);
     const erguvanSites = grounded.filter(({ landmark }) => landmark.map.erguvans).map(({ landmark, footprint }) => ({
       ...footprint, clearance: landmark.map.clearance ?? 0.25, count: landmark.map.erguvans,
     }));
     this.scene.add(createCityFabric({ ground: this.ground, keepOut: this.entries.flatMap((entry) => entry.keepOut), erguvanSites }));
-    this.scene.add(createShipping());
+  }
 
-    this.labelRenderer = createLabelRenderer(container, { canvas: renderer.domElement });
-    this.addLabels(regions, onSelectRegion);
-
+  collectAnimated() {
     this.animated = [];
     this.scene.traverse((object) => {
       if (object.userData.animate) this.animated.push(object.userData.animate);
     });
     // With reduced motion the ships never sail; put each at its starting place once.
     if (QUALITY.reducedMotion) for (const animate of this.animated) animate(0, 0);
-
-    this.raycaster = new THREE.Raycaster();
-    this.pointer = new THREE.Vector2();
-    this.pointerDirty = false;
-    this.listen(renderer.domElement);
   }
-
-  // ---------- building ----------
 
   placeLandmark(landmark) {
     const { map } = landmark;

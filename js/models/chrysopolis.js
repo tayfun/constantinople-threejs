@@ -120,7 +120,7 @@ function addLand(town) {
   town.add(mesh(landGeometry(COAST, GROUND, 6), M.grass));
   addTerraces(town, 5, [-110, 110], true);
   // The sandy strand behind the quay, where small boats are drawn up.
-  town.add(groundPlane(5, 70, M.sand, -60.5, GROUND + 0.02, -36));
+  town.add(groundPlane(5, 70, M.sand, -60.5, GROUND + 0.06, -36));
 }
 
 const mapLawns = new Map();
@@ -136,10 +136,14 @@ function addTerraces(town, step, [zMin, zMax], detail = true) {
   const lawn = detail ? M.grass : mapLawn();
   const scrub = detail ? tinted('grass', 0xd8cf9c) : mapLawn(0xe8dfb2);
   for (let i = 0; i < TERRACE_BASE_X.length; i++) {
+    // Each terrace is sunk half a metre into the one below, so at the diorama's cut edges their faces would share a plane:
+    // each stops 6 cm short of the one below instead (on the map the lowest keeps the full footprint).
+    const inset = 0.06 * (detail ? i + 1 : i);
+    const [east, z0, z1] = [130 - inset, zMin + inset, zMax - inset];
     const outline = [];
-    for (let z = zMin; z <= zMax; z += step) outline.push([Math.min(130, terraceBoundary(i, z)), z]);
-    if (outline[outline.length - 1][1] < zMax) outline.push([Math.min(130, terraceBoundary(i, zMax)), zMax]);
-    outline.push([130, zMax], [130, zMin]);
+    for (let z = z0; z <= z1; z += step) outline.push([Math.min(east, terraceBoundary(i, z)), z]);
+    if (outline[outline.length - 1][1] < z1) outline.push([Math.min(east, terraceBoundary(i, z1)), z1]);
+    outline.push([east, z1], [east, z0]);
     const height = TERRACE_HEIGHTS[i + 1];
     town.add(mesh(landGeometry(outline, height, height - TERRACE_HEIGHTS[i] + 0.5), i >= 2 ? scrub : lawn));
   }
@@ -150,7 +154,7 @@ function addTerraces(town, step, [zMin, zMax], detail = true) {
 /** The quay, the mole with its beacon, warehouses and the fish market under its awnings. */
 function addHarbour(town, detail) {
   // Quay along the shore, its face dropping into the water, with a darker coping.
-  town.add(box(7, GROUND + 1, 74, M.stone, -66, -1, -36));
+  town.add(box(7, GROUND + 1.12, 74, M.stone, -66, -1, -36)); // runs up inside the coping rather than stopping level with the ground
   town.add(box(7.4, 0.4, 74.4, M.stoneDark, -66, GROUND - 0.05, -36));
   // The mole, angled out from the north end to shelter the landing from the Bosphorus current.
   const mole = box(6, GROUND + 1.2, 42, M.stone, -82, -1, -84);
@@ -196,10 +200,10 @@ function warehouse(w, d, h, detail) {
   store.add(box(w, h, d, M.brick, 0, 0, 0));
   store.add(gableRoof(w, d, d * 0.32, M.roof, 0, h, 0, 0.5));
   if (detail) {
-    const door = mesh(archGeometry(2.4, 3.6), M.opening, -w / 2 - 0.03, 0, 0);
+    const door = mesh(archGeometry(2.4, 3.6), M.opening, -w / 2 - 0.06, 0, 0);
     door.rotation.y = -Math.PI / 2;
     store.add(door);
-    const vent = mesh(archGeometry(0.8, 1.2), M.opening, -w / 2 - 0.03, h - 2, 0);
+    const vent = mesh(archGeometry(0.8, 1.2), M.opening, -w / 2 - 0.06, h - 2, 0);
     vent.rotation.y = -Math.PI / 2;
     store.add(vent);
   }
@@ -214,7 +218,7 @@ function addCustomsPost(town, detail) {
   const [w, d, height] = [24, 22, 5];
   for (const side of [-1, 1]) {
     town.add(box(w, height, 1.8, M.stone, x, GROUND, z + side * d / 2));
-    town.add(box(1.8, height, d, M.stone, x + side * w / 2, GROUND, z));
+    town.add(box(1.8, height + 0.06, d, M.stone, x + side * w / 2, GROUND, z)); // a shade taller, so the corners' tops are not one plane
   }
   // A tower at the seaward corner watches the strait; the gate faces the quay.
   const tower = [x - w / 2 + 1, z + d / 2 - 1];
@@ -228,7 +232,7 @@ function addCustomsPost(town, detail) {
   const merlons = detail ? {} : MAP_MERLONS;
   for (const side of [-1, 1]) {
     town.add(mesh(crenellationGeometry(w - 1, merlons), M.stone, x, GROUND + height, z + side * (d / 2 + 0.55)));
-    const parapet = mesh(crenellationGeometry(d - 1, merlons), M.stone, x + side * (w / 2 + 0.55), GROUND + height, z);
+    const parapet = mesh(crenellationGeometry(d - 1, merlons), M.stone, x + side * (w / 2 + 0.55), GROUND + height + 0.06, z);
     parapet.rotation.y = Math.PI / 2;
     town.add(parapet);
   }
@@ -240,9 +244,9 @@ function addCustomsPost(town, detail) {
   if (detail) {
     const windows = windowRow({ count: 3, spacing: 3, width: 0.8, height: 1.4, y: GROUND + 3.6 });
     windows.rotation.y = -Math.PI / 2;
-    windows.position.set(x - 4.03, 0, z);
+    windows.position.set(x - 4.06, 0, z);
     town.add(windows);
-    const slit = mesh(archGeometry(0.7, 1.6), M.opening, tower[0] - 3.53, GROUND + 8, tower[1]);
+    const slit = mesh(archGeometry(0.7, 1.6), M.opening, tower[0] - 3.56, GROUND + 8, tower[1]);
     slit.rotation.y = -Math.PI / 2;
     town.add(slit);
   }
@@ -257,7 +261,7 @@ function addRoad(town, detail, elevation) {
   for (let i = 0; i <= breaks.length; i++) {
     const to = i < breaks.length ? breaks[i] - 4 : 130;
     const y = TERRACE_HEIGHTS[i];
-    town.add(groundPlane(to - from, 7, M.paving, (from + to) / 2, y + 0.03, ROAD_Z));
+    town.add(groundPlane(to - from, 7, M.paving, (from + to) / 2, y + 0.12, ROAD_Z)); // above the ground, and above the strand it crosses
     if (i < breaks.length) {
       // A ramp of paving between terraces, with a retaining wall each side.
       const rise = TERRACE_HEIGHTS[i + 1] - y;
@@ -290,7 +294,7 @@ function addMonastery(town, detail, elevation) {
   // The church: a cross-in-square, apse to the east, narthex to the west.
   town.add(box(16, 8, 16, M.brick, x, y, z));
   town.add(box(18, 11, 6.5, M.brick, x, y, z));
-  town.add(box(6.5, 11, 18, M.brick, x, y, z));
+  town.add(box(6.5, 11.06, 18, M.brick, x, y, z)); // a shade taller, so the arms' tops are not one plane under the roofs
   town.add(hipRoof(16, 16, 1.5, M.roof, x, y + 8, z, 0.4));
   town.add(gableRoof(18, 6.5, 2.2, M.roof, x, y + 11, z, 0.4));
   const transept = gableRoof(18, 6.5, 2.2, M.roof, x, y + 11, z, 0.4);
@@ -307,15 +311,15 @@ function addMonastery(town, detail, elevation) {
   town.add(hipRoof(4.5, 16, 1.5, M.roof, x - 10.25, y + 7, z, 0.4));
   if (detail) {
     const drumWindows = windowRow({ count: 4, spacing: 1.6, width: 0.6, height: 2.2, y: y + 14.2 });
-    drumWindows.position.set(x, 0, z + 3.23);
+    drumWindows.position.set(x, 0, z + 3.26);
     town.add(drumWindows);
     for (const side of [-1, 1]) {
       const windows = windowRow({ count: 3, spacing: 2.2, width: 0.7, height: 2.4, y: y + 7.8 });
-      windows.position.set(x, 0, z + side * 3.28);
+      windows.position.set(x, 0, z + side * 3.31);
       windows.rotation.y = side > 0 ? 0 : Math.PI;
       town.add(windows);
     }
-    const door = mesh(archGeometry(2, 3.6), M.opening, x - 12.53, y, z);
+    const door = mesh(archGeometry(2, 3.6), M.opening, x - 12.56, y, z);
     door.rotation.y = -Math.PI / 2;
     town.add(door);
   }
@@ -323,7 +327,7 @@ function addMonastery(town, detail, elevation) {
   const [cx, ew, ed] = [x, 32, 48];
   for (const side of [-1, 1]) {
     town.add(box(ew, 3.6, 1, M.stone, cx, y, z + side * ed / 2));
-    town.add(box(1, 3.6, ed, M.stone, cx + side * ew / 2, y, z));
+    town.add(box(1, 3.66, ed, M.stone, cx + side * ew / 2, y, z));
   }
   town.add(box(3, 5, 4, M.stone, cx - ew / 2, y, z + 8));
   town.add(box(2.2, 4, 1.4, M.opening, cx - ew / 2, y, z + 8));
@@ -338,7 +342,7 @@ function addMonastery(town, detail, elevation) {
   town.add(box(26, 0.4, 4, M.roof, cx, y + 3, rangeZ - 5.3));
   if (detail) {
     const cells = windowRow({ count: 6, spacing: 4.4, width: 0.7, height: 1.2, y: y + 3.6 });
-    cells.position.set(cx, 0, rangeZ - 3.47);
+    cells.position.set(cx, 0, rangeZ - 3.56);
     town.add(cells);
     town.add(cylinder(2, 2.2, 0.9, M.marble, cx - 8, y, z + 6, 12));
   }
@@ -353,7 +357,7 @@ function addPalace(town, detail, elevation) {
   const terrace = 2.5;
   const y = elevation(x, z);
   town.add(box(36, terrace, 32, M.banded, x, y - 0.5, z));
-  town.add(groundPlane(36, 32, M.paving, x, y + terrace - 0.47, z));
+  town.add(groundPlane(36, 32, M.paving, x, y + terrace - 0.44, z));
   const floor = y + terrace - 0.5;
 
   // The hall, with a two-storey colonnaded loggia on its seaward side.
@@ -381,13 +385,13 @@ function addPalace(town, detail, elevation) {
     for (const side of [-1, 1]) {
       const windows = windowRow({ count: 4, spacing: 5.2, width: 1.1, height: 2.4, y: floor + 7.5 });
       windows.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-      windows.position.set(x + 4 + side * 6.05, 0, z);
+      windows.position.set(x + 4 + side * 6.06, 0, z);
       town.add(windows);
     }
     town.add(mesh(new THREE.CircleGeometry(2.2, 16).rotateX(-Math.PI / 2), M.water, x - 11, floor + 0.7, z + 8));
   }
   // The stair down from the terrace towards the palace landing.
-  for (let i = 0; i < 3; i++) town.add(box(1.3, 0.7 * (3 - i), 6, M.stone, x - 18.6 - i * 1.3, y, z + 2));
+  for (let i = 0; i < 3; i++) town.add(box(1.3, 0.7 * (3 - i) + 0.06, 6, M.stone, x - 18.6 - i * 1.3, y, z + 2));
   for (const [dx, dz] of [[-16, -14], [-16, 14], [16, 14], [16, -14]]) town.add(cypress(9, x + dx, floor, z + dz));
   for (const [dx, dz] of [[-15, 4], [-6, 13], [-14, 11]]) town.add(roundTree(5, x + dx, floor, z + dz));
 }
@@ -484,17 +488,17 @@ function addDamalis(town) {
   town.add(mesh(new THREE.RingGeometry(9.6, 10.6, 18).rotateX(-Math.PI / 2), M.stone, x, 7, z));
   town.add(mesh(crenelRingGeometry(10.1, { count: 20, merlon: 1.2, height: 0.9, thickness: 0.7 }), M.stone, x, 7, z));
   town.add(box(6, 4.2, 4, M.stone, x + 10, 0, z + 2));
-  town.add(box(2.2, 3.2, 1.2, M.opening, x + 10.2, 3.8, z + 2));
+  town.add(box(2.2, 3.1, 1.2, M.opening, x + 10.2, 3.8, z + 2)); // stops under the wall-walk
   // The tower itself: a stone base, a timbered upper storey and a leaded roof, as the Komnenoi left it.
   town.add(cylinder(4.2, 4.6, 9, M.stone, x, 3.8, z, 12));
   town.add(cylinder(4.6, 4.6, 0.8, M.stoneDark, x, 12.8, z, 12));
   town.add(cylinder(3.9, 3.9, 5.5, M.wood, x, 13.6, z, 12));
   town.add(cylinder(4.5, 4.5, 0.8, M.wood, x, 19.1, z, 12));
   town.add(pyramid(6.6, 6.6, 4.8, M.lead, x, 19.9, z));
-  const window = mesh(archGeometry(0.9, 1.6), M.opening, x + 3.93, 15.6, z);
+  const window = mesh(archGeometry(0.9, 1.6), M.opening, x + 3.96, 15.6, z);
   window.rotation.y = Math.PI / 2;
   town.add(window);
-  town.add(box(1.4, 2.4, 0.5, M.opening, x + 4.3, 4.6, z));
+  town.add(box(1.4, 2.3, 0.5, M.opening, x + 4.3, 4.6, z));
   const banner = flag('byzantine', { width: 2.4, height: 1.6, pole: 5 });
   banner.position.set(x, 24.4, z);
   town.add(banner);

@@ -265,6 +265,33 @@ export const SEVEN_HILLS = [
   { at: [-38, -6.2], height: 1.4, radius: 6 }, // VII: Xerolophos, the broad south-western hill
 ].map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) }));
 
+/**
+ * The rolling country beyond the walls: the low ridges of Thrace west of the
+ * land walls and round the head of the Golden Horn, and the hills of the Asian
+ * shore behind Chrysopolis and Chalcedon (Çamlıca, the highest, looks down on
+ * the Bosphorus). Broad and gentle, exaggerated like the city's seven hills,
+ * and kept clear of the walls, the shores and the towns.
+ */
+export const THRACE_HILLS = [
+  { at: [-62, 2], height: 1.1, radius: 7 },
+  { at: [-73, 18], height: 1.6, radius: 9 },
+  { at: [-60, 32], height: 1.0, radius: 6 },
+  { at: [-81, -9], height: 1.4, radius: 8 },
+  { at: [-67, 44], height: 1.2, radius: 7 },
+  { at: [-49, 54], height: 0.9, radius: 6 },
+  { at: [-88, 38], height: 1.3, radius: 9 },
+].map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) }));
+
+export const ASIA_HILLS = [
+  { at: [43, 22], height: 1.7, radius: 8 }, // Çamlıca
+  { at: [53, 8], height: 1.2, radius: 7 },
+  { at: [51, -8], height: 1.0, radius: 7 },
+  { at: [61, 31], height: 1.4, radius: 9 },
+  { at: [46, 42], height: 1.1, radius: 7 },
+  { at: [63, -30], height: 0.9, radius: 7 },
+  { at: [70, 12], height: 1.3, radius: 9 },
+].map(({ at, height, radius }) => ({ at: magnify(at), height, radius: radius * magnificationAt(at) }));
+
 /** Ends of the great chain that could close the Golden Horn. */
 export const CHAIN_SOUTH = magnify([0, 9]);
 export const CHAIN_NORTH = magnify([-2.4, 14.7]);

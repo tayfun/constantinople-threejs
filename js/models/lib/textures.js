@@ -307,9 +307,10 @@ export const cityGround = () =>
 /** Countryside meadow: fresh green with soft, broad patches. */
 export const mapMeadow = () =>
   paintTexture('mapMeadow', { tile: 36 }, (ctx, w, h, rnd) => {
-    fill(ctx, w, h, [134, 168, 84]);
-    blotches(ctx, w, h, rnd, { count: 16, color: [118, 154, 72], radius: 80, alpha: 0.22 });
-    blotches(ctx, w, h, rnd, { count: 10, color: [160, 178, 96], radius: 70, alpha: 0.18 });
+    // A sun-dried Mediterranean green, olive rather than lawn, with paler straw-coloured patches.
+    fill(ctx, w, h, [136, 158, 88]);
+    blotches(ctx, w, h, rnd, { count: 16, color: [116, 146, 76], radius: 80, alpha: 0.24 });
+    blotches(ctx, w, h, rnd, { count: 12, color: [168, 170, 104], radius: 70, alpha: 0.22 });
   });
 
 /** Pine woods on the islands: deep green, broken by sunlit clearings. */

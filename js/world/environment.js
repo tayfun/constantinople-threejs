@@ -30,7 +30,7 @@ const skyFragment = /* glsl */ `
 `;
 
 /** A gradient sky sphere that follows the camera. */
-export function createSky({ top = 0x5f8fbf, horizon = 0xf0dcb8, sun = 0xffd9a0 } = {}) {
+export function createSky({ top = 0x5f8fbf, horizon = 0xf0dcb8, sun = 0xffd9a0, radius = 1000 } = {}) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uTop: { value: new THREE.Color(top) },
@@ -43,10 +43,26 @@ export function createSky({ top = 0x5f8fbf, horizon = 0xf0dcb8, sun = 0xffd9a0 }
     side: THREE.BackSide,
     depthWrite: false,
   });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), material);
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), material);
   sky.frustumCulled = false;
   sky.renderOrder = -1;
   return sky;
+}
+
+/**
+ * The sky, baked into a reflection map for the materials. Without one a
+ * metal has nothing to mirror and renders dull or black; with it the gilded
+ * domes, bronzes and lead roofs catch the sky and the ground's warmth, and
+ * marble and water get a faint sheen. The sky's own colours are used, so
+ * reflections match the backdrop. Built once per renderer and shared.
+ */
+export function createEnvironmentMap(renderer, { top = 0x5f8fbf, horizon = 0xf0dcb8 } = {}) {
+  const generator = new THREE.PMREMGenerator(renderer);
+  const scene = new THREE.Scene();
+  scene.add(createSky({ top, horizon, radius: 50 }));
+  const texture = generator.fromScene(scene, 0.04, 0.1, 100).texture;
+  generator.dispose();
+  return texture;
 }
 
 /** Warm late-afternoon sun with soft sky fill; the sun casts shadows over ±extent. */

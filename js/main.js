@@ -14,7 +14,10 @@ await nextFrame();
 await nextFrame();
 
 try {
-  new App(root).start(() => loading.ready());
+  const app = new App(root);
+  window.__app = app; // for scripted screenshots and debugging in the console
+  await app.build((done, total) => loading.progress(done / total));
+  app.start(() => loading.ready());
 } catch (error) {
   // three.js throws this when the browser refuses a WebGL context, which Chrome also does to a site whose page lost one before.
   const noWebgl = error.message.startsWith('Error creating WebGL context');

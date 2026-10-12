@@ -58,17 +58,18 @@ function createSection() {
 
   // Ground: city and terraces, the moat, and the open country beyond.
   walls.add(box(LENGTH + 20, 4, 113.5, M.grass, 0, -4, -23.25));
-  walls.add(groundPlane(LENGTH, 31, M.dirt, 0, 0.02, 18));
+  walls.add(groundPlane(LENGTH, 31, M.dirt, 0, 0.08, 18));
   walls.add(box(LENGTH + 20, 4, 20, M.dirt, 0, -4 - MOAT_DEPTH, 43.5));
   walls.add(box(LENGTH + 20, 4, 36.5, M.grass, 0, -4, 71.75));
   for (const z of [MOAT[0] + 0.5, MOAT[1] - 0.5]) walls.add(box(LENGTH + 20, MOAT_DEPTH, 1, M.stone, 0, -MOAT_DEPTH, z));
   walls.add(groundPlane(LENGTH + 20, 19, M.water, 0, -MOAT_DEPTH + 2.5, 43.5));
-  for (const x of [-80, 80]) walls.add(box(2.4, MOAT_DEPTH + 0.3, 20, M.stone, x, -MOAT_DEPTH, 43.5)); // dams dividing the moat
+  for (const x of [-80, 80]) walls.add(box(2.4, MOAT_DEPTH + 0.3, 19.9, M.stone, x, -MOAT_DEPTH, 43.5)); // dams dividing the moat, ending inside its scarps
 
   // Inner wall: 12 m high, 5 m thick, pierced by the gate; a parapet walk along the top.
   const gate = { x: 0, width: 6, bottom: 0, spring: 7.5 };
-  walls.add(mesh(archedWallGeometry({ length: LENGTH, height: INNER_HEIGHT, thickness: INNER_THICKNESS, openings: [gate] }), masonry));
-  walls.add(box(LENGTH, 0.5, INNER_THICKNESS + 0.6, M.stone, 0, INNER_HEIGHT - 0.5, 0)); // string course
+  // The masonry stops short under the string course, which runs 0.05 m past its ends, so their faces share no plane.
+  walls.add(mesh(archedWallGeometry({ length: LENGTH, height: INNER_HEIGHT - 0.3, thickness: INNER_THICKNESS, openings: [gate] }), masonry));
+  walls.add(box(LENGTH + 0.1, 0.5, INNER_THICKNESS + 0.6, M.stone, 0, INNER_HEIGHT - 0.5, 0)); // string course
   walls.add(mesh(crenellationGeometry(LENGTH, MERLONS), masonry, 0, INNER_HEIGHT, INNER_THICKNESS / 2 - 0.45));
   walls.add(box(LENGTH, 1, 0.5, masonry, 0, INNER_HEIGHT, -INNER_THICKNESS / 2 + 0.25)); // low parapet on the city side
   for (const x of [-85, 85]) {
@@ -82,7 +83,7 @@ function createSection() {
   const innerTowers = [[-110, 'octagon'], [-55, 'square'], [-12, 'gate'], [12, 'gate'], [55, 'square'], [110, 'octagon']];
   for (const [x, kind] of innerTowers) {
     if (kind === 'octagon') {
-      walls.add(cylinder(6.4, 6.6, 19, masonry, x, 0, 3.5, 8));
+      walls.add(cylinder(6.4, 6.6, 18.7, masonry, x, 0, 3.5, 8)); // stops short under the cap
       walls.add(cylinder(6.8, 6.8, 0.5, M.stone, x, 18.5, 3.5, 8));
       walls.add(mesh(crenelRingGeometry(6.4, { count: 16, merlon: 1.3, height: 1.9, thickness: 0.9 }), masonry, x, 19, 3.5));
       for (let i = 0; i < 3; i++) {
@@ -96,25 +97,25 @@ function createSection() {
       const depth = 13;
       const height = kind === 'gate' ? 21 : 19;
       const z = 3.5;
-      walls.add(box(width, height, depth, masonry, x, 0, z));
-      walls.add(box(width + 0.6, 0.5, depth + 0.6, M.stone, x, INNER_HEIGHT - 0.5, z)); // string course at wall-walk level
+      walls.add(box(width, height - 0.3, depth, masonry, x, 0, z)); // stops short under the cap
+      walls.add(box(width + 0.6, 0.5, depth + 0.6, M.stone, x, INNER_HEIGHT - 0.45, z)); // string course at wall-walk level, 0.05 m over the wall's
       walls.add(box(width + 0.6, 0.5, depth + 0.6, M.stone, x, height - 0.5, z));
       walls.add(battlements(width, depth, x, height, z, masonry));
       // Upper chamber windows on the field side and flanks, a door from the city side below.
-      for (const dx of [-3, 0, 3]) walls.add(mesh(archGeometry(1.1, 2.4), M.opening, x + dx, 14.5, z + depth / 2 + 0.03));
+      for (const dx of [-3, 0, 3]) walls.add(mesh(archGeometry(1.1, 2.4), M.opening, x + dx, 14.5, z + depth / 2 + 0.05));
       for (const side of [-1, 1]) {
-        const flank = mesh(archGeometry(1.1, 2.4), M.opening, x + side * (width / 2 + 0.03), 14.5, z + 2);
+        const flank = mesh(archGeometry(1.1, 2.4), M.opening, x + side * (width / 2 + 0.05), 14.5, z + 2);
         flank.rotation.y = side * Math.PI / 2;
         walls.add(flank);
       }
-      const door = mesh(archGeometry(1.8, 3.2), M.opening, x, 0.2, z - depth / 2 - 0.03);
+      const door = mesh(archGeometry(1.8, 3.2), M.opening, x, 0.2, z - depth / 2 - 0.05);
       door.rotation.y = Math.PI;
       walls.add(door);
     }
   }
   // The gate itself: a marble frame with bronze doors standing open.
   walls.add(box(9, 1, 0.8, M.marble, 0, 10.6, -INNER_THICKNESS / 2 - 0.3));
-  for (const side of [-1, 1]) walls.add(box(1.2, 10.6, 0.8, M.marble, side * 3.6, 0, -INNER_THICKNESS / 2 - 0.3));
+  for (const side of [-1, 1]) walls.add(box(1.2, 10.6, 0.8, M.marble, side * 3.65, 0, -INNER_THICKNESS / 2 - 0.3)); // beside the jambs
 
   // Outer wall: 8.5 m high and 2 m thick, with smaller towers set between the inner ones.
   walls.add(mesh(archedWallGeometry({ length: LENGTH, height: OUTER_HEIGHT, thickness: 2, openings: [{ x: 0, width: 5, bottom: 0, spring: 5.5 }] }), masonry, 0, 0, OUTER_Z));
@@ -122,7 +123,7 @@ function createSection() {
   for (const [x, round] of [[-82, true], [-33, false], [33, false], [82, true]]) {
     if (round) {
       walls.add(cylinder(4.2, 4.4, 12.5, masonry, x, 0, OUTER_Z + 1, 14, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }));
-      walls.add(box(8.4, 12.5, 2, masonry, x, 0, OUTER_Z));
+      walls.add(box(8.4, 12.5, 2.1, masonry, x, 0, OUTER_Z)); // 0.05 m proud of the wall's faces
       const ring = mesh(crenelRingGeometry(4.0, { count: 16, merlon: 1.1, height: 1.6, thickness: 0.8 }), masonry, x, 12.5, OUTER_Z + 1);
       walls.add(ring);
       for (const angle of [-0.9, 0, 0.9]) {
@@ -131,9 +132,9 @@ function createSection() {
         walls.add(slit);
       }
     } else {
-      walls.add(box(7, 13, 7, masonry, x, 0, OUTER_Z + 2.5));
+      walls.add(box(7, 13, 7.1, masonry, x, 0, OUTER_Z + 2.5)); // 0.05 m proud of the wall's back
       walls.add(battlements(7, 7, x, 13, OUTER_Z + 2.5, masonry));
-      for (const dx of [-2, 2]) walls.add(mesh(archGeometry(0.9, 1.9), M.opening, x + dx, 9.5, OUTER_Z + 6.03));
+      for (const dx of [-2, 2]) walls.add(mesh(archGeometry(0.9, 1.9), M.opening, x + dx, 9.5, OUTER_Z + 6.1));
     }
   }
 
@@ -146,15 +147,15 @@ function createSection() {
   }
   // A stone bridge on two arches carries the road over the moat.
   const bridge = mesh(archedWallGeometry({ length: 24, height: MOAT_DEPTH + 1, thickness: 7, openings: [
-    { x: -5.5, width: 7, bottom: 0, spring: 4.5 }, { x: 5.5, width: 7, bottom: 0, spring: 4.5 },
+    { x: -5.5, width: 6.9, bottom: 0, spring: 4.5 }, { x: 5.5, width: 6.9, bottom: 0, spring: 4.5 }, // the jambs 0.05 m inside the scarps
   ] }), M.stone, 0, -MOAT_DEPTH, 43.5);
   bridge.rotation.y = Math.PI / 2;
   walls.add(bridge);
   for (const side of [-1, 1]) walls.add(box(1.2, 0.8, 24, M.stone, side * 2.9, 1, 43.5));
 
   // Roads through the gate, and the city behind.
-  walls.add(groundPlane(6, 36, M.dirt, 0, 0.03, 72));
-  walls.add(groundPlane(6, 66, M.dirt, 0, 0.03, -46));
+  walls.add(groundPlane(6, 36, M.dirt, 0, 0.08, 72));
+  walls.add(groundPlane(6, 66, M.dirt, 0, 0.08, -46));
   scatterHouses(walls, createRandom(413), { count: 22, area: [-120, -76, 120, -18], avoid: [[0, -40, 10], [0, -20, 10], [0, -60, 10], [-78, -10, 8], [78, -10, 8]] });
 
   finalizeModel(walls);
@@ -277,9 +278,9 @@ function createMapCircuit() {
       const octagon = i % 4 === 2;
       const out = octagon ? inner.thickness * 0.7 : inner.towerDepth / 2 - inner.thickness / 2 + 0.03;
       const radius = inner.towerWidth * 0.58;
-      towers.push(place(octagon
-        ? cylinderGeometry(radius, radius * 1.03, inner.towerHeight, 8).rotateY(Math.PI / 8)
-        : boxGeometry(inner.towerWidth, inner.towerHeight, inner.towerDepth), out));
+      towers.push(place(octagon // each stops short under its cap
+        ? cylinderGeometry(radius, radius * 1.03, inner.towerHeight - 0.02, 8).rotateY(Math.PI / 8)
+        : boxGeometry(inner.towerWidth, inner.towerHeight - 0.02, inner.towerDepth), out));
       caps.push(place((octagon
         ? cylinderGeometry(radius + 0.03, radius + 0.03, 0.03, 8).rotateY(Math.PI / 8)
         : boxGeometry(inner.towerWidth + 0.06, 0.03, inner.towerDepth + 0.06)).translate(0, inner.towerHeight - 0.03, 0), out));

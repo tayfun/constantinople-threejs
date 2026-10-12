@@ -159,9 +159,10 @@ const PLOT_TONES = {
   churchyard: palette(0xe8dcc0),
   garden: palette(0x8fb25a, 0x86aa55),
   orchard: palette(0x9cba5e),
-  field: palette(0xc9c06a, 0xd4c374, 0xb8bd62),
-  meadow: palette(0x98bc5c, 0x8cb456),
-  fallow: palette(0xc4ad78, 0xbba270),
+  // Fields in the tawny greens and straw of a Thracian summer, not lawn.
+  field: palette(0xc6b57a, 0xd1bf86, 0xb3b26c, 0xa8ae6a, 0xbfae76),
+  meadow: palette(0x9cb064, 0x92a95e),
+  fallow: palette(0xc0a977, 0xb89f70),
 };
 const TREE_TONES = {
   round: palette(0x6ea845, 0x7db650, 0x5f9a3e, 0x8bbd55),

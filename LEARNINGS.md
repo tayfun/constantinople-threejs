@@ -112,6 +112,13 @@ the root cause took about 40 minutes, after hours of guessing.
 - **A tint that multiplies a texture can only darken it.**
 - **Layered ground (land, hills, streets) needs `polygonOffset`.** Use
   deeper negative factors for higher layers (−2, −4, −6).
+- **Flush faces flicker, and screenshots never show it.** A cornice whose top
+  is level with the wall it wraps, a plinth flush with its mass, paving a
+  centimetre above a slab: on a real GPU these z-fight as the model turns,
+  and the still, high-precision headless renderer draws them clean. Keep the
+  camera's near plane as far out as the closest zoom allows (0.1 wasted most
+  of the depth buffer), and scan every model for coplanar pairs with a script
+  (`scripts/coplanar.mjs`) rather than by eye.
 
 ## Geography and scale
 

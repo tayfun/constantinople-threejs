@@ -22,10 +22,10 @@ export function createJudasTree({ lod = 'detail' } = {}) {
     return finalizeModel(garden);
   }
 
-  // A round plot: a stone kerb, a paved walk round its edge, and the lawn.
+  // A round plot: a stone kerb, a paved walk round its edge, and the lawn, each a few centimetres above the last.
   garden.add(cylinder(RADIUS + 0.4, RADIUS + 0.6, GROUND - 0.1, M.stone, 0, 0, 0, 64));
-  garden.add(mesh(new THREE.RingGeometry(RADIUS - 1.4, RADIUS + 0.4, 64).rotateX(-Math.PI / 2), M.paving, 0, GROUND - 0.08, 0));
-  garden.add(mesh(new THREE.CircleGeometry(RADIUS - 1.4, 64).rotateX(-Math.PI / 2), M.grass, 0, GROUND - 0.06, 0));
+  garden.add(mesh(new THREE.RingGeometry(RADIUS - 1.4, RADIUS + 0.4, 64).rotateX(-Math.PI / 2), M.paving, 0, GROUND - 0.04, 0));
+  garden.add(mesh(new THREE.CircleGeometry(RADIUS - 1.4, 64).rotateX(-Math.PI / 2), M.grass, 0, GROUND + 0.02, 0));
 
   garden.add(judasTree(8, -0.8, GROUND, 0.4, { seed: 1 }));
   garden.add(judasTree(4.2, 5.2, GROUND, -4.4, { seed: 5 }));
@@ -35,7 +35,7 @@ export function createJudasTree({ lod = 'detail' } = {}) {
   const bench = new THREE.Group();
   bench.add(box(2.6, 0.12, 0.7, M.marble, 0, 0.42, 0));
   for (const x of [-1, 1]) bench.add(box(0.22, 0.42, 0.6, M.marble, x, 0, 0));
-  bench.position.set(3.6, GROUND - 0.08, 6.4);
+  bench.position.set(3.6, GROUND - 0.04, 6.4);
   bench.rotation.y = Math.atan2(-0.8 - 3.6, 0.4 - 6.4); // its front (+z) towards the trunk
   garden.add(bench);
 

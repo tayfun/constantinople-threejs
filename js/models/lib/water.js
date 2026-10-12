@@ -32,28 +32,45 @@ const fragmentShader = /* glsl */ `
   varying vec3 vWorld;
   #include <fog_pars_fragment>
 
+  // Cheap value noise, for the broad, slow-moving patches that wind lays on open water.
+  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+
+  // Five trains of waves, each running its own way across the others, so no
+  // stripes ever line up into the bands a few parallel sines would make.
   float waves(vec2 p) {
-    return sin(p.x * 1.7 + uTime * 0.9) * 0.35
-         + sin(p.y * 2.3 - uTime * 0.7) * 0.3
-         + sin((p.x * 0.8 + p.y * 1.4) * 2.9 + uTime * 1.6) * 0.18
-         + sin((p.y * 0.6 - p.x * 1.9) * 4.1 - uTime * 2.1) * 0.1;
+    return sin(dot(p, vec2(0.84, 0.54)) * 1.3 + uTime * 0.8) * 0.30
+         + sin(dot(p, vec2(-0.37, 0.93)) * 2.1 - uTime * 0.7) * 0.22
+         + sin(dot(p, vec2(0.98, -0.2)) * 3.7 + uTime * 1.4) * 0.14
+         + sin(dot(p, vec2(0.2, 0.98)) * 5.9 - uTime * 1.9) * 0.09
+         + sin(dot(p, vec2(-0.7, -0.7)) * 9.1 + uTime * 2.6) * 0.05;
   }
 
   void main() {
     vec2 p = vLocal * uScale;
+    // Gusts: slow drifting patches that roughen the surface here and smooth it there.
+    float gust = noise(p * 0.07 + vec2(uTime * 0.012, -uTime * 0.008));
+    gust = 0.6 + 0.6 * (gust - 0.5);
     float e = 0.05;
     float h = waves(p);
+    float slope = 0.11 * gust;
     vec3 normal = normalize(vec3(
-      -(waves(p + vec2(e, 0.0)) - h) / e * 0.1,
+      -(waves(p + vec2(e, 0.0)) - h) / e * slope,
       1.0,
-      -(waves(p + vec2(0.0, e)) - h) / e * 0.1
+      -(waves(p + vec2(0.0, e)) - h) / e * slope
     ));
     vec3 view = normalize(cameraPosition - vWorld);
     float fresnel = pow(1.0 - max(dot(normal, view), 0.0), 4.0);
-    vec3 color = mix(uDeep, uShallow, 0.4 + 0.25 * h);
-    color = mix(color, uSky, fresnel * 0.75);
-    float glint = pow(max(dot(reflect(-uSunDir, normal), view), 0.0), 140.0);
-    color += vec3(1.0, 0.9, 0.7) * glint * 0.9;
+    // The gusts also shift the tone a little: ruffled water looks darker, calm water paler.
+    vec3 color = mix(uDeep, uShallow, 0.42 + 0.2 * h - 0.2 * (gust - 0.6));
+    color = mix(color, uSky, fresnel * 0.7);
+    float glint = pow(max(dot(reflect(-uSunDir, normal), view), 0.0), 160.0);
+    color += vec3(1.0, 0.92, 0.75) * glint * 0.8 * gust;
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

@@ -39,7 +39,7 @@ const TERRACE = 4; // the upper town stands this much higher than the shore
 function createColony() {
   const colony = new THREE.Group();
   colony.add(box(210, 3, 125, M.paving, 0, -3, -12));
-  colony.add(box(210, TERRACE, 46, M.paving, 0, 0, -52)); // the upper terrace
+  colony.add(box(210, TERRACE, 45.8, M.paving, 0, 0, -52.1)); // the upper terrace, ending inside its retaining wall
   colony.add(box(210, TERRACE, 1.2, M.stoneDark, 0, 0, -28.6)); // its retaining wall
   const steps = stairs(10, 8, 0.5, 0.8, M.stone);
   steps.position.set(-10, 0, -21.6);
@@ -63,7 +63,7 @@ function createColony() {
   labelAt(colony, 'galataTower', 0, TERRACE + 68, -65);
 
   // Quay, harbour water and cargo.
-  colony.add(box(210, 1.8, 13, M.stone, 0, -1.2, 47.5));
+  colony.add(box(209.8, 1.8, 13, M.stone, 0, -1.2, 47.5)); // a hair short of the base, so their cut ends are not one plane
   colony.add(groundPlane(280, 70, M.water, 0, 0, 89));
   const rnd = createRandom(1267);
   for (let i = 0; i < 18; i++) {
@@ -140,23 +140,22 @@ function addPodestaPalace(group, { x, z, detail }) {
     group.add(flank);
   }
   group.add(hipRoof(w - 3, d - 3, 3, M.roof, x, h + 0.5, z, 0));
-  group.add(box(w, 0.6, 5, M.stone, x, 5.6, z + d / 2 - 2.5)); // the loggia floor
   if (!detail) return;
   // The two-light windows of the piano nobile and the storey above.
   const light = pointedArchGeometry(0.9, 2.8);
   for (const [y, count] of [[7.6, 7], [12.2, 7]]) {
     for (let i = 0; i < count; i++) {
       const wx = x - 15 + i * 5;
-      group.add(mesh(pointedArchGeometry(2.8, 3.6), M.stoneDark, wx, y - 0.3, z + d / 2 + 0.02));
-      for (const side of [-0.6, 0.6]) group.add(mesh(light, M.opening, wx + side, y, z + d / 2 + 0.04));
-      group.add(cylinder(0.12, 0.12, 2.3, M.marble, wx, y, z + d / 2 + 0.05, 6));
+      group.add(mesh(pointedArchGeometry(2.8, 3.6), M.stoneDark, wx, y - 0.3, z + d / 2 + 0.06));
+      for (const side of [-0.6, 0.6]) group.add(mesh(light, M.opening, wx + side, y, z + d / 2 + 0.12));
+      group.add(cylinder(0.12, 0.12, 2.3, M.marble, wx, y, z + d / 2 + 0.14, 6));
     }
   }
   // Windows on the ends.
   for (const side of [-1, 1]) {
     for (const y of [7.6, 12.2]) {
       for (const wz of [-5, 0, 5]) {
-        const window = mesh(pointedArchGeometry(1.4, 3), M.opening, x + side * (w / 2 + 0.03), y, z + wz);
+        const window = mesh(pointedArchGeometry(1.4, 3), M.opening, x + side * (w / 2 + 0.06), y, z + wz);
         window.rotation.y = side * Math.PI / 2;
         group.add(window);
       }
@@ -178,14 +177,14 @@ function addDominicanChurch(group, { x, z, detail }) {
   const nave = 10;
   const aisle = 5;
   const segments = detail ? 6 : 3; // of the pointed arches
-  const lift = detail ? 0.02 : 0.1; // flat openings stand off the wall more on the map, which is seen from far away
+  const lift = detail ? 0.06 : 0.1; // flat openings stand off the wall (and each other) by this; more on the map, which is seen from far away
   group.add(box(nave, 16, length, M.banded, x, 0, z));
   const roof = gableRoof(length, nave, 4.2, M.roof, x, 16, z, 0.4);
   roof.rotation.y = Math.PI / 2;
   group.add(roof);
   for (const side of [-1, 1]) {
     group.add(box(aisle, 9, length, M.banded, x + side * (nave + aisle) / 2, 0, z));
-    group.add(mesh(leanToRoofGeometry(length + 0.8, aisle + 0.6, 2.6, side), M.roof, x + side * (nave / 2 + aisle / 2 + 0.3), 9, z));
+    group.add(mesh(leanToRoofGeometry(length + 0.8, aisle + 0.7, 2.6, side), M.roof, x + side * (nave / 2 + aisle / 2 + 0.25), 9, z)); // its ridge sunk a little into the nave wall
     for (let i = 0; i < 6; i++) group.add(box(1, 7.5, 1.4, M.stone, x + side * (nave / 2 + aisle + 0.4), 0, z - length / 2 + 7.2 + i * 6.4)); // buttresses
   }
   // Square sanctuary at the east end.
@@ -203,7 +202,7 @@ function addDominicanChurch(group, { x, z, detail }) {
   group.add(mesh(pointedArchGeometry(3, 5.5, segments), M.stoneDark, x, 0, front));
   group.add(mesh(pointedArchGeometry(2.2, 4.6, segments), M.opening, x, 0, front + lift));
   group.add(mesh(new THREE.RingGeometry(2.6, 3.1, detail ? 24 : 12), M.stone, x, 11.5, front));
-  group.add(mesh(new THREE.CircleGeometry(2.6, detail ? 24 : 12), M.opening, x, 11.5, front + lift / 2));
+  group.add(mesh(new THREE.CircleGeometry(2.6, detail ? 24 : 12), M.opening, x, 11.5, front + lift));
   // Belfry openings on all four faces, and in the diorama a lancet per storey below.
   const lancet = pointedArchGeometry(0.9, 3.6, segments);
   for (let i = 0; i < 4; i++) {
@@ -224,10 +223,10 @@ function addDominicanChurch(group, { x, z, detail }) {
   for (const side of [-1, 1]) {
     for (let i = 0; i < 6; i++) {
       const wz = z - length / 2 + 4 + i * 6.4;
-      const clerestory = mesh(lancet, M.opening, x + side * (nave / 2 + 0.03), 11, wz);
+      const clerestory = mesh(lancet, M.opening, x + side * (nave / 2 + lift), 11, wz);
       clerestory.rotation.y = side * Math.PI / 2;
       group.add(clerestory);
-      const low = mesh(tall, M.opening, x + side * (nave / 2 + aisle + 0.03), 3.2, wz);
+      const low = mesh(tall, M.opening, x + side * (nave / 2 + aisle + lift), 3.2, wz);
       low.rotation.y = side * Math.PI / 2;
       group.add(low);
     }
@@ -235,7 +234,7 @@ function addDominicanChurch(group, { x, z, detail }) {
   // The gable's small lancets; east lancets in the sanctuary.
   for (const side of [-1, 1]) group.add(mesh(lancet, M.opening, x + side * (nave + aisle) / 2, 2.5, front));
   for (const side of [-1, 1]) {
-    const east = mesh(tall, M.opening, x + side * 2.6, 5, z - length / 2 - 10 - 0.03);
+    const east = mesh(tall, M.opening, x + side * 2.6, 5, z - length / 2 - 10 - lift);
     east.rotation.y = Math.PI;
     group.add(east);
   }

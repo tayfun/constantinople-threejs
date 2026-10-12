@@ -32,6 +32,7 @@ export function setIntroSkipped(skip) {
 export class LoadingScreen {
   constructor(element) {
     this.element = element;
+    this.bar = element.querySelector('.loading__bar-fill');
     this.loaded = false;
     this.entered = introSkipped();
     if (!this.entered) this.showIntro();
@@ -68,6 +69,11 @@ export class LoadingScreen {
     this.intro.remove();
     this.element.classList.remove('has-intro');
     if (this.loaded) this.hide();
+  }
+
+  /** How much of the city is built, 0 to 1; shown as a bar on the plain loading screen. */
+  progress(fraction) {
+    if (this.bar) this.bar.style.transform = `scaleX(${Math.min(1, Math.max(0, fraction))})`;
   }
 
   /** The first frame of the city is drawn. */

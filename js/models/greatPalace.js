@@ -40,13 +40,17 @@ const HALF = { thetaStart: -Math.PI / 2, thetaLength: Math.PI };
  * its own ground). These two helpers carry the per-level choices.
  */
 const curve = (detail, fine, coarse) => (detail ? fine : coarse);
-/** Height of a pavement or lawn above the slab under it: centimetres in the diorama, more on the map, whose far camera cannot tell them apart. */
-const lift = (dy, detail) => (detail ? dy : dy * 12);
+/**
+ * Height of a pavement or lawn above the slab under it: centimetres in the
+ * diorama (never less than 0.06 m between two surfaces, or they flicker on
+ * the stage), more on the map, whose far camera cannot tell them apart.
+ */
+const lift = (dy, detail) => (detail ? dy : dy * 6);
 
 /** Judas trees in the palace gardens, [x, y, z]: on the Mesokepion lawn, in the western garden, above the harbour. */
 export const JUDAS_TREES = [[46, UPPER, -14], [4, UPPER, -46], [-108, UPPER, -18], [-118, MIDDLE, 14], [20, LOWER, 58]];
 /** How far the map build raises its lawns above the terrace they lie on. */
-export const MAP_LAWN_LIFT = lift(0.05, false);
+export const MAP_LAWN_LIFT = lift(0.12, false);
 
 export function createGreatPalace({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
@@ -89,7 +93,7 @@ export function createGreatPalace({ lod = 'detail' } = {}) {
   // first as a landmark of its own. Kept apart from the merge (dynamic) so they can glow when hovered.
   if (detail) {
     JUDAS_TREES.forEach(([x, y, z], i) => {
-      const tree = judasTree(9, x, y + lift(0.05, detail), z, { seed: i + 1 });
+      const tree = judasTree(9, x, y + lift(0.12, detail), z, { seed: i + 1 });
       tree.userData.landmarkId = 'judas-tree';
       tree.userData.dynamic = true;
       palace.add(tree);
@@ -104,22 +108,22 @@ export function createGreatPalace({ lod = 'detail' } = {}) {
 /** A terrace: banded retaining wall (its face relieved by blind arches) with a paved top. */
 function terrace(palace, width, depth, top, z, detail) {
   palace.add(box(width, top + 2, depth, M.banded, 0, -2, z));
-  palace.add(groundPlane(width, depth, M.paving, 0, top + lift(0.03, detail), z));
+  palace.add(groundPlane(width, depth, M.paving, 0, top + lift(0.06, detail), z));
   if (!detail) return;
   const face = z + depth / 2;
   const below = top === UPPER ? MIDDLE : top === MIDDLE ? LOWER : 0;
   const arcade = windowRow({ count: Math.floor(width / 9), spacing: 9, width: 3.2, height: Math.min(6, top - below - 1.5), y: 0.6 });
-  arcade.position.set(0, below, face + 0.02);
+  arcade.position.set(0, below, face + 0.06);
   palace.add(arcade);
 }
 
 /** Lawns and groves between the buildings: the palace was as much gardens as halls. */
 function addGardens(palace, detail) {
-  palace.add(groundPlane(50, 40, M.grass, 24, UPPER + lift(0.05, detail), -30)); // the Mesokepion around the Chrysotriklinos
-  palace.add(groundPlane(36, 20, M.grass, -112, UPPER + lift(0.05, detail), -22));
-  palace.add(groundPlane(24, 40, M.grass, 118, UPPER + lift(0.05, detail), -74));
-  palace.add(groundPlane(66, 24, M.grass, 92, LOWER + lift(0.05, detail), 66)); // the Tzykanisterion, Basil I's polo ground
-  palace.add(groundPlane(20, 40, M.grass, -120, MIDDLE + lift(0.05, detail), 26));
+  palace.add(groundPlane(50, 40, M.grass, 24, UPPER + lift(0.12, detail), -30)); // the Mesokepion around the Chrysotriklinos
+  palace.add(groundPlane(36, 20, M.grass, -112, UPPER + lift(0.12, detail), -22));
+  palace.add(groundPlane(24, 40, M.grass, 118, UPPER + lift(0.12, detail), -74));
+  palace.add(groundPlane(66, 24, M.grass, 92, LOWER + lift(0.12, detail), 66)); // the Tzykanisterion, Basil I's polo ground
+  palace.add(groundPlane(20, 40, M.grass, -120, MIDDLE + lift(0.12, detail), 26));
   if (!detail) return;
   // Goal posts of the polo ground.
   for (const x of [62, 122]) for (const dz of [-5, 5]) palace.add(cylinder(0.2, 0.25, 3, M.wood, x, LOWER, 66 + dz, 6));
@@ -196,7 +200,7 @@ function addChalke(palace, detail) {
   palace.add(box(5, 7.5, 0.5, M.bronze, x, UPPER, front - 0.1));
   palace.add(box(4, 4.6, 0.5, M.gold, x, UPPER + 9.5, front - 0.1));
   palace.add(box(1.6, 3.4, 0.2, cloth(0x3a4f7a), x, UPPER + 10.1, front - 0.4)); // the figure's blue mantle
-  palace.add(box(1.1, 1.1, 0.2, cloth(0xe8d2b0), x, UPPER + 12.6, front - 0.4));
+  palace.add(box(1.1, 1.1, 0.2, cloth(0xe8d2b0), x, UPPER + 12.6, front - 0.5));
   // The imperial standards flanking the gate.
   for (const side of [-1, 1]) {
     const standard = flag('imperial', detail ? { width: 4, height: 2.6, pole: 14 } : { width: 7, height: 4.5, pole: 18 });
@@ -284,7 +288,7 @@ function addDaphne(palace, detail) {
 function addMagnaura(palace, detail) {
   const [x, z] = [70, -72];
   palace.add(box(46, 11, 28, M.stone, x, UPPER, z));
-  palace.add(box(46, 18, 14, M.stone, x, UPPER, z));
+  palace.add(box(45.8, 18, 14, M.stone, x, UPPER, z)); // its ends a step inside the aisles' so the two faces do not fight
   palace.add(gableRoof(46, 14, 4, M.roof, x, UPPER + 18, z));
   for (const side of [-1, 1]) {
     const aisleRoof = box(46.6, 0.5, 7.6, M.roof, x, UPPER + 11, z + side * 10.5);
@@ -320,7 +324,7 @@ function addMagnaura(palace, detail) {
 /** The Chrysotriklinos, the octagonal throne hall of Justin II: eight niches, a dome on sixteen windows. */
 function addChrysotriklinos(palace, detail) {
   const [x, z] = [22, -28];
-  palace.add(cylinder(14, 14, 15, M.brick, x, UPPER, z, 8));
+  palace.add(cylinder(14, 14, 14.6, M.brick, x, UPPER, z, 8)); // stops inside the cornice
   palace.add(cylinder(14.3, 14.3, 0.8, M.marble, x, UPPER + 14.2, z, 8)); // cornice
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2 + Math.PI / 8;
@@ -348,7 +352,7 @@ function addTriconch(palace, detail) {
   palace.add(box(16, 11, 16, M.brick, x, UPPER, z));
   palace.add(box(16.5, 0.5, 16.5, M.lead, x, UPPER + 11, z));
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, -1]]) apse(palace, 5, 9, M.brick, M.lead, x + dx * 8, UPPER, z + dz * 8, dx, dz);
-  palace.add(groundPlane(28, 14, M.mosaic, x, UPPER + lift(0.08, detail), z + 15));
+  palace.add(groundPlane(28, 14, M.mosaic, x, UPPER + lift(0.16, detail), z + 15));
   const columns = 11;
   for (let i = 0; i <= columns; i++) {
     const angle = (i / columns) * Math.PI;
@@ -368,14 +372,14 @@ function addPeristyle(palace, detail) {
   const [x, z] = [-62, 18];
   const [w, d, walk] = [60, 46, 9];
   // Mosaic pavement under the walks, a garden with a fountain in the open middle.
-  palace.add(groundPlane(w, d, M.mosaic, x, MIDDLE + lift(0.06, detail), z));
-  palace.add(groundPlane(w - walk * 2, d - walk * 2, M.grass, x, MIDDLE + lift(0.1, detail), z));
+  palace.add(groundPlane(w, d, M.mosaic, x, MIDDLE + lift(0.12, detail), z));
+  palace.add(groundPlane(w - walk * 2, d - walk * 2, M.grass, x, MIDDLE + lift(0.2, detail), z));
   palace.add(cylinder(3.2, 3.4, 1, M.marble, x, MIDDLE, z, 16));
   palace.add(cylinder(2.8, 2.8, 0.3, M.water, x, MIDDLE + 0.8, z, 16));
   for (const side of [-1, 1]) {
     palace.add(box(w + 2, 7, 1.2, M.stone, x, MIDDLE, z + side * (d / 2 + 0.6)));
     palace.add(box(1.2, 7, d, M.stone, x + side * (w / 2 + 0.6), MIDDLE, z));
-    const roofZ = box(w + 2, 0.5, walk + 1, M.roof, x, MIDDLE + 7, z + side * (d / 2 - walk / 2 + 0.6));
+    const roofZ = box(w + 1.8, 0.5, walk + 1, M.roof, x, MIDDLE + 7, z + side * (d / 2 - walk / 2 + 0.6)); // ends a step inside the walls'
     roofZ.rotation.x = -side * 0.14;
     palace.add(roofZ);
     const roofX = box(walk + 1, 0.5, d - walk * 2, M.roof, x + side * (w / 2 - walk / 2 + 0.6), MIDDLE + 7, z);
@@ -407,7 +411,7 @@ function addPharosChurch(palace, detail) {
   const [cx, cz] = [36, 16];
   palace.add(box(16, 9, 16, M.brick, cx, MIDDLE, cz));
   palace.add(box(20, 12, 6.5, M.brick, cx, MIDDLE, cz));
-  palace.add(box(6.5, 12, 20, M.brick, cx, MIDDLE, cz));
+  palace.add(box(6.5, 11.9, 20, M.brick, cx, MIDDLE, cz)); // a step lower than the other arm, so their tops do not fight
   drumAndDome(palace, 3.2, 3.5, M.lead, cx, MIDDLE + 12, cz, { windows: detail ? 8 : 0, segments: 16 });
   for (const [dx, dz] of [[-5.5, -5.5], [5.5, -5.5], [-5.5, 5.5], [5.5, 5.5]]) {
     drumAndDome(palace, 1.8, 1.8, M.lead, cx + dx, MIDDLE + 9, cz + dz, { segments: 12 });
@@ -433,8 +437,8 @@ function addNea(palace, detail) {
   palace.add(box(26, 12, 24, M.brick, x, base, z));
   palace.add(box(27, 0.8, 25, M.marble, x, base + 6, z)); // string course
   palace.add(box(26.5, 0.5, 24.5, M.lead, x, base + 12, z));
-  palace.add(box(10, 16, 24.5, M.brick, x, base, z));
-  palace.add(box(26.5, 16, 10, M.brick, x, base, z));
+  palace.add(box(10, 15.9, 24.4, M.brick, x, base, z)); // the arms end inside the lead slab's edges, one a step lower than the other
+  palace.add(box(26.4, 16, 10, M.brick, x, base, z));
   drumAndDome(palace, 5, 4.5, M.gildedBronze, x, base + 16, z, { windows: detail ? 12 : 0, segments: 20 });
   for (const [dx, dz] of [[-9, -8], [9, -8], [-9, 8], [9, 8]]) drumAndDome(palace, 2.6, 3, M.gildedBronze, x + dx, base + 12, z + dz, { windows: detail ? 8 : 0, segments: 14 });
   for (const dz of [-7, 0, 7]) apse(palace, dz ? 2.2 : 4, dz ? 8 : 11, M.brick, M.lead, x + 13, base, z + dz, 1, 0, 10);
@@ -442,9 +446,8 @@ function addNea(palace, detail) {
   palace.add(box(1.6, 0.4, 0.4, M.gold, x, base + 27, z));
   // Atrium with its two fountains, and the stair up from the terrace.
   const ax = x - 25;
-  palace.add(groundPlane(22, 30, M.paving, ax, base + lift(0.04, detail), z));
-  palace.add(box(22, 1, 30, M.banded, ax, MIDDLE + 6, z));
-  palace.add(box(22, 6, 30, M.banded, ax, MIDDLE, z));
+  palace.add(groundPlane(22, 30, M.paving, ax, base + lift(0.08, detail), z));
+  palace.add(box(19, 7, 30, M.banded, ax - 1.5, MIDDLE, z)); // abuts the church's substructure
   const flight = stairs(8, 7, 1, 1.4, M.marble);
   flight.position.set(ax - 11 - 9.8, MIDDLE, z);
   flight.rotation.y = Math.PI / 2;
@@ -463,7 +466,7 @@ function addNea(palace, detail) {
   west.rotation.y = Math.PI / 2;
   west.position.set(ax - 9.5, base, z);
   palace.add(west);
-  palace.add(box(3, 0.4, 30, M.roof, ax - 9.5, base + 5.5, z));
+  palace.add(box(3, 0.3, 29.8, M.roof, ax - 9.4, base + 5.5, z)); // a step lower and shorter than the side walks' roofs, which it meets
 }
 
 /** The Pharos, the signal tower on the sea wall whose fire answered the beacon chain from the frontier. */
@@ -496,9 +499,9 @@ function addBoukoleon(palace, detail) {
   const upperTop = wallTop + 10;
 
   // Palace rooms behind the façade, and the tower-like "House of Justinian" at the east end.
-  palace.add(box(length, upperTop - LOWER, 22, M.stone, x, LOWER, 75));
-  palace.add(box(length + 1, 0.8, 23, M.marble, x, upperTop - 0.8, 75));
-  palace.add(hipRoof(length, 22, 5, M.roof, x, upperTop, 75));
+  palace.add(box(length, upperTop - LOWER - 0.4, 22, M.stone, x, LOWER, 75)); // stops inside the cornice
+  palace.add(box(length + 1, 0.8, 23, M.marble, x, upperTop - 0.9, 75)); // a step below the sea wall's top, which it meets
+  palace.add(hipRoof(length, 22, 5, M.roof, x, upperTop - 0.1, 75));
   labelAt(palace, 'boukoleon', x, upperTop + 5, 75);
   palace.add(box(16, upperTop + 4 - LOWER, 18, M.stone, x + length / 2 - 2, LOWER, 76));
   palace.add(box(17, 0.6, 19, M.lead, x + length / 2 - 2, upperTop + 4, 76));
@@ -536,7 +539,9 @@ function addBoukoleon(palace, detail) {
   // The rest of the sea wall with towers.
   for (const [start, end] of [[-130, x - length / 2], [x + length / 2, 130]]) {
     const span = end - start;
-    palace.add(box(span, LOWER + 6, 4, M.banded, start + span / 2, 0, SEA_WALL_Z));
+    // The wall's outer end stops a step inside the terrace's end, so the two faces do not fight.
+    const inset = start === -130 ? 0.1 : end === 130 ? -0.1 : 0;
+    palace.add(box(span - 0.1, LOWER + 6, 4, M.banded, start + span / 2 + inset / 2, 0, SEA_WALL_Z));
     palace.add(mesh(crenellationGeometry(span), M.banded, start + span / 2, LOWER + 6, SEA_WALL_Z + 1.6));
   }
   for (const towerX of [-120, -80, 10, 50, 90]) palace.add(box(9, LOWER + 11, 9, M.banded, towerX, 0, SEA_WALL_Z + 1));
@@ -547,8 +552,8 @@ function addBoukoleon(palace, detail) {
     palace.add(groundPlane(320, 90, M.water, 0, 0, SEA_WALL_Z + 47));
     // The quay in grey-veined Proconnesian marble, so the white statues stand out against it.
     palace.add(box(100, 1.3, 11, tinted('marble', 0x9c9a96), x, -0.3, SEA_WALL_Z + 7.5));
-    for (const moleX of [x - 52, x + 52]) palace.add(box(5, 1.5, 40, M.stone, moleX, -0.3, SEA_WALL_Z + 21));
-    palace.add(box(5, 1.5, 7, M.stone, x - 52, 1.2, SEA_WALL_Z + 38)); // the mole's beacon base
+    for (const moleX of [x - 52, x + 52]) palace.add(box(4.8, 1.5, 40, M.stone, moleX, -0.3, SEA_WALL_Z + 21));
+    palace.add(box(4.8, 1.5, 7, M.stone, x - 52, 1.2, SEA_WALL_Z + 38)); // the mole's beacon base
     const flight = stairs(6, 8, 0.5, 0.8, M.marble);
     flight.position.set(x + 12, 1, SEA_WALL_Z + 8.6);
     flight.rotation.y = Math.PI;

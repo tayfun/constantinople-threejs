@@ -25,3 +25,11 @@ export function tween({ duration, easing = ease.inOutCubic, onUpdate }) {
 }
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Lets the browser catch up: paints the next frame and handles any input that
+ * is waiting, then resumes. A long build awaits this between its stages, so
+ * the page stays responsive (a click on the loading screen lands at once)
+ * instead of freezing until the build is done.
+ */
+export const breathe = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));

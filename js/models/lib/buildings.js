@@ -19,7 +19,7 @@ export function createHouse({ w = 10, d = 8, h = 7, color = PLASTER_COLORS[0], r
     const count = Math.max(1, Math.floor(w / 3));
     for (let s = 0; s < storeys; s++) {
       const row = windowRow({ count, spacing: w / count, width: 0.9, height: 1.5, y: 1.2 + s * 3.2 });
-      row.position.z = d / 2 + 0.03;
+      row.position.z = d / 2 + 0.06; // clear of the wall by enough not to z-fight with it once the stage scales the model down
       house.add(row);
     }
   }

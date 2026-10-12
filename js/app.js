@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as Sentry from '@sentry/browser';
+import { createEnvironmentMap } from './world/environment.js';
 import { MapView } from './views/mapView.js';
 import { DetailView } from './views/detailView.js';
 import { InfoPanel } from './ui/infoPanel.js';
@@ -41,6 +42,7 @@ export class App {
     this.renderer.toneMappingExposure = 1.05;
     viewport.appendChild(this.renderer.domElement);
     this.watchContext(this.renderer.domElement);
+    const environment = createEnvironmentMap(this.renderer);
 
     this.mapView = new MapView({
       renderer: this.renderer,
@@ -51,6 +53,11 @@ export class App {
       onSelectRegion: (id) => this.openRegion(id),
     });
     this.detailView = new DetailView({ renderer: this.renderer, container: viewport, onSelectLandmark: (id) => this.openLandmark(id) });
+    // The baked sky lights the materials softly from all round, and gives the metals something to reflect.
+    for (const view of [this.mapView, this.detailView]) {
+      view.scene.environment = environment;
+      view.scene.environmentIntensity = 0.45;
+    }
 
     this.panel = new InfoPanel(root.querySelector('#info-panel'), {
       onSelectLandmark: (id) => this.openLandmark(id),
@@ -91,6 +98,19 @@ export class App {
     window.addEventListener('resize', () => this.resize());
     this.resize();
     this.mapView.jumpHome();
+  }
+
+  /**
+   * Raises the city, then compiles its shaders, stage by stage with a breath
+   * between each so the loading screen stays alive. `onProgress(done, total)`
+   * reports each finished stage. Call before start().
+   */
+  async build(onProgress = () => {}) {
+    const { mapView, renderer } = this;
+    await mapView.build((done, total) => onProgress(done, total + 1));
+    // The first frame would otherwise stall on compiling every shader at once; done here, in parallel where the GPU allows.
+    await renderer.compileAsync(mapView.scene, mapView.camera);
+    onProgress(1, 1);
   }
 
   /**

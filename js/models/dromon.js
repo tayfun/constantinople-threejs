@@ -71,7 +71,7 @@ function createShip(detail) {
     ship.add(box(0.18, 1, 0.18, M.wood, LENGTH / 2 - 3.6 + dx, DECK + 1.35, dz));
   }
   for (const side of [-1, 1]) ship.add(box(3.9, 0.12, 0.12, M.wood, LENGTH / 2 - 3.6, DECK + 2.25, side * 1.3));
-  ship.add(box(1.2, 0.9, 1.1, M.bronze, LENGTH / 2 - 2.4, DECK, 0)); // the cauldron and pump
+  ship.add(box(1.2, 0.9, 1.1, M.bronze, LENGTH / 2 - 2.35, DECK, 0)); // the cauldron and pump, its face 0.05 m proud of the forecastle's
   const siphon = cylinder(0.14, 0.24, 2.6, M.bronze, LENGTH / 2 - 0.6, DECK + 0.65, 0, 10);
   siphon.rotation.z = -Math.PI / 2 + 0.12;
   ship.add(siphon);
@@ -114,8 +114,8 @@ function createShip(detail) {
     }
   }
 
-  // Two masts with lateen yards and sails.
-  for (const { x, height, yardLength, tilt } of [{ x: 7, height: 15, yardLength: 20, tilt: 0.45 }, { x: -3.5, height: 12.5, yardLength: 15, tilt: 0.48 }]) {
+  // Two masts with lateen yards and sails; the foresail hangs a little further to starboard, since its leech crosses the mainsail's yard.
+  for (const { x, height, yardLength, tilt, side } of [{ x: 7, height: 15, yardLength: 20, tilt: 0.45, side: 0.58 }, { x: -3.5, height: 12.5, yardLength: 15, tilt: 0.48, side: 0.5 }]) {
     ship.add(cylinder(0.16, 0.24, height, M.wood, x, DECK, 0, 8));
     ship.add(box(0.7, 0.6, 0.7, M.wood, x, DECK + height - 1.6, 0));
     const yard = cylinder(0.1, 0.1, yardLength, M.wood, 0, 0, 0, 6);
@@ -124,9 +124,9 @@ function createShip(detail) {
     yard.position.set(x, GUNWALE + height - 1.5, 0.4);
     ship.add(yard);
     const half = yardLength / 2;
-    const fore = new THREE.Vector3(x + Math.cos(tilt) * half, GUNWALE + height - 1.5 - Math.sin(tilt) * half, 0.5);
-    const peak = new THREE.Vector3(x - Math.cos(tilt) * half, GUNWALE + height - 1.5 + Math.sin(tilt) * half, 0.5);
-    const clew = new THREE.Vector3(x - half * 0.55, GUNWALE + 1.4, 0.5);
+    const fore = new THREE.Vector3(x + Math.cos(tilt) * half, GUNWALE + height - 1.5 - Math.sin(tilt) * half, side);
+    const peak = new THREE.Vector3(x - Math.cos(tilt) * half, GUNWALE + height - 1.5 + Math.sin(tilt) * half, side);
+    const clew = new THREE.Vector3(x - half * 0.55, GUNWALE + 1.4, side);
     ship.add(mesh(triangleSailGeometry(fore, peak, clew, 0.9, detail ? 10 : 6), M.sail));
   }
 

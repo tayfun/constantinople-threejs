@@ -36,7 +36,7 @@ const GROUND = 2.6;
 const CUT_X = 0; // the roof and the square above survive east of this line
 const FRAME = 16; // earth shown around the cistern
 /** Height of a pavement or lawn above the slab under it: centimetres in the diorama, more on the map, whose far camera cannot tell them apart. */
-const lift = (dy, detail) => (detail ? dy : dy * 12);
+const lift = (dy, detail) => (detail ? dy : dy * 6);
 
 export function createBasilicaCistern({ lod = 'detail' } = {}) {
   const detail = lod === 'detail';
@@ -56,8 +56,9 @@ export function createBasilicaCistern({ lod = 'detail' } = {}) {
   for (const side of [-1, 1]) {
     cistern.add(box(LENGTH + 8, wallHeight, 4, M.brick, 0, FLOOR, side * (WIDTH / 2 + 2)));
     cistern.add(box(4, wallHeight, WIDTH, M.brick, side * (LENGTH / 2 + 2), FLOOR, 0));
-    cistern.add(box(LENGTH, wallHeight - 0.6, 0.15, mortar, 0, FLOOR, side * (WIDTH / 2 - 0.05)));
-    cistern.add(box(0.15, wallHeight - 0.6, WIDTH, mortar, side * (LENGTH / 2 - 0.05), FLOOR, 0));
+    // Each lining's ends are buried in the lining across the corner.
+    cistern.add(box(LENGTH - 0.2, wallHeight - 0.6, 0.15, mortar, 0, FLOOR, side * (WIDTH / 2 - 0.05)));
+    cistern.add(box(0.15, wallHeight - 0.6, WIDTH - 0.2, mortar, side * (LENGTH / 2 - 0.05), FLOOR, 0));
   }
 
   // Earth around the cistern, cut to show the section; the streets above are paved.
@@ -65,17 +66,18 @@ export function createBasilicaCistern({ lod = 'detail' } = {}) {
     for (const side of [-1, 1]) {
       cistern.add(box(LENGTH + 8 + FRAME * 2, wallHeight, FRAME, M.dirt, 0, FLOOR, side * (WIDTH / 2 + 4 + FRAME / 2)));
       cistern.add(box(FRAME, wallHeight, WIDTH + 8, M.dirt, side * (LENGTH / 2 + 4 + FRAME / 2), FLOOR, 0));
-      cistern.add(groundPlane(LENGTH + 8 + FRAME * 2, FRAME, M.paving, 0, GROUND + 0.02, side * (WIDTH / 2 + 4 + FRAME / 2)));
-      cistern.add(groundPlane(FRAME, WIDTH + 8, M.paving, side * (LENGTH / 2 + 4 + FRAME / 2), GROUND + 0.02, 0));
+      cistern.add(groundPlane(LENGTH + 8 + FRAME * 2, FRAME, M.paving, 0, GROUND + 0.05, side * (WIDTH / 2 + 4 + FRAME / 2)));
+      cistern.add(groundPlane(FRAME, WIDTH + 8, M.paving, side * (LENGTH / 2 + 4 + FRAME / 2), GROUND + 0.05, 0));
     }
   }
 
   addVaults(cistern, { columnsAlong, columnsAcross, stepX, stepZ, columnX, columnZ, detail });
 
-  // The surviving roof over the eastern part, and the Basilica square above it.
+  // The surviving roof over the eastern part (a slab spanning between the walls, not over them, so its top
+  // and theirs are not one plane), and the Basilica square above it.
   const roofLength = LENGTH / 2 + 4 - CUT_X;
-  cistern.add(box(roofLength, 0.6, WIDTH + 8, M.brick, CUT_X + roofLength / 2, GROUND - 0.6, 0));
-  cistern.add(groundPlane(roofLength, WIDTH + 8, M.paving, CUT_X + roofLength / 2, GROUND + lift(0.02, detail), 0));
+  cistern.add(box(roofLength - 4, 0.6, WIDTH, M.brick, CUT_X + (roofLength - 4) / 2, GROUND - 0.6, 0));
+  cistern.add(groundPlane(roofLength, WIDTH + 8, M.paving, CUT_X + roofLength / 2, GROUND + lift(0.05, detail), 0));
   addStoa(cistern, detail);
   addColumns(cistern, { columnsAlong, columnsAcross, columnX, columnZ, detail });
   if (detail) addLamps(cistern, columnX, columnZ);
@@ -139,7 +141,8 @@ function addVaults(cistern, { columnsAlong, columnsAcross, stepX, stepZ, columnX
   for (let i = 0; i < columnsAlong; i++) {
     if (!archesReach(columnX(i), 0) || !shown(columnX(i))) continue;
     for (const side of [-1, 1]) {
-      const arch = mesh(wallArch, M.brick, columnX(i), springing, side * (WIDTH / 2 - stepZ / 4));
+      // A shade lower than the arches they overlap, so their tops are not one plane; the foot sinks into the impost.
+      const arch = mesh(wallArch, M.brick, columnX(i), springing - 0.1, side * (WIDTH / 2 - stepZ / 4));
       arch.rotation.y = Math.PI / 2;
       arch.scale.z = 0.5;
       cistern.add(arch);
@@ -251,9 +254,9 @@ function addStoa(cistern, detail) {
   const stoaX = west + stoaLength / 2;
 
   // The garden court inside the colonnades.
-  cistern.add(groundPlane(stoaLength - 14, 44, M.grass, stoaX, GROUND + lift(0.05, detail), 0));
-  cistern.add(groundPlane(stoaLength - 14, 4, M.paving, stoaX, GROUND + lift(0.08, detail), 0));
-  cistern.add(groundPlane(4, 44, M.paving, stoaX, GROUND + lift(0.08, detail), 0));
+  cistern.add(groundPlane(stoaLength - 14, 44, M.grass, stoaX, GROUND + lift(0.1, detail), 0));
+  cistern.add(groundPlane(stoaLength - 14, 4, M.paving, stoaX, GROUND + lift(0.14, detail), 0));
+  for (const side of [-1, 1]) cistern.add(groundPlane(4, 20, M.paving, stoaX, GROUND + lift(0.14, detail), side * 12)); // the cross path, either side of the long one
 
   labelAt(cistern, 'stoaBasilica', stoaX, GROUND + 10, -31);
   labelAt(cistern, 'library', east + 8, GROUND + 19, 0);
@@ -279,7 +282,7 @@ function addStoa(cistern, detail) {
       cistern.add(columns);
     }
     if (!detail) continue;
-    const doors = Array.from({ length: 4 }, (_, k) => mesh(archGeometry(2, 4), M.opening, west + 10 + k * 16, GROUND, side * 31 + 0.42 * -side));
+    const doors = Array.from({ length: 4 }, (_, k) => mesh(archGeometry(2, 4), M.opening, west + 10 + k * 16, GROUND, side * 31 + 0.46 * -side));
     for (const door of doors) door.rotation.y = side > 0 ? Math.PI : 0;
     cistern.add(...doors);
   }

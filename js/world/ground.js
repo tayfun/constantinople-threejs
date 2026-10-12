@@ -1,6 +1,7 @@
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import {
-  BLACHERNAE_WALLS, CITY, ISLANDS, LAND_WALLS, PERA, PERA_HILLS, PERA_SHORE, SEA_WALLS, SEVEN_HILLS,
+  ASIA, ASIA_HILLS, BLACHERNAE_WALLS, CHALCEDON_TOWN, CHRYSOPOLIS, CITY, EUROPE, ISLANDS, LAND_WALLS, PERA, PERA_HILLS,
+  PERA_SHORE, SEA_WALLS, SEVEN_HILLS, THRACE_HILLS,
 } from '../data/geography.js';
 
 const smoothstep = (edge0, edge1, x) => {
@@ -18,7 +19,8 @@ const TERRACE_BLEND = 1.2;
  * land walls, so shores and fortifications stay level. Across the Horn the
  * hill of Galata and the Pera ridge rise from the water; Galata's walls climb
  * the slope (see mapWalls.js), so only the shore holds that ridge down. Out in
- * the Marmara the Princes' Islands rise steeply from their beaches. Each
+ * the Marmara the Princes' Islands rise steeply from their beaches, and the
+ * open country of Thrace and Asia rolls gently beyond the walls and towns. Each
  * landmark sits on a terrace: inside its footprint the ground is flattened to
  * the height at its centre, blending smoothly back into the hills around it —
  * much as the Byzantines terraced the slopes for their great buildings.
@@ -40,6 +42,15 @@ export function createGround({ footprints = [] } = {}) {
     if (pointInPolygon(point, PERA)) return bumps(point, PERA_HILLS) * shoreward(point, PERA_SHORE);
     for (const { shore, hills, fade } of ISLANDS) {
       if (pointInPolygon(point, shore)) return bumps(point, hills) * smoothstep(0.3, fade, distanceToPolyline(point, shore, true));
+    }
+    // The open country: Thrace beyond the land walls, and Asia behind its two towns, each fading to its shore.
+    if (pointInPolygon(point, EUROPE)) {
+      const walls = smoothstep(2, 6, distanceToPolyline(point, LAND_WALLS));
+      return bumps(point, THRACE_HILLS) * walls * smoothstep(0.8, 3.5, distanceToPolyline(point, EUROPE, true));
+    }
+    if (pointInPolygon(point, ASIA)) {
+      const towns = Math.min(smoothstep(0.5, 2.5, distanceToPolyline(point, CHRYSOPOLIS, true)), smoothstep(0.5, 2.5, distanceToPolyline(point, CHALCEDON_TOWN, true)));
+      return bumps(point, ASIA_HILLS) * towns * smoothstep(0.8, 3.5, distanceToPolyline(point, ASIA, true));
     }
     return 0;
   };

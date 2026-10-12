@@ -57,7 +57,7 @@ export class Sidebar {
       h('button', { class: 'sidebar__region-button', type: 'button', onClick: () => onSelectRegion(region.id) },
         regionText(region.id).name, h('span', { class: 'sidebar__region-sub' }, regionText(region.id).subtitle)),
       h('ul', {}, landmarks.filter((landmark) => landmark.region === region.id).map((landmark) => {
-        const button = h('button', { class: 'sidebar__landmark', type: 'button', onClick: () => onSelectLandmark(landmark.id) }, landmarkText(landmark.id).name);
+        const button = h('button', { class: 'sidebar__landmark', type: 'button', 'data-landmark': landmark.id, onClick: () => onSelectLandmark(landmark.id) }, landmarkText(landmark.id).name);
         this.buttons.set(landmark.id, button);
         return h('li', {}, button);
       })));

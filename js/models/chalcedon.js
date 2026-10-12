@@ -143,7 +143,10 @@ function addWalls(city, detail, rnd) {
       .filter(({ t, off }) => off < 0.5 && t > 0 && t < length).map(({ t }) => t);
 
     // Curtain spans between the gates.
-    const cuts = [0, ...gates.flatMap((t) => [t - 6, t + 6]), length];
+    // The curtains end a little inside the gates' flanking towers, so their cut ends share no plane with the towers' faces;
+    // alternate stretches of the circuit stand 6 cm taller, so neighbours' tops share none under the corner towers.
+    const cuts = [0, ...gates.flatMap((t) => [t - 6.1, t + 6.1]), length];
+    const lift = (i % 2) * 0.06;
     for (let k = 0; k < cuts.length; k += 2) {
       const [a, b] = [cuts[k], cuts[k + 1]];
       if (i === RUINED_EDGE) {
@@ -157,7 +160,7 @@ function addWalls(city, detail, rnd) {
         continue;
       }
       const [x, z] = at((a + b) / 2);
-      const curtain = box(b - a, height, thickness, M.stone, x, GROUND, z);
+      const curtain = box(b - a, height + lift, thickness, M.stone, x, GROUND, z);
       curtain.rotation.y = angle;
       city.add(curtain);
       const parapet = mesh(crenellationGeometry(b - a, merlons), M.stone, x, GROUND + height, z);
@@ -180,18 +183,19 @@ function addWalls(city, detail, rnd) {
       parapet.rotation.y = angle;
       city.add(parapet);
     }
-    // A corner tower at each angle of the circuit.
-    tower(x0, z0, 7.5, height + 4.5, angle);
+    // A corner tower at each angle of the circuit, a shade taller than the gate towers it can overlap.
+    tower(x0, z0, 7.5, height + 4.6, angle);
   }
 }
 
 /** The two paved streets that cross the town between its gates. */
 function addStreets(city) {
-  city.add(groundPlane(6, 140, M.paving, 10, GROUND + 0.03, 4)); // north gate to the quay
-  city.add(groundPlane(180, 6, M.paving, 40, GROUND + 0.03, 30)); // west gate to east gate and on along the Nicomedia road
+  // The paving floats a few centimetres over the ground, and each sheet a few over the one it crosses, so none fight.
+  city.add(groundPlane(6, 140, M.paving, 10, GROUND + 0.06, 4)); // north gate to the quay
+  city.add(groundPlane(180, 6, M.paving, 40, GROUND + 0.12, 30)); // west gate to east gate and on along the Nicomedia road
   // Outside the north gate, the way to the shrine's court.
   const [x0, z0, x1, z1] = [10, -70, -34, -83];
-  const way = groundPlane(Math.hypot(x1 - x0, z1 - z0) + 4, 5, M.paving, (x0 + x1) / 2, GROUND + 0.03, (z0 + z1) / 2);
+  const way = groundPlane(Math.hypot(x1 - x0, z1 - z0) + 4, 5, M.paving, (x0 + x1) / 2, GROUND + 0.12, (z0 + z1) / 2);
   way.rotation.y = Math.atan2(-(z1 - z0), x1 - x0);
   city.add(way);
 }
@@ -201,7 +205,7 @@ function addStreets(city) {
 /** The agora: a paved square closed by two stoas, with an honorific column in the middle. */
 function addAgora(city, detail) {
   const [x, z] = AGORA;
-  city.add(groundPlane(36, 28, M.paving, x, GROUND + 0.04, z));
+  city.add(groundPlane(36, 28, M.paving, x, GROUND + 0.06, z));
   const stoa = (length, cx, cz, rotation) => {
     const group = new THREE.Group();
     group.add(colonnade({ length: length - 4, count: Math.round(length / 3.6), height: 6, radius: 0.36 }));
@@ -237,13 +241,14 @@ function halfDiscGeometry(radius, height, segments = 16) {
 function addTheatre(city, detail) {
   const [x, z] = THEATRE;
   const rings = 6;
+  // Each tier's flat face stands 6 cm behind the one below (and the orchestra 6 cm before the lowest), so the faces on the open side are never one plane.
   for (let k = 0; k < rings; k++) {
     const r = 9 + (k + 1) * (12 / rings);
-    const tier = mesh(halfDiscGeometry(r, 1.1 * (k + 1), detail ? 18 : 12), k === rings - 1 ? M.stoneDark : M.stone, x, GROUND, z);
+    const tier = mesh(halfDiscGeometry(r, 1.1 * (k + 1), detail ? 18 : 12), k === rings - 1 ? M.stoneDark : M.stone, x + 0.06 * k, GROUND, z);
     tier.rotation.y = -Math.PI / 2; // curve towards +x, the open side west
     city.add(tier);
   }
-  const orchestra = mesh(halfDiscGeometry(8.6, 0.15, detail ? 16 : 12), M.paving, x, GROUND, z);
+  const orchestra = mesh(halfDiscGeometry(8.6, 0.15, detail ? 16 : 12), M.paving, x - 0.06, GROUND, z);
   orchestra.rotation.y = -Math.PI / 2;
   city.add(orchestra);
   // The stage building (skene) across the open side, with its columned front.
@@ -265,7 +270,7 @@ function addEuphemia(city, detail) {
   // The basilica: aisles under a hipped roof, a tall clerestoried nave, the apse to the east.
   city.add(box(38, 8, 20, M.brick, x, GROUND, z));
   city.add(hipRoof(38, 20, 2.4, M.roof, x, GROUND + 8, z, 0.5));
-  city.add(box(38, 15, 10, M.brick, x, GROUND, z));
+  city.add(box(38.2, 15, 10, M.brick, x, GROUND, z)); // the nave's ends a shade proud of the aisles'
   city.add(gableRoof(38, 10, 3, M.roof, x, GROUND + 15, z, 0.5));
   city.add(faceToward(cylinder(5, 5, 10, M.brick, x + 19, GROUND, z, 14, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
   city.add(faceToward(dome(5, M.roof, x + 19, GROUND + 10, z, { phiLength: Math.PI, heightScale: 0.6 }), 1, 0));
@@ -274,37 +279,37 @@ function addEuphemia(city, detail) {
   if (detail) {
     for (const side of [-1, 1]) {
       const clerestory = windowRow({ count: 7, spacing: 5, width: 1.3, height: 2.6, y: GROUND + 10.5 });
-      clerestory.position.set(x, 0, z + side * 5.03);
+      clerestory.position.set(x, 0, z + side * 5.06);
       clerestory.rotation.y = side > 0 ? 0 : Math.PI;
       city.add(clerestory);
       const aisle = windowRow({ count: 7, spacing: 5, width: 1, height: 2.2, y: GROUND + 3.2 });
-      aisle.position.set(x, 0, z + side * 10.03);
+      aisle.position.set(x, 0, z + side * 10.06);
       aisle.rotation.y = side > 0 ? 0 : Math.PI;
       city.add(aisle);
     }
     const doors = windowRow({ count: 3, spacing: 5.5, width: 2.2, height: 4.6, y: GROUND });
     doors.rotation.y = -Math.PI / 2;
-    doors.position.set(x - 19.03, 0, z);
+    doors.position.set(x - 19.16, 0, z);
     city.add(doors);
   }
 
   // The court before it: "open to the sky, of great extent, embellished on all sides with columns".
   const [ax, az, aw, ad] = [x - 19 - 14, z, 28, 20];
-  city.add(groundPlane(aw, ad, M.paving, ax, GROUND + 0.04, az));
-  const side = (length, cx, cz, rotation) => {
+  city.add(groundPlane(aw, ad, M.paving, ax, GROUND + 0.06, az));
+  const side = (length, cx, cz, rotation, slab = 0.45) => {
     const walk = new THREE.Group();
     walk.add(colonnade({ length: length - 3, count: Math.round(length / 3.3), height: 4.6, radius: 0.32 }));
-    walk.add(box(length, 0.45, 3.4, M.roof, 0, 4.6, -1.4));
+    walk.add(box(length, slab, 3.4, M.roof, 0, 4.6, -1.4));
     walk.position.set(cx, GROUND, cz);
     walk.rotation.y = rotation;
     city.add(walk);
   };
   side(aw, ax, az + ad / 2 - 1.2, Math.PI);
   side(aw, ax, az - ad / 2 + 1.2, 0);
-  side(ad, ax - aw / 2 + 1.2, az, Math.PI / 2);
+  side(ad, ax - aw / 2 + 1.2, az, Math.PI / 2, 0.51); // its slab a shade thicker, so the corners share no plane
   city.add(box(aw, 1, 0.6, M.stone, ax, GROUND, az + ad / 2));
   city.add(box(aw, 1, 0.6, M.stone, ax, GROUND, az - ad / 2));
-  city.add(box(0.6, 1, ad, M.stone, ax - aw / 2, GROUND, az));
+  city.add(box(0.6, 1.06, ad, M.stone, ax - aw / 2, GROUND, az));
   if (detail) {
     city.add(cylinder(1.8, 2, 0.8, M.marble, ax, GROUND, az, 12));
     city.add(mesh(new THREE.CircleGeometry(1.6, 12).rotateX(-Math.PI / 2), M.water, ax, GROUND + 0.7, az));
@@ -323,13 +328,13 @@ function addEuphemia(city, detail) {
   if (detail) {
     for (let k = 0; k < 8; k++) {
       const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
-      const window = mesh(archGeometry(0.9, 2.2), M.opening, rx + Math.sin(a) * 6.03, GROUND + 12, rz + Math.cos(a) * 6.03);
+      const window = mesh(archGeometry(0.9, 2.2), M.opening, rx + Math.sin(a) * 6.06, GROUND + 12, rz + Math.cos(a) * 6.06);
       window.rotation.y = a;
       city.add(window);
     }
     for (let k = 0; k < 6; k++) {
       const a = (k / 6) * Math.PI * 2 + Math.PI / 6 + Math.PI;
-      const window = mesh(archGeometry(1.1, 3.2), M.opening, rx + Math.sin(a) * (rr + 0.03), GROUND + 5.5, rz + Math.cos(a) * (rr + 0.03));
+      const window = mesh(archGeometry(1.1, 3.2), M.opening, rx + Math.sin(a) * (rr + 0.06), GROUND + 5.5, rz + Math.cos(a) * (rr + 0.06));
       window.rotation.y = a;
       city.add(window);
     }
@@ -343,7 +348,7 @@ function addTownChurch(city, detail) {
   city.add(box(14, 7, 14, M.brick, x, GROUND, z));
   city.add(hipRoof(14, 14, 1.4, M.roof, x, GROUND + 7, z, 0.4));
   city.add(box(15, 9.5, 5.5, M.brick, x, GROUND, z));
-  city.add(box(5.5, 9.5, 15, M.brick, x, GROUND, z));
+  city.add(box(5.5, 9.56, 15, M.brick, x, GROUND, z)); // a shade taller, so the arms' tops are not one plane under the roofs
   city.add(gableRoof(15, 5.5, 1.9, M.roof, x, GROUND + 9.5, z, 0.4));
   city.add(gableRoof(15, 5.5, 1.9, M.roof, x, GROUND + 9.5, z, 0.4).rotateY(Math.PI / 2));
   city.add(faceToward(cylinder(2.6, 2.6, 6, M.brick, x + 7, GROUND, z, 10, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
@@ -354,7 +359,7 @@ function addTownChurch(city, detail) {
   city.add(box(1.1, 0.16, 0.16, M.gold, x, GROUND + 18, z));
   if (detail) {
     const windows = windowRow({ count: 4, spacing: 1.4, width: 0.5, height: 1.8, y: GROUND + 12.2 });
-    windows.position.set(x, 0, z + 2.73);
+    windows.position.set(x, 0, z + 2.76);
     city.add(windows);
   }
 }
@@ -387,32 +392,34 @@ function addTemple(city, rnd) {
 
 /** The harbour on the Marmara shore below the south gate: quays along the bay, a mole with a beacon, and warehouses. */
 function addHarbour(city, detail) {
-  const quay = ([ax, az], [bx, bz], width) => {
+  // Each quay's block runs up inside its coping rather than stopping level with the ground, and each quay stands 6 cm
+  // higher than the last, so where they meet at the corners no two tops share a plane.
+  const quay = ([ax, az], [bx, bz], width, lift) => {
     const length = Math.hypot(bx - ax, bz - az);
-    const block = box(length, GROUND + 1, width, M.stone, (ax + bx) / 2, -1, (az + bz) / 2);
+    const block = box(length, GROUND + 1.12 + lift, width, M.stone, (ax + bx) / 2, -1, (az + bz) / 2);
     block.rotation.y = Math.atan2(-(bz - az), bx - ax);
     city.add(block);
-    const coping = box(length + 0.4, 0.4, width + 0.4, M.stoneDark, (ax + bx) / 2, GROUND - 0.05, (az + bz) / 2);
+    const coping = box(length + 0.4, 0.4, width + 0.4, M.stoneDark, (ax + bx) / 2, GROUND - 0.05 + lift, (az + bz) / 2);
     coping.rotation.y = block.rotation.y;
     city.add(coping);
     return block.rotation.y;
   };
-  quay([-70, 56], [-30, 62], 8);
-  quay([-30, 62], [12, 81], 8);
-  quay([16, 86], [-24, 104], 6); // the mole
+  quay([-70, 56], [-30, 62], 8, 0);
+  quay([-30, 62], [12, 81], 8, 0.06);
+  quay([16, 86], [-24, 104], 6, 0.12); // the mole
   const beacon = [-24, 104];
   city.add(cylinder(2.4, 2.8, 6.5, M.stone, beacon[0], GROUND - 0.4, beacon[1], 10));
   city.add(cylinder(2.9, 2.9, 0.6, M.stoneDark, beacon[0], GROUND + 6.1, beacon[1], 10));
   city.add(cylinder(1.3, 1.3, 0.9, M.iron, beacon[0], GROUND + 6.7, beacon[1], 8));
   city.add(mesh(new THREE.IcosahedronGeometry(1, 0), M.fire, beacon[0], GROUND + 8, beacon[1]));
   if (detail) {
-    for (const [bx, bz] of [[-62, 60], [-48, 62.3], [-36, 64], [-21, 69.2], [-7, 75.6], [5, 81]]) city.add(cylinder(0.45, 0.5, 1.1, M.stoneDark, bx, GROUND + 0.35, bz, 8));
+    for (const [bx, bz] of [[-62, 60], [-48, 62.3], [-36, 64], [-21, 69.2], [-7, 75.6], [5, 81]]) city.add(cylinder(0.45, 0.5, 1.1, M.stoneDark, bx, GROUND + 0.35 + (bx > -30 ? 0.06 : 0), bz, 8));
   }
   // Warehouses between the south wall and the quay, doors to the water.
   for (const [x, z, w] of [[-22, 59, 12], [-6, 61, 13], [26, 72, 11]]) {
     city.add(box(w, 5.5, 7, M.brick, x, GROUND, z));
     city.add(gableRoof(w, 7, 2.4, M.roof, x, GROUND + 5.5, z, 0.5));
-    if (detail) city.add(mesh(archGeometry(2.2, 3.4), M.opening, x, GROUND, z + 3.53));
+    if (detail) city.add(mesh(archGeometry(2.2, 3.4), M.opening, x, GROUND, z + 3.56));
   }
 }
 

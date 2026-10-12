@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
-import { archGeometry, box, crenellationGeometry, cylinder, cylinderGeometry, flag, groundPlane, mesh } from './lib/primitives.js';
+import {
+  archGeometry, box, crenellationGeometry, cylinder, cylinderGeometry, cypress, faceToward, flag, gableRoof, groundPlane, mesh, roundTree,
+} from './lib/primitives.js';
 import { finalizeModel } from './lib/merge.js';
 import { labelAt } from './lib/parts.js';
+import { createMerchantShip } from './merchantShip.js';
+import { createRandom } from '../util/random.js';
 import { CHAIN_NORTH, CHAIN_SOUTH, LAND_HEIGHT, METERS_TO_MAP } from '../data/geography.js';
 
 /**
@@ -22,8 +26,15 @@ import { CHAIN_NORTH, CHAIN_SOUTH, LAND_HEIGHT, METERS_TO_MAP } from '../data/ge
  *
  * Detail: a compressed span between the two ends, the logs riding the
  * swell; the links are drawn six times life size, or they would vanish on
- * the stage. Map: the chain across the mouth of the Horn (absolute), its
- * links much enlarged, its logs and the two forts at its ends in brief.
+ * the stage. Behind the Kastellion lies the Galata shore: a quay with
+ * steps to the water, the houses and a church of the old settlement of
+ * Sykai, and its fig and plane trees. Behind the Tower of Eugenios the sea
+ * wall runs on along the shore of the Acropolis with towers at intervals,
+ * and the hill climbs behind it under cypresses, with the churches of
+ * St Demetrios and St Barbara that stood near the point. A merchantman
+ * lies checked at the boom and a guard boat rows along it. Map: the chain
+ * across the mouth of the Horn (absolute), its links much enlarged, its
+ * logs and the two forts at its ends in brief.
  */
 export function createHornChain({ lod = 'detail' } = {}) {
   return lod === 'detail' ? createSpan() : createMapChain();
@@ -67,6 +78,8 @@ function linkGeometry(length, width, bar) {
 function createSpan() {
   const scene = new THREE.Group();
   scene.add(groundPlane(...STAGE, M.water, 0, 0, 0));
+  addGalataShore(scene, KASTELLION_X);
+  addAcropolisShore(scene, EUGENIOS_X);
   addKastellion(scene, KASTELLION_X, true);
   addEugeniosTower(scene, EUGENIOS_X, true);
   // The fort's label sits low on its walls, clear of the chain tower's label above.
@@ -83,7 +96,196 @@ function createSpan() {
     scene.add(banner);
   }
   scene.add(createFloatingChain());
+  // A nave of Venice, sails furled, checked at the boom on the open side of the chain, and the guard boat that rows along it.
+  const ship = createMerchantShip({ banner: 'venice', sail: false });
+  ship.position.set(-6, 0, 20);
+  ship.rotation.y = Math.PI / 2 + 0.12; // bow to the chain
+  scene.add(ship);
+  scene.add(createGuardBoat(26, -9, 0.35));
   return scene;
+}
+
+// ---------- the shores ----------
+
+/**
+ * The Galata shore behind the Kastellion: a stone quay with steps down to
+ * the water and mooring posts, the houses of Sykai rising on a low terrace
+ * behind the fort, a domed church among them, and the fig and plane trees
+ * the suburb was named for.
+ */
+function addGalataShore(scene, cx) {
+  const [edge, shore] = [-STAGE[0] / 2, cx + 30];
+  const depth = STAGE[1];
+  const terrace = cx - 24;
+  // The base reaches 0.05 m past the stage's cut on its three outer sides, so the cut faces of what stands on it share no plane with its own.
+  scene.add(box(shore - edge + 0.05, 5, depth + 0.1, M.stoneDark, (edge + shore) / 2 - 0.025, -3, 0));
+  scene.add(box(shore - 5 - terrace - 0.5, 0.3, depth, M.grass, (terrace + 0.5 + shore - 5) / 2, 2, 0)); // from the terrace wall to the quay
+  scene.add(box(5, 0.35, depth, M.paving, shore - 2.5, 2, 0)); // the quay
+  for (const z of [-34, 30]) addWaterSteps(scene, shore, z, 1);
+  for (const z of [-50, -24, 24, 42, 54]) scene.add(cylinder(0.25, 0.3, 1.4, M.wood, shore - 1, 2.3, z, 6));
+  // The ground rises inland in a terrace, with a retaining wall.
+  scene.add(box(terrace - 0.5 - edge, 4, depth, M.grass, (edge + terrace - 0.5) / 2, 2, 0)); // up to the retaining wall
+  scene.add(box(1, 4.2, depth, M.rubble, terrace, 2, 0));
+  const groundAt = (x) => (x < terrace ? 6 : 2);
+
+  const rnd = createRandom(717);
+  const fortClear = (x, z) => x > cx - 25 && x < cx + 30 && z > -22 && z < 22;
+  const spots = [
+    [-100, -52], [-98, -44], [-100, -30], [-99, -14], [-100, 4], [-99, 22], [-100, 40], [-99, 52],
+    [-78, -50], [-66, -44], [-54, -36], [-44, -46], [-78, 46], [-66, 36], [-54, 44], [-44, 52], [-60, -56], [-58, 56],
+  ];
+  for (const [x, z] of spots) {
+    if (fortClear(x, z)) continue;
+    const house = townHouse(rnd, { w: rnd.range(7, 10), d: rnd.range(5.5, 7.5), h: rnd.range(5, 8.5) });
+    house.position.set(x, groundAt(x), z);
+    house.rotation.y = rnd.pick([0, Math.PI / 2]) + rnd.range(-0.2, 0.2);
+    scene.add(house);
+  }
+  addChurch(scene, -80, 2, 30, Math.PI / 2, 0.8); // the church of Sykai
+  // Planes and figs along the quay and between the houses, cypresses on the terrace.
+  for (const [x, z] of [[-48, -28], [-42, 36], [-70, -32], [-72, 34], [-84, 58], [-86, -58], [-62, 50], [-50, 58]]) scene.add(roundTree(rnd.range(6, 8), x, groundAt(x), z));
+  for (const [x, z] of [[-98, -40], [-102, -8], [-96, 12], [-102, 30], [-98, 48], [-101, 56], [-90, -4]]) scene.add(cypress(rnd.range(9, 13), x, groundAt(x), z));
+}
+
+/**
+ * The point of the Acropolis behind the Tower of Eugenios: a quay before
+ * the sea wall, which runs on along the shore with towers at intervals,
+ * and the hill rising steeply behind it, terraced with houses, two
+ * churches and cypresses.
+ */
+function addAcropolisShore(scene, cx) {
+  const [shore, edge] = [cx - 7, STAGE[0] / 2];
+  const depth = STAGE[1];
+  scene.add(box(edge - shore + 0.05, 5, depth + 0.1, M.stoneDark, (shore + edge) / 2 + 0.025, -3, 0)); // past the stage's cut, as on the Galata side
+  scene.add(box(7.9, 0.35, depth, M.paving, shore + 4.05, 2, 0)); // the quay outside the wall, 0.1 m back from the tower's face
+  for (const z of [-28, 34]) addWaterSteps(scene, shore, z, -1);
+  for (const z of [-46, -18, 16, 48]) scene.add(cylinder(0.25, 0.3, 1.4, M.wood, shore + 1, 2.3, z, 6));
+
+  // The hill: a smooth profile from the foot of the wall to the stage's edge, extruded along the shore.
+  const foot = cx + 5;
+  const heightAt = (x) => {
+    const t = THREE.MathUtils.clamp((x - foot) / (edge - foot), 0, 1);
+    return 2 + 24 * t * t * (3 - 2 * t);
+  };
+  const profile = new THREE.Shape();
+  profile.moveTo(foot, 1.9);
+  for (let i = 0; i <= 16; i++) {
+    const x = foot + ((edge - foot) * i) / 16;
+    profile.lineTo(x, heightAt(x));
+  }
+  profile.lineTo(edge, 1.9);
+  profile.closePath();
+  const hill = new THREE.ExtrudeGeometry(profile, { depth, bevelEnabled: false }).translate(0, 0, -depth / 2);
+  scene.add(mesh(hill, M.grass));
+
+  // Terraces cut into the slope carry the houses; each stands on a plinth sunk into the hill.
+  const rnd = createRandom(1203);
+  const stand = (object, x, z) => {
+    const y = heightAt(x);
+    object.position.set(x, y, z);
+    scene.add(object);
+    return y;
+  };
+  const plinth = (x, z, w, d) => scene.add(box(w, 3, d, M.rubble, x, heightAt(x) - 3 + 0.2, z));
+  const houses = [
+    [70, -50, 8, 6.5, 6], [74, -36, 9, 7, 7], [70, 28, 8, 6.5, 6.5], [72, 44, 9, 7, 7], [84, -54, 10, 7, 8], [84, 50, 10, 7, 8],
+    [88, -40, 9, 7, 7], [90, -10, 10, 8, 9], [88, 20, 9, 7, 7], [98, 2, 11, 8, 8], [98, -30, 10, 7, 7], [98, 38, 10, 7, 8], [78, 6, 8, 6, 6],
+  ];
+  for (const [x, z, w, d, h] of houses) {
+    const house = townHouse(rnd, { w, d, h });
+    house.rotation.y = rnd.range(-0.15, 0.15);
+    plinth(x, z, w + 1, d + 1);
+    stand(house, x, z);
+  }
+  plinth(80, -20, 16, 15);
+  stand(addChurch(new THREE.Group(), 0, 0, 0, Math.PI / 2, 1), 80, -20); // St Demetrios, near the point
+  plinth(92, 50, 10, 9);
+  stand(addChurch(new THREE.Group(), 0, 0, 0, Math.PI / 2, 0.6), 92, 50); // St Barbara
+  for (const [x, z] of [[66, -20], [66, 12], [78, -6], [78, 56], [86, 36], [94, -46], [102, -18], [102, 24], [94, 14], [70, -58]]) {
+    scene.add(cypress(rnd.range(10, 14), x, heightAt(x), z));
+  }
+  for (const [x, z] of [[76, 20], [94, -56], [84, 2], [100, 58]]) scene.add(roundTree(rnd.range(6, 8), x, heightAt(x), z));
+}
+
+/** Steps cut down from the quay (top at y = 2) to the water, the water lying on the `toward` side (+1: +x). */
+function addWaterSteps(scene, shoreX, z, toward) {
+  for (let i = 0; i < 4; i++) {
+    scene.add(box(0.8, 2.6 - i * 0.5, 4.5, M.stone, shoreX + toward * (0.4 + i * 0.8), -0.6, z));
+  }
+}
+
+/** A plastered house under a tiled gable, with a door and a few arched windows on its long side. */
+function townHouse(rnd, { w, d, h }) {
+  const house = new THREE.Group();
+  const plaster = rnd.pick([M.plaster, M.plasterOchre, M.brick]);
+  house.add(box(w, h, d, plaster, 0, 0, 0));
+  house.add(gableRoof(w, d, d * 0.32, M.roof, 0, h, 0, 0.4));
+  house.add(mesh(archGeometry(1.1, 2.1), M.opening, -w / 4, 0, d / 2 + 0.06)); // the openings stand off the wall as the lib's houses' do
+  const window = archGeometry(0.8, 1.3);
+  const storeys = Math.max(1, Math.floor(h / 3.2));
+  for (let s = 0; s < storeys; s++) {
+    for (const dx of s === 0 ? [w / 4] : [-w / 3, 0, w / 3]) house.add(mesh(window, M.opening, dx, 1.4 + s * 3.0, d / 2 + 0.06));
+  }
+  return house;
+}
+
+/** A small cross-domed church: a brick box with a drum and dome, an apse to the east (local +x) and a porch. Scaled by `size`. */
+function addChurch(group, x, y, z, rotation, size) {
+  const church = new THREE.Group();
+  church.add(box(14, 7, 11, M.brick, 0, 0, 0));
+  church.add(gableRoof(14, 11, 2.4, M.roof, 0, 7, 0, 0.3));
+  church.add(cylinder(3, 3, 2.4, M.brick, 0, 8.4, 0, 12));
+  church.add(mesh(new THREE.SphereGeometry(3.2, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.lead, 0, 10.8, 0));
+  church.add(cylinder(0.08, 0.08, 1.4, M.gold, 0, 14, 0, 6));
+  church.add(box(0.6, 0.08, 0.08, M.gold, 0, 14.9, 0));
+  church.add(faceToward(cylinder(2.8, 2.8, 5.5, M.brick, 7, 0, 0, 10, { thetaStart: -Math.PI / 2, thetaLength: Math.PI }), 1, 0));
+  church.add(faceToward(mesh(new THREE.SphereGeometry(2.9, 10, 5, 0, Math.PI, 0, Math.PI / 2).scale(1, 0.5, 1), M.lead, 7, 5.5, 0), 1, 0));
+  church.add(box(3, 5, 8, M.brick, -8, 0, 0)); // the narthex porch
+  church.add(gableRoof(3, 8, 1.2, M.roof, -8, 5, 0, 0.3));
+  const door = mesh(archGeometry(1.6, 3), M.opening, -9.6, 0, 0); // openings stand 0.1 m proud, so they clear the walls at the smallest scale too
+  door.rotation.y = -Math.PI / 2;
+  church.add(door);
+  for (const side of [-1, 1]) for (const dx of [-3, 0, 3]) church.add(mesh(archGeometry(0.9, 2), M.opening, dx, 3.4, side * 5.6).rotateY(side > 0 ? 0 : Math.PI));
+  church.scale.setScalar(size);
+  church.position.set(x, y, z);
+  church.rotation.y = rotation;
+  group.add(church);
+  return group;
+}
+
+/** A guard boat: a small rowing boat with a steersman and two oarsmen, a lantern pole at its stern, riding the swell. */
+function createGuardBoat(x, z, heading) {
+  const boat = new THREE.Group();
+  boat.userData.dynamic = true;
+  const hull = mesh(new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.hull, 0, 0.9, 0);
+  hull.scale.set(4.2, 1.1, 1.3);
+  boat.add(hull);
+  const rim = mesh(new THREE.TorusGeometry(1, 0.08, 5, 14).rotateX(Math.PI / 2), M.wood, 0, 0.9, 0);
+  rim.scale.set(4.2, 1, 1.3);
+  boat.add(rim);
+  for (const dx of [-1.6, 0, 1.6]) boat.add(box(0.5, 0.12, 2.2, M.wood, dx, 0.5, 0));
+  for (const dx of [-1.6, 0.2]) {
+    boat.add(cylinder(0.26, 0.3, 0.9, M.imperialPurple, dx, 0.6, 0, 7));
+    boat.add(mesh(new THREE.SphereGeometry(0.2, 7, 5), M.rope, dx, 1.6, 0));
+    for (const side of [-1, 1]) {
+      const oar = cylinder(0.04, 0.04, 3.4, M.wood, dx + 0.3, 1.0, side * 1.1, 4);
+      oar.rotation.z = side * 0.0;
+      oar.rotation.x = side * 1.2;
+      boat.add(oar);
+    }
+  }
+  boat.add(cylinder(0.26, 0.3, 0.9, M.imperialPurple, 1.8, 0.6, 0, 7)); // the steersman
+  boat.add(mesh(new THREE.SphereGeometry(0.2, 7, 5), M.rope, 1.8, 1.6, 0));
+  boat.add(cylinder(0.05, 0.05, 2.4, M.wood, -3.2, 0.7, 0, 4));
+  boat.add(mesh(new THREE.SphereGeometry(0.18, 6, 4), M.fire, -3.2, 3.1, 0));
+  boat.position.set(x, 0, z);
+  boat.rotation.y = heading;
+  const phase = 3;
+  boat.userData.animate = (time) => {
+    boat.position.y = Math.sin(time * 1.4 + phase) * 0.12;
+    boat.rotation.z = Math.sin(time * 1.1 + phase) * 0.04;
+  };
+  return boat;
 }
 
 /**
@@ -93,12 +295,6 @@ function createSpan() {
  */
 function addKastellion(scene, cx, detail) {
   const segments = detail ? 12 : 8;
-  if (detail) {
-    // The Galata shore, from its quay wall to the stage's far end.
-    const [edge, shore] = [-STAGE[0] / 2, cx + 30];
-    scene.add(box(shore - edge, 5, STAGE[1], M.stoneDark, (edge + shore) / 2, -3, 0));
-    scene.add(box(shore - 4 - edge, 0.3, STAGE[1], M.grass, (edge + shore - 4) / 2, 2, 0));
-  }
   const [w, d, h] = [40, 32, 12];
   scene.add(box(w, h, d, M.banded, cx, 2, 0));
   scene.add(box(w - 4, 1.2, d - 4, M.paving, cx, 2 + h - 0.6, 0)); // the wall-walk's court
@@ -128,18 +324,18 @@ function addKastellion(scene, cx, detail) {
   scene.add(drum);
   for (const z of [-4.5, 0.5]) scene.add(box(1.2, 3.2, 1.2, M.wood, tx, 26, tz + z));
   if (!detail) return;
-  const door = mesh(archGeometry(2.4, 3.6), M.opening, tx + 7.02, 2, 0);
+  const door = mesh(archGeometry(2.4, 3.6), M.opening, tx + 7.05, 2, 0);
   door.rotation.y = Math.PI / 2;
   scene.add(door);
   for (const y of [10, 17]) {
-    const slit = mesh(archGeometry(0.7, 2.2), M.opening, tx + 7.02, y, tz);
+    const slit = mesh(archGeometry(0.7, 2.2), M.opening, tx + 7.05, y, tz);
     slit.rotation.y = Math.PI / 2;
     scene.add(slit);
   }
   // The chain's iron ring on the face of the tower, and the windlass bars.
   scene.add(mesh(new THREE.TorusGeometry(1, 0.22, 6, 14), M.iron, tx + 7.1, 2.6, 0));
-  for (const angle of [0, Math.PI / 3, (2 * Math.PI) / 3]) {
-    const bar = box(7, 0.3, 0.3, M.wood, tx, 29, tz + 4.2);
+  for (const [i, angle] of [0, Math.PI / 3, (2 * Math.PI) / 3].entries()) {
+    const bar = box(7, 0.3, 0.3, M.wood, tx, 29, tz + 4.2 + i * 0.06); // each a little further out, so their faces share no plane
     bar.rotation.z = angle;
     scene.add(bar);
   }
@@ -153,12 +349,6 @@ function addKastellion(scene, cx, detail) {
  * keeps the tower alone.
  */
 function addEugeniosTower(scene, cx, detail) {
-  if (detail) {
-    // The Acropolis point, from the tower's foot to the stage's far end.
-    const [shore, edge] = [cx - 7, STAGE[0] / 2];
-    scene.add(box(edge - shore, 5, STAGE[1], M.stoneDark, (shore + edge) / 2, -3, 0));
-    scene.add(box(edge - shore - 8, 0.3, STAGE[1], M.grass, (shore + 8 + edge) / 2, 2, 0));
-  }
   scene.add(box(14, 22, 14, M.banded, cx, 2, 0));
   for (const side of [-1, 1]) {
     scene.add(mesh(crenellationGeometry(14), M.banded, cx, 24, side * 6.65));
@@ -171,17 +361,26 @@ function addEugeniosTower(scene, cx, detail) {
   ring.rotation.y = Math.PI / 2;
   scene.add(ring);
   for (const y of [9, 16]) {
-    const slit = mesh(archGeometry(0.7, 2.2), M.opening, cx - 7.02, y, 0);
+    const slit = mesh(archGeometry(0.7, 2.2), M.opening, cx - 7.05, y, 0);
     slit.rotation.y = -Math.PI / 2;
     scene.add(slit);
   }
-  // The sea wall runs away from the tower in both directions, with a smaller tower beyond.
+  // The sea wall runs away from the tower in both directions along the shore of the Acropolis, with towers at intervals.
   for (const side of [-1, 1]) {
-    scene.add(box(3.2, 11, 30, M.banded, cx + 3, 2, side * 22));
-    const parapet = mesh(crenellationGeometry(30), M.banded, cx + 1.9, 13, side * 22);
-    parapet.rotation.y = Math.PI / 2;
-    scene.add(parapet);
-    scene.add(box(9, 16, 9, M.banded, cx + 3, 2, side * 38));
+    for (const [z, length] of [[22, 30], [48, 12]]) {
+      scene.add(box(3.2, 11, length, M.banded, cx + 3, 2, side * z));
+      const parapet = mesh(crenellationGeometry(length), M.banded, cx + 1.9, 13, side * z);
+      parapet.rotation.y = Math.PI / 2;
+      scene.add(parapet);
+    }
+    for (const z of [38, 55.5]) {
+      scene.add(box(9, 16, 8.9, M.banded, cx + 3, 2, side * z)); // the outer one ends 0.05 m short of the stage's cut
+      scene.add(mesh(crenellationGeometry(9, { merlon: 0.8, gap: 0.6, height: 1 }), M.banded, cx + 3, 18, side * z - 4.1));
+      scene.add(mesh(crenellationGeometry(9, { merlon: 0.8, gap: 0.6, height: 1 }), M.banded, cx + 3, 18, side * z + 4.1));
+      const slit = mesh(archGeometry(0.6, 1.8), M.opening, cx - 1.55, 10, side * z);
+      slit.rotation.y = -Math.PI / 2;
+      scene.add(slit);
+    }
   }
 }
 

@@ -28,7 +28,10 @@ export class DetailView {
   constructor({ renderer, container, onSelectLandmark = () => {} }) {
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(BACKDROP, 90, 260);
-    this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 3000);
+    // The near plane stands well out: depth precision falls with the square of the distance divided by the
+    // near distance, and a diorama's paving sits only centimetres above its slab. At 0.1 the big dioramas
+    // (scaled to a tenth) z-fought on real GPUs, flickering like static; the orbit never comes closer than 1.
+    this.camera = new THREE.PerspectiveCamera(38, 1, 1, 3000);
 
     this.controls = new OrbitControls(this.camera, renderer.domElement);
     Object.assign(this.controls, {
@@ -161,7 +164,7 @@ export class DetailView {
     this.labelLayer.replaceChildren(...this.current.labels.map(({ element }) => element));
     this.refreshLabels();
 
-    this.plinth.scale.set(radius * 1.04, 1, radius * 1.04);
+    this.plinth.scale.set(radius * 1.12, 1, radius * 1.12);
     // The sun stands back far enough, and its shadow frustum opens wide enough, to take in a tall obelisk as well as a wide diorama.
     const lightDistance = Math.max(LIGHT_DISTANCE, height * 1.2);
     this.sun.position.setLength(lightDistance);
@@ -171,9 +174,11 @@ export class DetailView {
     // Slender models (an obelisk, a column) are instead looked at from their middle, so their tops stay in frame.
     const slender = THREE.MathUtils.clamp(height / (radius * 2) - 1, 0, 1); // 0 when squat, 1 when twice as tall as wide
     const lerp = (squat, tall) => THREE.MathUtils.lerp(squat, tall, slender);
-    const distance = (Math.hypot(radius, height / 2) / Math.sin(this.visibleHalfFov())) * lerp(0.88, 1.04);
+    // A first guess at the distance, deliberately close: fitInView() then backs the camera off until the whole diorama fits.
+    const distance = (Math.hypot(radius, height / 2) / Math.sin(this.visibleHalfFov())) * lerp(0.55, 0.8);
     const azimuth = 0.75;
-    const elevation = 0.5;
+    // A wide, low diorama (a town, an aqueduct) is seen from a lower angle, so its façades are not flattened into a plan.
+    const elevation = lerp(0.42, 0.55);
     const targetY = height * lerp(0.3, 0.5);
     this.camera.position.set(
       Math.sin(azimuth) * Math.cos(elevation) * distance,
@@ -181,11 +186,15 @@ export class DetailView {
       Math.cos(azimuth) * Math.cos(elevation) * distance,
     );
     this.controls.target.set(0, targetY, 0);
+    this.fitInView(radius, height);
     // The fog that fades the floor into the backdrop must start beyond the model, however far the camera stands.
-    this.scene.fog.near = Math.max(90, distance * 1.3);
+    this.scene.fog.near = Math.max(90, this.camera.position.distanceTo(this.controls.target) * 1.3);
     this.scene.fog.far = this.scene.fog.near + 170;
-    this.controls.minDistance = radius * 0.25;
-    this.controls.maxDistance = Math.max(radius * 4, distance * 1.6);
+    // The orbit limits follow the fitted distance: on a phone, where the panel leaves only a strip of screen,
+    // the camera stands much further back than the first guess, and a limit set from the guess would clamp it.
+    const fitted = this.camera.position.distanceTo(this.controls.target);
+    this.controls.minDistance = Math.max(2, radius * 0.25);
+    this.controls.maxDistance = Math.max(radius * 4, fitted * 1.6);
     this.controls.autoRotate = !QUALITY.reducedMotion;
     this.controls.update();
     this.invalidate();
@@ -201,6 +210,47 @@ export class DetailView {
     } });
   }
 
+  /**
+   * Backs the camera away from its target until the whole diorama, as it
+   * turns, stays inside the screen area left free by the panels, with a
+   * margin. The model sweeps a cylinder as it turns, so the rim of that
+   * cylinder at its foot and its crown is what must fit, whichever way it
+   * is facing. Without this a tall, slender column lost its top.
+   */
+  fitInView(radius, height) {
+    const { camera, controls } = this;
+    const { width, height: screenHeight } = this.size ?? { width: 1, height: 1 };
+    const { left = 0, right = 0, top = 0, bottom = 0 } = this.insets ?? {};
+    const margin = 0.05;
+    const bounds = {
+      minX: -1 + (2 * left) / width + margin,
+      maxX: 1 - (2 * right) / width - margin,
+      minY: -1 + (2 * bottom) / screenHeight + margin,
+      maxY: 1 - (2 * top) / screenHeight - margin,
+    };
+    // The crown must always fit; the rim is tested a little inside the true sweep, since a diorama's
+    // outermost corners are its ground slab or its water, which may brush the edge as it turns.
+    const points = [new THREE.Vector3(0, height * 1.02, 0)];
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      const [x, z] = [Math.cos(angle) * radius * 0.9, Math.sin(angle) * radius * 0.9];
+      points.push(new THREE.Vector3(x, 0, z), new THREE.Vector3(x, height, z));
+    }
+    const direction = camera.position.clone().sub(controls.target).normalize();
+    const projected = new THREE.Vector3();
+    for (let step = 0; step < 40; step++) {
+      camera.lookAt(controls.target);
+      camera.updateMatrixWorld();
+      let overflow = 0;
+      for (const point of points) {
+        projected.copy(point).project(camera);
+        overflow = Math.max(overflow, bounds.minX - projected.x, projected.x - bounds.maxX, bounds.minY - projected.y, projected.y - bounds.maxY);
+      }
+      if (overflow <= 0) break;
+      camera.position.addScaledVector(direction, camera.position.distanceTo(controls.target) * Math.min(0.25, overflow * 0.6 + 0.02));
+    }
+  }
+
   /** The diorama's shapes changed: redraw it, shadows included. */
   invalidate() {
     this.dirty = true;
@@ -209,6 +259,10 @@ export class DetailView {
 
   build(landmark) {
     const model = landmark.create({ lod: 'detail' });
+    // Water throws no shadow: a sea or moat casting a dark slab onto the floor beside the plinth looks absurd.
+    model.traverse((object) => {
+      if (object.isMesh && (object.material === M.water || object.material === M.waterSide)) object.castShadow = false;
+    });
     model.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
