@@ -124,7 +124,7 @@ export const LANDMARKS = [
     period: { from: 330, to: 1453, toApprox: true, ending: 'demolished' },
     create: createGreatPalace,
     map: GREAT_PALACE,
-    maps: [41.00583, 28.97722],
+    maps: 'Boukoleon Palace, Istanbul', // its sea front, the one part of the palace still standing
   },
   {
     id: 'judas-tree',

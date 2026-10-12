@@ -18,13 +18,7 @@ export class InfoPanel {
     const label = (key) => info.labels?.[key] ?? ui(key);
     this.render([
       h('p', { class: 'info-panel__region' }, regionText(landmark.region).name),
-      h('h2', {}, h('a', {
-        class: 'info-panel__maps',
-        href: mapsUrl(landmark.maps),
-        target: '_blank',
-        rel: 'noopener',
-        title: ui('openInMaps'),
-      }, info.name)),
+      h('h2', {}, mapsLink(info.name, landmark.maps)),
       h('p', { class: 'info-panel__years' }, info.years ?? formatPeriod(period)),
       h('p', { class: 'info-panel__subtitle' }, info.subtitle),
       h('dl', { class: 'info-panel__stats' },
@@ -48,7 +42,7 @@ export class InfoPanel {
     const text = regionText(region.id);
     this.render([
       h('p', { class: 'info-panel__region' }, ui('areaOfMap')),
-      h('h2', {}, text.name),
+      h('h2', {}, mapsLink(text.name, region.maps)),
       h('p', { class: 'info-panel__subtitle' }, text.subtitle),
       h('div', { class: 'info-panel__ornament' }),
       text.paragraphs.map((paragraph) => h('p', {}, paragraph)),
@@ -93,8 +87,14 @@ function legendBlock({ title, paragraphs }) {
   return h('section', { class: 'info-panel__legend' }, h('h3', {}, title), paragraphs.map((text) => h('p', {}, text)));
 }
 
-/** A Google Maps link: a search for a place that still stands, or a pin where one stood. */
-function mapsUrl(target) {
+/** A title linking to Google Maps: a search for a place that still stands, or a pin where one stood. */
+function mapsLink(name, target) {
   const query = Array.isArray(target) ? target.join(',') : target;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return h('a', {
+    class: 'info-panel__maps',
+    href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+    target: '_blank',
+    rel: 'noopener',
+    title: ui('openInMaps'),
+  }, name);
 }
