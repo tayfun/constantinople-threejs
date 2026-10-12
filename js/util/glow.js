@@ -35,8 +35,13 @@ function glowingVersion(material) {
   return glowing.get(material);
 }
 
+/** Parts below the root that are picked on their own (the Golden Gate in the walls) glow only when hovered themselves. */
+const pickedAlone = (object) => Boolean(object.userData.landmarkId || object.userData.regionId);
+
 export function setGlow(root, on) {
-  root.traverse((object) => {
+  const visit = (object) => {
+    if (object !== root && pickedAlone(object)) return;
+    for (const child of object.children) visit(child);
     if (!object.isMesh) return;
     const { material } = object;
     const materials = Array.isArray(material) ? material : [material];
@@ -48,5 +53,6 @@ export function setGlow(root, on) {
       object.material = object.userData.restMaterial;
       delete object.userData.restMaterial;
     }
-  });
+  };
+  visit(root);
 }

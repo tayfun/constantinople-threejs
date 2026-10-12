@@ -346,6 +346,11 @@ function createGoldenGate(y) {
   along(0, innerGoldenGate(marble));
   along(MAP.outer.offset, outerGoldenGate(marble));
   along(MAP.moat.offset, moatBridge());
+  // A part of its own on the map: clicked or hovered, it stands for the Golden Gate's region, not the
+  // walls. Merged here and kept out of the walls' merge (dynamic) so it can be picked and glow alone.
+  finalizeModel(gate);
+  gate.userData.regionId = 'golden-gate';
+  gate.userData.dynamic = true;
   return gate;
 }
 

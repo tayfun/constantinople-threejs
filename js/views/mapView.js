@@ -57,6 +57,7 @@ export class MapView {
     this.regions = regions;
     this.onSelectRegion = onSelectRegion;
     this.entries = [];
+    this.regionParts = []; // model parts that stand for a region (the Golden Gate in the walls), pickable like landmarks
     this.labels = [];
     this.animated = [];
     this.labelRenderer = createLabelRenderer(container, { canvas: renderer.domElement });
@@ -187,13 +188,22 @@ export class MapView {
     }
     this.updateLabelVisibility();
 
+    const parts = new Map();
+    for (const { holder } of this.entries) holder.traverse((object) => { if (object.userData.regionId) parts.set(object.userData.regionId, object); });
+
     // Districts float high over their area; waters lie on the surface, the Mese just above its hills and the Golden Gate over its towers.
     const lift = { water: 0.3, place: 1.8 };
     for (const region of regions.filter((r) => r.labelAt)) {
       const kind = region.labelKind ?? 'region';
       const read = () => ({ text: regionText(region.id).name, sub: regionText(region.id).subtitle });
       const height = kind === 'region' ? 3 : (region.labelLift ?? lift[kind]) + this.ground.heightAt(region.labelAt);
-      add(this.scene, toWorld(region.labelAt, height), read, { kind, onClick: () => onSelectRegion(region.id) });
+      const part = parts.get(region.id) && { region, holder: parts.get(region.id) };
+      const label = add(this.scene, toWorld(region.labelAt, height), read, {
+        kind,
+        onClick: () => onSelectRegion(region.id),
+        onHover: part && ((on) => this.setHovered(on ? part : null)),
+      });
+      if (part) this.regionParts.push(Object.assign(part, { label }));
     }
   }
 
@@ -236,16 +246,19 @@ export class MapView {
       downAt = null;
       if (moved > 6) return;
       const entry = this.pick();
-      if (entry) this.onSelectLandmark(entry.landmark.id);
+      if (entry?.region) this.onSelectRegion(entry.region.id);
+      else if (entry) this.onSelectLandmark(entry.landmark.id);
     });
   }
 
+  /** The landmark entry, or region part, under the pointer. */
   pick() {
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const shown = this.entries.filter((entry) => entry.holder.visible).map((entry) => entry.holder);
     const [hit] = this.raycaster.intersectObjects(shown, true);
     if (!hit) return null;
     for (let node = hit.object; node; node = node.parent) {
+      if (node.userData.regionId) return this.regionParts.find((part) => part.holder === node);
       if (node.userData.landmarkId) return this.entries.find((entry) => entry.holder === node);
     }
     return null;
@@ -280,7 +293,7 @@ export class MapView {
         } });
       }
     }
-    if (this.hovered && !this.hovered.holder.visible) this.setHovered(null);
+    if (this.hovered && !isShown(this.hovered.holder)) this.setHovered(null);
   }
 
   /** The scene's shapes changed: redraw it, shadows included. */
@@ -421,7 +434,13 @@ function distanceOutside(holder, footprint) {
 
 // ---------- hover highlight ----------
 
-/** Glows the landmark and its label together. */
+/** Whether an object and every group it sits in are visible. */
+function isShown(object) {
+  for (let node = object; node; node = node.parent) if (!node.visible) return false;
+  return true;
+}
+
+/** Glows the landmark, or region part, and its label together. */
 function highlight(entry, on) {
   entry.label.element.classList.toggle('is-hover', on);
   setGlow(entry.holder, on);
