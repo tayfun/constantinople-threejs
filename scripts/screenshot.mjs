@@ -36,8 +36,9 @@ const ALL = ['hagia-sophia', 'hippodrome', 'obelisk-of-theodosius', 'serpent-col
   'basilica-cistern', 'forum-of-constantine', 'aqueduct-of-valens', 'blachernae', 'theodosian-walls', 'venetian-quarter', 'horn-chain',
   'dromon', 'galata-tower', 'genoese-quarter', 'chrysopolis', 'chalcedon'];
 
+// --enable-automation sets navigator.webdriver, which keeps Sentry from reporting these runs.
 const chrome = spawn('google-chrome', [
-  '--headless=new', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox', '--disable-gpu-sandbox',
+  '--headless=new', '--enable-automation', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox', '--disable-gpu-sandbox',
   `--remote-debugging-port=${port}`, `--window-size=${width},${height}`, '--hide-scrollbars', `--user-data-dir=${join(outDir, '.profile')}`,
   'about:blank',
 ], { stdio: 'ignore' });
