@@ -381,9 +381,29 @@ export const HOUSE_ATLAS = {
   soffit: [552, 480, 128, 48],
   dark: [688, 480, 48, 48],
   roof: [8, 584, 512, 432],
+  // The neighbourhood churches (world/churches.js), each face painted over the heights in CHURCH.
+  churchWest: [528, 584, 96, 248], // the west end of the nave: the portal, a window above, the gable
+  churchArm: [632, 584, 96, 248], // the other ends of the cross: a tall window, a slit in the gable
+  churchBay: [736, 584, 80, 152], // the low corner bays: a small window
+  churchDrum: [824, 584, 48, 156],
+  churchApse: [880, 584, 40, 200],
+  churchBell: [928, 584, 40, 110],
+  churchSide: [736, 792, 272, 200], // the long sides of the cross's arms, above the bays
 };
 export const HOUSE_FOOT = 0.25;
 export const HOUSE_STOREY = 0.45; // the floor of the upper storey, as a share of the eaves height
+
+/** Heights of the neighbourhood church, in units of its length, shared by its atlas faces and its model. */
+export const CHURCH = {
+  foot: -0.12, // walls run this far below ground
+  bays: 0.3, // eaves of the low corner bays
+  arms: 0.44, // eaves of the four arms of the cross
+  rise: 0.12, // of the arms' gables
+  drum: [0.4, 0.7], // its windows clear the arms' ridges
+  apse: 0.34,
+  sideApse: 0.24,
+  bell: [0.26, 0.5],
+};
 
 /**
  * Painted after the reference of a two-storey Byzantine house: a ground floor
@@ -472,6 +492,145 @@ function paintHouseAtlas(ctx, rnd) {
   ctx.fillRect(...A.dark);
 
   romanTiles(ctx, rnd, ...A.roof);
+  paintChurch(ctx, rnd);
+}
+
+/**
+ * The church's faces, after the reference of a small cross-in-square church:
+ * courses of rubble laced with bands of brick, old plaster clinging in
+ * patches, round-headed windows in brick arches glazed with roundels, and a
+ * portal in a moulded stone frame.
+ */
+function paintChurch(ctx, rnd) {
+  const A = HOUSE_ATLAS;
+  const C = CHURCH;
+  // Each face's rectangle spans the heights [y0, y1]; `at(y)` is the canvas row of a height.
+  const face = ([x, y, w, h], y0, y1, plaster = 0.16) => {
+    churchWall(ctx, rnd, x, y, w, h, plaster);
+    const at = (height) => y + h - ((height - y0) / (y1 - y0)) * h;
+    ctx.fillStyle = rgb([196, 188, 170]); // a plinth of dressed stone at the foot
+    for (let left = x - rnd.next() * 20; left < x + w; left += 22) ctx.fillRect(Math.max(x, left + 1), at(0.03), 20, at(C.foot) - at(0.03));
+    return { x, w, at };
+  };
+
+  const west = face(A.churchWest, C.foot, C.arms + C.rise);
+  portal(ctx, rnd, west.x + west.w / 2, west.at(0.2), west.at(0), west.w * 0.46);
+  lancet(ctx, rnd, west.x + west.w / 2, west.at(0.4), west.at(0.28), west.w * 0.2);
+  const arm = face(A.churchArm, C.foot, C.arms + C.rise);
+  lancet(ctx, rnd, arm.x + arm.w / 2, arm.at(0.38), arm.at(0.16), arm.w * 0.24);
+  lancet(ctx, rnd, arm.x + arm.w / 2, arm.at(0.51), arm.at(0.46), arm.w * 0.08);
+  const bay = face(A.churchBay, C.foot, C.bays);
+  lancet(ctx, rnd, bay.x + bay.w / 2, bay.at(0.22), bay.at(0.1), bay.w * 0.2);
+  const drum = face(A.churchDrum, C.drum[0], C.drum[1], 0.3);
+  lancet(ctx, rnd, drum.x + drum.w / 2, drum.at(0.685), drum.at(0.6), drum.w * 0.46);
+  ctx.fillStyle = rgb([196, 188, 170]); // the cornice under the dome
+  ctx.fillRect(drum.x, drum.at(C.drum[1]), drum.w, 5);
+  const apse = face(A.churchApse, C.foot, C.apse);
+  lancet(ctx, rnd, apse.x + apse.w / 2, apse.at(0.22), apse.at(0.08), apse.w * 0.42);
+  // The bell-cote: brick, with the bell hanging in its arch.
+  const [bx, by, bw, bh] = A.churchBell;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(bx, by, bw, bh);
+  ctx.clip();
+  ctx.fillStyle = rgb([196, 170, 148]);
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.translate(bx, 0);
+  courses(ctx, bw, rnd, { top: by, bottom: by + bh, courseHeight: 6, minLength: 12, maxLength: 16, mortar: 1.5, color: HOUSE.brick, amount: 0.25 });
+  ctx.restore();
+  const belfry = (height) => by + bh - ((height - C.bell[0]) / (C.bell[1] - C.bell[0])) * bh;
+  archedOpening(ctx, bx + bw / 2, belfry(0.47), belfry(0.36), bw * 0.5, rgb(HOUSE.void));
+  ctx.fillStyle = rgb([92, 104, 72]); // a bronze bell, green with age
+  ctx.beginPath();
+  const cx = bx + bw / 2;
+  const top = belfry(0.44);
+  ctx.moveTo(cx - 3, top);
+  ctx.quadraticCurveTo(cx - 5, top + 8, cx - 8, top + 13);
+  ctx.lineTo(cx + 8, top + 13);
+  ctx.quadraticCurveTo(cx + 5, top + 8, cx + 3, top);
+  ctx.fill();
+  const [sx, sy, sw, sh] = A.churchSide;
+  churchWall(ctx, rnd, sx, sy, sw, sh, 0.16);
+}
+
+/** Opus mixtum: courses of rubble laced every few feet with a band of brick, patched with plaster. */
+function churchWall(ctx, rnd, x, y, w, h, plaster) {
+  stoneCourses(ctx, rnd, x, y, w, h, { course: 9 });
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  for (let band = y + h - 34; band > y - 12; band -= 62) {
+    for (let k = 0; k < 3; k++) {
+      const top = band + k * 4;
+      ctx.fillStyle = rgb([196, 170, 148]);
+      ctx.fillRect(x, top, w, 4);
+      for (let left = x - rnd.next() * 14; left < x + w; left += 14) {
+        ctx.fillStyle = vary(rnd, HOUSE.brick, 0.22);
+        ctx.fillRect(left + 1, top + 0.8, 12, 2.6);
+      }
+    }
+  }
+  ctx.restore();
+  whitewash(ctx, rnd, x, y, w, h, plaster);
+}
+
+/** A round-headed opening from `top` (the crown of its arch) down to `bottom`, in canvas rows. */
+function archedOpening(ctx, cx, top, bottom, w, fill) {
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.arc(cx, top + w / 2, w / 2, Math.PI, 0);
+  ctx.lineTo(cx + w / 2, bottom);
+  ctx.lineTo(cx - w / 2, bottom);
+  ctx.fill();
+}
+
+/** A round-headed window in a ring of brick voussoirs, glazed with roundels, on a stone sill. */
+function lancet(ctx, rnd, cx, top, bottom, w) {
+  const ring = Math.max(2, w * 0.28);
+  archedOpening(ctx, cx, top - ring, bottom, w + ring * 2, rgb(HOUSE.brick));
+  ctx.strokeStyle = 'rgba(220, 200, 180, 0.55)';
+  ctx.lineWidth = 0.8;
+  for (let k = 1; k < 7; k++) {
+    const a = Math.PI + (k / 7) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * w * 0.5, top + w / 2 + Math.sin(a) * w * 0.5);
+    ctx.lineTo(cx + Math.cos(a) * (w * 0.5 + ring), top + w / 2 + Math.sin(a) * (w * 0.5 + ring));
+    ctx.stroke();
+  }
+  archedOpening(ctx, cx, top, bottom, w, rgb([44, 46, 48]));
+  if (w >= 6) {
+    ctx.strokeStyle = 'rgba(170, 182, 184, 0.55)';
+    ctx.lineWidth = 0.9;
+    const r = w / 4;
+    for (let row = top + w / 2; row < bottom - r; row += r * 2) {
+      for (const dx of [-r, r]) {
+        ctx.beginPath();
+        ctx.arc(cx + dx, row + r, r * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.fillStyle = rgb([200, 192, 176]);
+  ctx.fillRect(cx - w / 2 - ring, bottom, w + ring * 2, Math.max(2, ring * 0.7));
+}
+
+/** The portal: double plank doors under a plastered tympanum, framed in a moulded stone arch. */
+function portal(ctx, rnd, cx, top, bottom, w) {
+  const frame = w * 0.16;
+  archedOpening(ctx, cx, top - frame - w * 0.5, bottom, w + frame * 2, rgb([204, 196, 180]));
+  ctx.strokeStyle = 'rgba(120, 110, 96, 0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, top - w * 0.5 + w / 2, w / 2 + frame * 0.5, Math.PI, 0);
+  ctx.stroke();
+  archedOpening(ctx, cx, top - w * 0.5, top + 2, w, rgb([214, 202, 180])); // the tympanum
+  planks(ctx, rnd, cx - w / 2, top, w / 2 - 0.5, bottom - top, 4, true);
+  planks(ctx, rnd, cx + 0.5, top, w / 2 - 0.5, bottom - top, 4, true);
+  ctx.fillStyle = rgb([40, 34, 30]);
+  ctx.fillRect(cx - 0.75, top, 1.5, bottom - top);
+  ctx.fillRect(cx - w / 2, top, w, 1.5); // the lintel's shadow
+  for (const dx of [-3, 3]) ctx.fillRect(cx + dx - 1, top + (bottom - top) * 0.5, 2, 2); // ring handles
 }
 
 /** Irregular stones in rough courses over mortar, with a share of them whitewashed over. */

@@ -8,6 +8,7 @@ import { crownGeometry, cypressGeometry, judasTreeGeometry } from '../models/lib
 import { createRandom } from '../util/random.js';
 import { QUALITY } from '../util/quality.js';
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
+import { createChurches } from './churches.js';
 import { createHouses } from './houses.js';
 import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
@@ -92,7 +93,7 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
   fabric.add(
     createPlots(rnd, layers.plots, ground),
     createHouses(createRandom(1453 + 330), layers.houses),
-    createChurches(rnd, layers.churches),
+    createChurches(createRandom(1054), layers.churches),
     createTrees(rnd, layers.trees),
     createErguvans(createRandom(1454), erguvans, ground),
   );
@@ -248,52 +249,6 @@ function createPlots(rnd, plots, ground) {
     plates.setColorAt(i, tone(rnd, PLOT_TONES[kind], 0.06));
   });
   return plates;
-}
-
-/**
- * Small cross-in-square churches: a low body, the raised arms of the cross,
- * an apse to the east and a dome on a drum — each part one instanced mesh.
- * Proportions are in units of the church's length.
- */
-const CHURCH_PARTS = [
-  { name: 'body', geometry: boxGeometry(1, 1, 1), offset: [0, 0, 0], scale: [1, 0.42, 0.78] },
-  { name: 'nave', geometry: boxGeometry(1, 1, 1), offset: [0, 0, 0], scale: [1.02, 0.6, 0.34] },
-  { name: 'transept', geometry: boxGeometry(1, 1, 1), offset: [0, 0, 0], scale: [0.34, 0.6, 0.82] },
-  { name: 'apse', geometry: cylinderGeometry(1, 1, 1, 10), offset: [0.5, 0, 0], scale: [0.17, 0.38, 0.17] },
-  { name: 'drum', geometry: cylinderGeometry(1, 1, 1, 12), offset: [0, 0.6, 0], scale: [0.16, 0.13, 0.16] },
-  { name: 'dome', geometry: domeGeometry(1, { segments: 12 }), offset: [0, 0.73, 0], scale: [0.165, 0.16, 0.165] },
-];
-const CHURCH_TONES = palette(0xd98f66, 0xe6b98a, 0xf2e2c2, 0xcf8560);
-const DOME_TONES = palette(0x8fa3ad, 0x9fb0b8, 0xc4633f);
-
-function createChurches(rnd, churches) {
-  const masonry = new THREE.MeshStandardMaterial({ roughness: 0.85 });
-  const roofing = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.2 });
-  const meshes = CHURCH_PARTS.map(({ name, geometry }) => instanced(geometry, name === 'dome' ? roofing : masonry, churches.length));
-  const base = new THREE.Matrix4();
-  const part = new THREE.Matrix4();
-  const identity = new THREE.Quaternion();
-
-  churches.forEach(({ point: [east, north], y, angle, size }, i) => {
-    base.makeRotationY(angle).setPosition(east, y - FOUNDATION, -north);
-    const stone = tone(rnd, CHURCH_TONES);
-    const roof = tone(rnd, DOME_TONES);
-    CHURCH_PARTS.forEach(({ name, offset, scale }, k) => {
-      const lift = name === 'drum' || name === 'dome' ? FOUNDATION : 0;
-      const height = name === 'drum' || name === 'dome' ? scale[1] * size : scale[1] * size + FOUNDATION;
-      part.compose(
-        new THREE.Vector3(offset[0] * size, offset[1] * size + lift, offset[2] * size),
-        identity,
-        new THREE.Vector3(scale[0] * size, height, scale[2] * size),
-      );
-      meshes[k].setMatrixAt(i, part.premultiply(base));
-      meshes[k].setColorAt(i, name === 'dome' ? roof : stone);
-    });
-  });
-
-  const group = new THREE.Group();
-  group.add(...meshes);
-  return group;
 }
 
 /** Sea walls following both shores of the city, set just inside the coast. */
