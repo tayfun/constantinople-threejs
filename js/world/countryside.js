@@ -90,7 +90,7 @@ function addFarm(rnd, plan, centre, open) {
       const point = [hamlet[0] + rnd.range(-0.55, 0.55), hamlet[1] + rnd.range(-0.55, 0.55)];
       if (!open(point, 0.7) || placed.some((other) => Math.hypot(point[0] - other[0], point[1] - other[1]) < 0.45)) continue;
       placed.push(point);
-      plan.houses.push({ point, angle: angle + rnd.pick([0, Math.PI / 2]), w: rnd.range(0.28, 0.4), d: rnd.range(0.22, 0.3), h: rnd.range(0.12, 0.18), flat: false });
+      plan.houses.push({ point, angle: angle + rnd.pick([0, Math.PI / 2]), w: rnd.range(0.28, 0.4), d: rnd.range(0.22, 0.3), h: rnd.range(0.12, 0.18), farm: true });
     }
   }
 }

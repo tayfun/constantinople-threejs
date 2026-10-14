@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createRandom, hashString } from '../../util/random.js';
+import { QUALITY } from '../../util/quality.js';
 
 /**
  * Procedurally painted canvas textures.
@@ -357,6 +358,386 @@ export const hieroglyphs = () => {
   texture.repeat.set(4, 1);
   return texture;
 };
+
+/**
+ * The town houses' atlas: every face of the map's houses (see world/houses.js)
+ * samples one region of this canvas. Pixel rectangles [x, y, width, height]
+ * on a 1024 × 1024 sheet; façades run from a buried foundation at the bottom
+ * (HOUSE_FOOT of the eaves height) to the eaves at the top.
+ */
+export const HOUSE_ATLAS = {
+  size: 1024,
+  gableFront2: [8, 8, 272, 224], // the gable end of the main block, two arched windows over a door
+  gableFront1: [288, 8, 208, 224], // the same, narrower, one window
+  eavesFront: [504, 8, 400, 224], // a long front: a door onto the balcony between two windows
+  steps: [912, 8, 104, 104],
+  wood: [912, 120, 104, 112],
+  sideWall: [8, 240, 272, 224],
+  wingFront: [288, 240, 208, 224], // whitewashed below, a door and window onto the balcony above
+  wingSide: [504, 240, 272, 224],
+  rubble: [784, 240, 232, 224],
+  gable: [8, 480, 272, 96],
+  railing: [288, 480, 256, 48],
+  soffit: [552, 480, 128, 48],
+  dark: [688, 480, 48, 48],
+  roof: [8, 584, 512, 432],
+};
+export const HOUSE_FOOT = 0.25;
+export const HOUSE_STOREY = 0.45; // the floor of the upper storey, as a share of the eaves height
+
+/**
+ * Painted after the reference of a two-storey Byzantine house: a ground floor
+ * of rubble stone, an upper floor of stone laced with bands of brick and patched
+ * with whitewash between weathered timbers, arched windows in brick surrounds
+ * with plank shutters, and a roof of Roman tiles.
+ */
+export const townHouseAtlas = () => {
+  const { size } = HOUSE_ATLAS;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = Math.round(size * QUALITY.textureScale);
+  // Painted at full size so every stroke keeps its proportions, then copied down on a modest device.
+  const pad = QUALITY.textureScale < 1 ? Object.assign(document.createElement('canvas'), { width: size, height: size }) : canvas;
+  paintHouseAtlas(pad.getContext('2d'), createRandom(hashString('townHouses')));
+  if (pad !== canvas) canvas.getContext('2d').drawImage(pad, 0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+};
+
+const HOUSE = {
+  mortar: [126, 116, 102],
+  stones: [[184, 174, 156], [168, 158, 140], [196, 186, 166], [150, 140, 124], [178, 162, 138]],
+  brick: [174, 88, 64],
+  plaster: [220, 212, 194],
+  timber: [112, 96, 78],
+  shutter: [124, 110, 92],
+  void: [34, 28, 24],
+};
+
+function paintHouseAtlas(ctx, rnd) {
+  const A = HOUSE_ATLAS;
+  fill(ctx, A.size, A.size, HOUSE.mortar);
+  const lift = (rect) => {
+    const [x, y, w, h] = rect;
+    return { x, y, w, h, ground: y + h - h * (HOUSE_FOOT / (1 + HOUSE_FOOT)), storey: y + h - h * ((HOUSE_FOOT + HOUSE_STOREY) / (1 + HOUSE_FOOT)) };
+  };
+
+  facade(ctx, rnd, lift(A.gableFront2), { upper: [['arch', 0.3], ['arch', 0.7]], lower: [['door', 0.36], ['window', 0.76]] });
+  facade(ctx, rnd, lift(A.gableFront1), { upper: [['arch', 0.5]], lower: [['door', 0.5]] });
+  facade(ctx, rnd, lift(A.eavesFront), { upper: [['arch', 0.18], ['doorway', 0.5], ['arch', 0.82]], lower: [['door', 0.3], ['window', 0.62], ['window', 0.86]] });
+  facade(ctx, rnd, lift(A.sideWall), { upper: [['arch', 0.5]], lower: [['window', 0.5]], quoins: false });
+  facade(ctx, rnd, lift(A.wingSide), { upper: [['window', 0.55]], lower: [['window', 0.3]], quoins: false, beams: false });
+  facade(ctx, rnd, lift(A.wingFront), { upper: [['doorway', 0.28], ['arch', 0.74]], lower: [['window', 0.6]], whitewash: true, quoins: false });
+
+  const [rx, ry, rw, rh] = A.rubble;
+  stoneCourses(ctx, rnd, rx, ry, rw, rh, { course: 12, plaster: 0.15 });
+  const [gx, gy, gw, gh] = A.gable;
+  upperWall(ctx, rnd, gx, gy, gw, gh, 0.25);
+  ctx.fillStyle = rgb(HOUSE.void);
+  ctx.fillRect(gx + gw / 2 - 7, gy + 26, 14, 18); // a vent under the ridge
+  ctx.fillStyle = rgb(HOUSE.timber);
+  ctx.fillRect(gx, gy + gh - 7, gw, 7);
+
+  const [sx, sy, sw, sh] = A.steps;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(sx, sy, sw, sh);
+  ctx.clip();
+  for (let y = sy; y < sy + sh; y += 26) { // dressed blocks for the treads
+    for (let x = sx - rnd.next() * 30; x < sx + sw; x += 42) {
+      ctx.fillStyle = vary(rnd, [178, 162, 138], 0.1);
+      ctx.fillRect(x + 1.5, y + 1.5, 39, 23);
+    }
+  }
+  ctx.restore();
+
+  planks(ctx, rnd, ...A.wood, 13);
+  const [lx, ly, lw, lh] = A.railing;
+  ctx.fillStyle = rgb([58, 50, 42]);
+  ctx.fillRect(lx, ly, lw, lh);
+  for (let x = lx + 2; x < lx + lw; x += 13) {
+    ctx.fillStyle = vary(rnd, HOUSE.timber, 0.2);
+    ctx.fillRect(x, ly, 6, lh);
+  }
+  ctx.fillStyle = rgb(HOUSE.timber.map((c) => c * 1.12));
+  ctx.fillRect(lx, ly, lw, 8);
+  ctx.fillRect(lx, ly + lh - 6, lw, 6);
+  const [ox, oy, ow, oh] = A.soffit;
+  ctx.fillStyle = rgb([70, 58, 46]);
+  ctx.fillRect(ox, oy, ow, oh);
+  ctx.fillStyle = rgb([96, 80, 64]);
+  for (let x = ox + 4; x < ox + ow; x += 16) ctx.fillRect(x, oy, 6, oh);
+  ctx.fillStyle = rgb([40, 46, 50]);
+  ctx.fillRect(...A.dark);
+
+  romanTiles(ctx, rnd, ...A.roof);
+}
+
+/** Irregular stones in rough courses over mortar, with a share of them whitewashed over. */
+function stoneCourses(ctx, rnd, x, y, w, h, { course = 11, plaster = 0 } = {}) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = rgb(HOUSE.mortar);
+  ctx.fillRect(x, y, w, h);
+  for (let top = y + h; top > y - course; top -= course) {
+    const height = course * (0.75 + rnd.next() * 0.25);
+    for (let left = x - rnd.next() * 20; left < x + w; ) {
+      const length = course * (1.1 + rnd.next() * 1.4);
+      ctx.fillStyle = vary(rnd, rnd.pick(HOUSE.stones), 0.12);
+      ctx.beginPath();
+      ctx.roundRect(left + 1, top - height, length - 2, height - 1.5, 3);
+      ctx.fill();
+      left += length;
+    }
+  }
+  ctx.translate(x, y);
+  speckle(ctx, w, h, rnd, { count: (w * h) / 20, color: [90, 80, 68], size: 1.4, alpha: 0.18 });
+  ctx.restore();
+  if (plaster > 0) whitewash(ctx, rnd, x, y, w, h, plaster);
+}
+
+/** A ragged outline round (cx, cy): a ring of points at wandering distances, joined by curves through their midpoints. */
+function raggedPath(ctx, rnd, cx, cy, r) {
+  const ring = [];
+  let reach = 1;
+  for (let k = 0; k < 14; k++) {
+    reach = THREE.MathUtils.clamp(reach + (rnd.next() - 0.5) * 0.5, 0.55, 1.3);
+    const angle = (k / 14) * Math.PI * 2;
+    ring.push([cx + Math.cos(angle) * r * reach * 1.5, cy + Math.sin(angle) * r * reach]);
+  }
+  const mid = (k) => [(ring[k % 14][0] + ring[(k + 1) % 14][0]) / 2, (ring[k % 14][1] + ring[(k + 1) % 14][1]) / 2];
+  ctx.beginPath();
+  ctx.moveTo(...mid(0));
+  for (let k = 1; k <= 14; k++) ctx.quadraticCurveTo(...ring[k % 14], ...mid(k));
+}
+
+/** Patches of old lime plaster clinging to the stone, with soft, ragged edges. */
+function whitewash(ctx, rnd, x, y, w, h, share) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  const count = Math.round((w * h * share) / 500);
+  for (let i = 0; i < count; i++) {
+    raggedPath(ctx, rnd, x + rnd.next() * w, y + rnd.next() * h, 8 + rnd.next() * 16);
+    ctx.fillStyle = vary(rnd, HOUSE.plaster, 0.07);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110, 96, 80, 0.3)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+  // Grime and stains over the plaster.
+  ctx.translate(x, y);
+  speckle(ctx, w, h, rnd, { count: (w * h) / 40, color: [120, 108, 92], size: 1.6, alpha: 0.16 });
+  ctx.restore();
+}
+
+/** A rendered wall, its plaster fallen away here and there to show the stone beneath. */
+function plastered(ctx, rnd, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = rgb(HOUSE.plaster);
+  ctx.fillRect(x, y, w, h);
+  ctx.translate(x, y);
+  blotches(ctx, w, h, rnd, { count: 10, color: [196, 184, 160], radius: 24, alpha: 0.35 });
+  speckle(ctx, w, h, rnd, { count: (w * h) / 40, color: [120, 108, 92], size: 1.6, alpha: 0.16 });
+  ctx.translate(-x, -y);
+  for (let i = 0; i < Math.round((w * h) / 4000); i++) {
+    const cx = x + rnd.next() * w;
+    const cy = y + rnd.next() * h;
+    const r = 7 + rnd.next() * 10;
+    ctx.save();
+    raggedPath(ctx, rnd, cx, cy, r);
+    ctx.clip();
+    stoneCourses(ctx, rnd, cx - r * 2, cy - r * 1.4, r * 4, r * 2.8, { course: 9 });
+    ctx.restore();
+    raggedPath(ctx, rnd, cx, cy, r);
+    ctx.strokeStyle = 'rgba(110, 96, 80, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** The upper storey: stone courses laced with bands of three brick courses, patched with plaster. */
+function upperWall(ctx, rnd, x, y, w, h, plaster = 0.35) {
+  stoneCourses(ctx, rnd, x, y, w, h, { course: 10 });
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  for (let band = y + h - 26; band > y - 14; band -= 40) {
+    for (let k = 0; k < 3; k++) {
+      const top = band + k * 5;
+      ctx.fillStyle = rgb([196, 170, 148]);
+      ctx.fillRect(x, top, w, 5);
+      for (let left = x - rnd.next() * 18; left < x + w; left += 18) {
+        ctx.fillStyle = vary(rnd, HOUSE.brick, 0.22);
+        ctx.fillRect(left + 1, top + 1, 16, 3.4);
+      }
+    }
+  }
+  ctx.restore();
+  whitewash(ctx, rnd, x, y, w, h, plaster);
+}
+
+/** Weathered boards, grain running across. */
+function planks(ctx, rnd, x, y, w, h, board = 12, vertical = false) {
+  ctx.fillStyle = rgb([70, 60, 50]);
+  ctx.fillRect(x, y, w, h);
+  const span = vertical ? w : h;
+  for (let t = 0; t < span; t += board) {
+    ctx.fillStyle = vary(rnd, HOUSE.timber, 0.22);
+    if (vertical) ctx.fillRect(x + t + 0.8, y, board - 1.6, h);
+    else ctx.fillRect(x, y + t + 0.8, w, board - 1.6);
+  }
+}
+
+/**
+ * A house front: rubble ground floor with corner quoins, a timber beam at the
+ * upper floor, the banded upper wall framed in timber, and openings placed at
+ * shares of the width.
+ */
+function facade(ctx, rnd, { x, y, w, h, ground, storey }, { upper = [], lower = [], quoins = true, beams = true, whitewash: washed = false }) {
+  if (washed) plastered(ctx, rnd, x, storey, w, y + h - storey);
+  else stoneCourses(ctx, rnd, x, storey, w, y + h - storey, { course: 12, plaster: 0.06 });
+  upperWall(ctx, rnd, x, y, w, storey - y, 0.28);
+  if (quoins) {
+    for (let top = y + h, k = 0; top > y; top -= 15, k++) {
+      for (const [left, length] of [[x, k % 2 ? 22 : 13], [x + w - (k % 2 ? 13 : 22), k % 2 ? 13 : 22]]) {
+        ctx.fillStyle = vary(rnd, [204, 196, 180], 0.08);
+        ctx.fillRect(left, top - 14, length, 13);
+      }
+    }
+  }
+  const unit = storey - y; // the upper storey's height in pixels
+  for (const [kind, at] of upper) opening(ctx, rnd, kind, x + at * w, storey, unit);
+  for (const [kind, at] of lower) opening(ctx, rnd, kind, x + at * w, ground, ground - storey);
+  if (beams) {
+    ctx.fillStyle = rgb(HOUSE.timber);
+    ctx.fillRect(x, storey - 4, w, 8); // the floor beam
+    ctx.fillRect(x, y, w, 7); // the wall plate under the eaves
+    for (const post of [x + 4, x + w - 10]) ctx.fillRect(post, y, 6, unit);
+    ctx.fillStyle = 'rgba(40, 32, 26, 0.35)';
+    ctx.fillRect(x, storey + 4, w, 2);
+  }
+}
+
+/** Openings standing on a floor line `base`, sized to the storey's height in pixels. */
+function opening(ctx, rnd, kind, cx, base, storey) {
+  const voidColour = rgb(HOUSE.void);
+  if (kind === 'arch') {
+    const w = storey * 0.3;
+    const top = base - storey * 0.84;
+    const bottom = base - storey * 0.3;
+    // Plank shutters folded back on either side.
+    for (const side of [-1, 1]) planks(ctx, rnd, cx + side * (w * 0.5 + 2) - (side < 0 ? w * 0.48 : 0), top + w * 0.25, w * 0.48, bottom - top - w * 0.25, 4, true);
+    ctx.fillStyle = rgb(HOUSE.brick);
+    ctx.beginPath();
+    ctx.arc(cx, top + w / 2, w / 2 + 5, Math.PI, 0);
+    ctx.lineTo(cx + w / 2 + 5, bottom);
+    ctx.lineTo(cx - w / 2 - 5, bottom);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(220, 200, 180, 0.6)';
+    ctx.lineWidth = 1;
+    for (let k = 1; k < 8; k++) {
+      const a = Math.PI + (k / 8) * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * w * 0.5, top + w / 2 + Math.sin(a) * w * 0.5);
+      ctx.lineTo(cx + Math.cos(a) * (w * 0.5 + 5), top + w / 2 + Math.sin(a) * (w * 0.5 + 5));
+      ctx.stroke();
+    }
+    ctx.fillStyle = voidColour;
+    ctx.beginPath();
+    ctx.arc(cx, top + w / 2, w / 2, Math.PI, 0);
+    ctx.lineTo(cx + w / 2, bottom);
+    ctx.lineTo(cx - w / 2, bottom);
+    ctx.fill();
+    ctx.strokeStyle = rgb([120, 100, 80]); // the window's lattice
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, top + 2);
+    ctx.lineTo(cx, bottom);
+    for (let t = top + w * 0.5; t < bottom; t += w * 0.45) {
+      ctx.moveTo(cx - w / 2, t);
+      ctx.lineTo(cx + w / 2, t);
+    }
+    ctx.stroke();
+    ctx.fillStyle = rgb([200, 192, 176]);
+    ctx.fillRect(cx - w / 2 - 6, bottom, w + 12, 4); // sill
+  } else if (kind === 'doorway') {
+    const w = storey * 0.34;
+    const top = base - storey * 0.86;
+    ctx.fillStyle = rgb(HOUSE.timber);
+    ctx.fillRect(cx - w / 2 - 4, top - 4, w + 8, base - top + 4);
+    ctx.fillStyle = voidColour;
+    ctx.fillRect(cx - w / 2, top, w, base - top);
+  } else if (kind === 'door') {
+    const w = storey * 0.42;
+    const top = base - storey * 0.8;
+    ctx.fillStyle = rgb([196, 188, 172]);
+    ctx.fillRect(cx - w / 2 - 6, top - 6, w + 12, base - top + 6); // stone jambs
+    planks(ctx, rnd, cx - w / 2, top, w, base - top, 6, true);
+    ctx.fillStyle = rgb([60, 52, 44]);
+    for (const t of [0.25, 0.75]) ctx.fillRect(cx - w / 2, top + (base - top) * t, w, 2.5); // iron straps
+    ctx.fillStyle = rgb(HOUSE.timber);
+    ctx.fillRect(cx - w / 2 - 12, top - 12, w + 24, 8); // lintel beam
+  } else if (kind === 'window') {
+    const w = storey * 0.2;
+    const top = base - storey * 0.72;
+    ctx.fillStyle = rgb([200, 192, 176]);
+    ctx.fillRect(cx - w / 2 - 4, top - 4, w + 8, w * 1.15 + 8);
+    ctx.fillStyle = voidColour;
+    ctx.fillRect(cx - w / 2, top, w, w * 1.15);
+    ctx.fillStyle = rgb([100, 92, 84]);
+    ctx.fillRect(cx - 1, top, 2, w * 1.15);
+  }
+}
+
+/** Roman tiles in courses down the slope: flat pans under rounded covers, weathered unevenly. */
+function romanTiles(ctx, rnd, x, y, w, h) {
+  ctx.fillStyle = rgb([124, 68, 48]);
+  ctx.fillRect(x, y, w, h);
+  const column = 21;
+  const course = 27;
+  for (let left = x; left < x + w; left += column) {
+    for (let top = y; top < y + h; top += course) {
+      const k = 1 + rnd.range(-0.06, 0.06) - (rnd.chance(0.1) ? 0.12 : 0); // now and then an older, darker tile
+      const base = [214 * k + rnd.range(-6, 6), 124 * k + rnd.range(-5, 5), 88 * k + rnd.range(-4, 4)];
+      ctx.fillStyle = rgb(base.map((c) => c * 0.86)); // the pan
+      ctx.fillRect(left, top, column, course - 1);
+      const gradient = ctx.createLinearGradient(left + 9, 0, left + column - 1, 0); // the cover tile, lit across its curve
+      gradient.addColorStop(0, rgb(base.map((c) => c * 0.58)));
+      gradient.addColorStop(0.4, rgb(base.map((c) => Math.min(255, c * 1.08))));
+      gradient.addColorStop(1, rgb(base.map((c) => c * 0.62)));
+      ctx.fillStyle = gradient;
+      ctx.fillRect(left + 9, top, column - 10, course - 2);
+      ctx.fillStyle = 'rgba(60, 30, 20, 0.4)';
+      ctx.fillRect(left + 9, top + course - 4, column - 10, 3); // the lap's shadow
+    }
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  for (let i = 0; i < 22; i++) { // lichen and soot
+    const cx = x + rnd.next() * w;
+    const cy = y + rnd.next() * h;
+    const r = 24 + rnd.next() * 40;
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const colour = rnd.chance(0.5) ? [150, 140, 108] : [96, 70, 56];
+    gradient.addColorStop(0, rgb(colour, 0.22));
+    gradient.addColorStop(1, rgb(colour, 0));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+  ctx.restore();
+}
 
 /** Banner designs, painted once per kind. */
 export const flag = (kind) =>

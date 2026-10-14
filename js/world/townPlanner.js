@@ -137,10 +137,10 @@ function addPerimeterHouses(rnd, plan, { centre, angle, length, width, accept, h
   const sides = [];
   for (const s of [-1, 1]) {
     // Long sides run the full length; short sides fit between them.
-    sides.push({ start: offset(centre, -length / 2, (s * width) / 2, angle), along: 0, inward: [0, -s], span: length });
-    sides.push({ start: offset(centre, (s * length) / 2, -width / 2 + depth, angle), along: Math.PI / 2, inward: [-s, 0], span: width - 2 * depth });
+    sides.push({ start: offset(centre, -length / 2, (s * width) / 2, angle), along: 0, inward: [0, -s], span: length, turn: s > 0 });
+    sides.push({ start: offset(centre, (s * length) / 2, -width / 2 + depth, angle), along: Math.PI / 2, inward: [-s, 0], span: width - 2 * depth, turn: s < 0 });
   }
-  for (const { start, along, inward, span } of sides) {
+  for (const { start, along, inward, span, turn } of sides) {
     const direction = angle + along;
     let t = 0;
     while (t < span - 0.18) {
@@ -148,7 +148,9 @@ function addPerimeterHouses(rnd, plan, { centre, angle, length, width, accept, h
       const centreAlong = offset(start, t + w / 2, 0, direction);
       const point = offset(centreAlong, (inward[0] * depth) / 2, (inward[1] * depth) / 2, angle);
       if (!rnd.chance(0.05) && accept(point)) {
-        plan.houses.push({ point, angle: direction, w, d: depth, h: rnd.range(...height), flat: rnd.chance(0.3) });
+        // A house's front faces +z in its own frame; on two of the four sides that means turning it about.
+        plan.houses.push({ point, angle: direction + (turn ? Math.PI : 0), w, d: depth, h: rnd.range(...height) });
+        rnd.next(); // once drew a flat roof for some houses; still drawn, so that the towns keep their layout
       }
       t += w + 0.02;
     }

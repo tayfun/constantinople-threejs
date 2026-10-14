@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { materials as M } from '../models/lib/materials.js';
 import {
-  box, boxGeometry, cylinder, cylinderGeometry, domeGeometry, hipRoofGeometry, mesh, crenelRingGeometry, pyramid,
+  box, boxGeometry, cylinder, cylinderGeometry, domeGeometry, mesh, crenelRingGeometry, pyramid,
 } from '../models/lib/primitives.js';
 import { mapStone, wallAlongGeometry } from '../models/lib/mapWalls.js';
 import { crownGeometry, cypressGeometry, judasTreeGeometry } from '../models/lib/trees.js';
 import { createRandom } from '../util/random.js';
 import { QUALITY } from '../util/quality.js';
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
+import { createHouses } from './houses.js';
 import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
@@ -90,7 +91,7 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
   const fabric = new THREE.Group();
   fabric.add(
     createPlots(rnd, layers.plots, ground),
-    createHouses(rnd, layers.houses),
+    createHouses(createRandom(1453 + 330), layers.houses),
     createChurches(rnd, layers.churches),
     createTrees(rnd, layers.trees),
     createErguvans(createRandom(1454), erguvans, ground),
@@ -152,8 +153,6 @@ function onLand(point, margin) {
 
 const palette = (...hexes) => hexes.map((hex) => new THREE.Color(hex));
 const FOUNDATION = 0.06; // how far buildings reach below their ground point
-const WALL_TONES = palette(0xfaf2e2, 0xf5e8cf, 0xfdf8ee, 0xf0dfc0, 0xf6e4c8);
-const TILE_TONES = palette(0xc4633f, 0xb9583a, 0xd0744c, 0xaf5238);
 const PLOT_TONES = {
   built: palette(0xdcc59a),
   churchyard: palette(0xe8dcc0),
@@ -175,19 +174,6 @@ function tone(rnd, palette, jitter = 0.05) {
   return palette[Math.floor(rnd.next() * palette.length)].clone().multiplyScalar(1 - jitter / 2 + rnd.next() * jitter);
 }
 
-/** Box with a darker foot, a cheap stand-in for ambient occlusion where walls meet the ground. */
-function shadedBoxGeometry() {
-  const geometry = boxGeometry(1, 1, 1);
-  const position = geometry.attributes.position;
-  const colors = [];
-  for (let i = 0; i < position.count; i++) {
-    const shade = 0.7 + 0.3 * position.getY(i);
-    colors.push(shade, shade, shade);
-  }
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  return geometry;
-}
-
 function instanced(geometry, material, count) {
   const result = new THREE.InstancedMesh(geometry, material, Math.max(1, count));
   result.count = count;
@@ -198,36 +184,6 @@ function instanced(geometry, material, count) {
 function compose(matrix, east, y, north, angle, sx, sy, sz) {
   const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
   return matrix.compose(new THREE.Vector3(east, y, -north), rotation, new THREE.Vector3(sx, sy, sz));
-}
-
-function createHouses(rnd, houses) {
-  const tiled = houses.filter((house) => !house.flat);
-  const flat = houses.filter((house) => house.flat);
-  const walls = instanced(shadedBoxGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }), houses.length);
-  // A unit hipped roof whose ridge runs along x for half its length.
-  const roofs = instanced(hipRoofGeometry(2, 1, 1, 0).scale(0.5, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.75 }), tiled.length);
-  const terraces = instanced(boxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.9 }), flat.length);
-  const matrix = new THREE.Matrix4();
-
-  houses.forEach(({ point: [east, north], y, angle, w, d, h }, i) => {
-    // A little foundation below ground, so houses on a slope never float.
-    walls.setMatrixAt(i, compose(matrix, east, y - FOUNDATION, north, angle, w, h + FOUNDATION, d));
-    walls.setColorAt(i, tone(rnd, WALL_TONES));
-  });
-  tiled.forEach(({ point: [east, north], y, angle, w, d, h }, i) => {
-    // Keep the ridge along the longer side.
-    const [length, width, turn] = w >= d ? [w, d, 0] : [d, w, Math.PI / 2];
-    roofs.setMatrixAt(i, compose(matrix, east, y + h, north, angle + turn, length * 1.08, width * 0.42, width * 1.12));
-    roofs.setColorAt(i, tone(rnd, TILE_TONES));
-  });
-  flat.forEach(({ point: [east, north], y, angle, w, d, h }, i) => {
-    terraces.setMatrixAt(i, compose(matrix, east, y + h, north, angle, w * 1.02, 0.012, d * 1.02));
-    terraces.setColorAt(i, tone(rnd, WALL_TONES).multiplyScalar(0.94));
-  });
-
-  const group = new THREE.Group();
-  group.add(walls, roofs, terraces);
-  return group;
 }
 
 function createTrees(rnd, trees) {
