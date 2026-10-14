@@ -12,6 +12,7 @@ const BACKDROP = 0xe6d3ae;
 const STAGE_SIZE = 26; // every model is scaled so its footprint spans this many units
 const LIGHT_DISTANCE = 80;
 const LABEL_GAP = 4; // px kept clear between part labels; a label that would crowd a nearer one is hidden
+const PHONE_ZOOM = 0.18; // share of the fitted camera distance a phone moves in by
 
 /**
  * The close-up stage: one landmark at a time, built at full detail, set on
@@ -248,6 +249,20 @@ export class DetailView {
       }
       if (overflow <= 0) break;
       camera.position.addScaledVector(direction, camera.position.distanceTo(controls.target) * Math.min(0.25, overflow * 0.6 + 0.02));
+    }
+    // A phone's strip of screen leaves the whole diorama too small to read, so it comes in closer,
+    // letting the edges of the ground brush the screen's edge as it turns. A tall model is then raised
+    // in view until its crown fits again, so what is lost is its foot, just above the panel.
+    if (!window.matchMedia('(max-width: 760px)').matches) return;
+    camera.position.lerp(controls.target, PHONE_ZOOM);
+    const crown = new THREE.Vector3(0, height * 1.06, 0); // a little above the top: crowns spread as they turn
+    const below = bounds.maxY - 0.1; // and clear of the back button at the top of the screen
+    const lift = new THREE.Vector3(0, height * 0.02, 0);
+    for (let step = 0; step < 30; step++) {
+      camera.updateMatrixWorld();
+      if (projected.copy(crown).project(camera).y <= below) break;
+      camera.position.add(lift);
+      controls.target.add(lift);
     }
   }
 
