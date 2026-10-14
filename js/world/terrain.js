@@ -3,13 +3,15 @@ import { materials as M } from '../models/lib/materials.js';
 import { cityGround, mapMeadow, mapPines, mapScrub } from '../models/lib/textures.js';
 import { createWaterMaterial } from '../models/lib/water.js';
 import { mesh } from '../models/lib/primitives.js';
-import { pointInPolygon, samplePolyline } from '../util/geo.js';
+import { cutNotch, pointInPolygon, samplePolyline } from '../util/geo.js';
+import { harbourNotches } from '../models/harbours.js';
 import {
   ASIA, ASIA_HILLS, CITY, EUROPE, GALATA, ISLANDS, LAND_HEIGHT, MESE, MESE_NORTH, PERA, THRACE_HILLS,
 } from '../data/geography.js';
 
 /**
- * The map's ground: the two shores, Europe and Asia, with sandy beaches, open water,
+ * The map's ground: the two shores, Europe and Asia, with sandy beaches, open water
+ * (reaching into the harbours, cut out of the city's shore),
  * the built-up area of each town, the city's seven hills and the ridge of
  * Galata and Pera, the Princes' Islands out in the Marmara, and the Mese,
  * Constantinople's main street, running over them.
@@ -22,7 +24,10 @@ export function createTerrain(ground) {
   const water = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000).rotateX(-Math.PI / 2), createWaterMaterial({ scale: 0.9, deep: 0x19587a, shallow: 0x3c8da3, sky: 0xb4d2dc }));
   terrain.add(water);
 
-  for (const polygon of [EUROPE, ASIA]) terrain.add(landMesh(polygon));
+  // The harbours are inlets of the sea: their precincts are cut out of the land, and build their own ground.
+  const notches = harbourNotches();
+  const harboured = (polygon) => notches.reduce(cutNotch, polygon);
+  for (const polygon of [harboured(EUROPE), ASIA]) terrain.add(landMesh(polygon));
   for (const { shore, bare } of ISLANDS) {
     const cover = bare ? scrub : pines;
     terrain.add(landMesh(shore, cover), hillsMesh(ground, cover, { within: shore }));
@@ -35,7 +40,7 @@ export function createTerrain(ground) {
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
   });
-  for (const area of [CITY, GALATA]) terrain.add(overlay(area, urban, 0.01));
+  for (const area of [harboured(CITY), GALATA]) terrain.add(overlay(area, urban, 0.01));
   terrain.add(hillsMesh(ground, urban, { within: CITY }), hillsMesh(ground, urban, { within: GALATA }));
   terrain.add(hillsMesh(ground, meadow, { within: PERA, except: [GALATA] }));
   // The rolling country beyond: one mesh per group of hills, over just the ground they rise from.

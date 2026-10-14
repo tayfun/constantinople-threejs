@@ -115,3 +115,49 @@ export function polygonCentroid(polygon) {
   const sum = polygon.reduce((acc, [x, y]) => [acc[0] + x, acc[1] + y], [0, 0]);
   return [sum[0] / polygon.length, sum[1] / polygon.length];
 }
+
+/** Where segments p–q and a–b cross: [point, t along a–b], or null. */
+function crossing([px, py], [qx, qy], [ax, ay], [bx, by]) {
+  const [rx, ry, sx, sy] = [qx - px, qy - py, bx - ax, by - ay];
+  const denominator = rx * sy - ry * sx;
+  if (denominator === 0) return null;
+  const u = ((ax - px) * ry - (ay - py) * rx) / denominator; // along a–b
+  const v = ((ax - px) * sy - (ay - py) * sx) / denominator; // along p–q
+  return u >= 0 && u <= 1 && v >= 0 && v <= 1 ? [[ax + u * sx, ay + u * sy], u] : null;
+}
+
+/**
+ * A polygon with a notch cut into its outline: `notch` is a path [a, …, d]
+ * whose first and last points lie outside the polygon, the rest inside, so
+ * that its first and last legs each cross the outline once (a harbour cut
+ * into the shore). The stretch of outline between the two crossings is
+ * replaced by the notch; a notch that misses the polygon leaves it as it is.
+ */
+export function cutNotch(polygon, notch) {
+  const n = polygon.length;
+  const find = (p, q) => {
+    for (let i = 0; i < n; i++) {
+      const hit = crossing(p, q, polygon[i], polygon[(i + 1) % n]);
+      if (hit) return { edge: i, point: hit[0], t: hit[1] };
+    }
+    return null;
+  };
+  const enter = find(notch[0], notch[1]);
+  const leave = find(notch.at(-2), notch.at(-1));
+  if (!enter || !leave) return polygon;
+  // The outline from one crossing forward to the other, as points.
+  const arc = (from, to) => {
+    if (from.edge === to.edge && to.t >= from.t) return [from.point, to.point];
+    const points = [from.point];
+    for (let k = (from.edge + 1) % n; ; k = (k + 1) % n) {
+      points.push(polygon[k]);
+      if (k === to.edge) break;
+    }
+    return [...points, to.point];
+  };
+  const length = (points) => points.slice(1).reduce((sum, p, i) => sum + Math.hypot(p[0] - points[i][0], p[1] - points[i][1]), 0);
+  const inside = notch.slice(1, -1);
+  // Keep the longer way round; the shorter is the stretch of shore the notch replaces.
+  const [forward, backward] = [arc(enter, leave), arc(leave, enter)];
+  return length(backward) >= length(forward) ? [...backward, ...inside] : [...forward, ...inside.toReversed()];
+}

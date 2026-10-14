@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { materials as M } from './lib/materials.js';
 import {
-  archShape, archedWallGeometry, box, colonnade, crenellationGeometry, cylinder, gableRoof, groundPlane, mesh, windowRow,
+  archedWallGeometry, box, colonnade, crenellationGeometry, cylinder, gableRoof, groundPlane, mesh, windowRow,
 } from './lib/primitives.js';
 import { scatterHouses } from './lib/buildings.js';
-import { createWaterMaterial } from './lib/water.js';
 import { finalizeModel } from './lib/merge.js';
 import { labelAt, labelled } from './lib/parts.js';
 import { createRandom } from '../util/random.js';
@@ -25,38 +24,38 @@ import { HORN_SOUTH_CITY, LAND_HEIGHT, MARMARA_CITY, METERS_TO_MAP } from '../da
  * arched water gate between two towers; quays of dressed stone surround it
  * at y = 0, and the water lies WATER below them.
  *
- * On the map the model stands on the land, whose top is its y = 0; a basin
- * sunk below that would be hidden by the ground, so the whole precinct is
- * raised MAP_LIFT on a stone platform, the water just above the land, and
- * whatever stands in the sea (the moles) reaches down to the map's sea far
- * below. (Müller-Wiener, Die Häfen von Byzantion, Konstantinupolis, Istanbul;
- * the Yenikapı excavation reports.)
+ * On the map each harbour is an inlet of the sea: the map cuts its precinct
+ * out of the land (harbourNotches(), used by terrain.js), so the map's own
+ * sea lies in the basin and runs out through the water gate, and the model
+ * fills the rest of the cut with its own ground — quays, and a strand of
+ * stone between the wall and the sea — reaching down below the water. The
+ * map's land stands far above its sea (LAND_HEIGHT), so there the basin is
+ * deep below its quays, and the precinct is raised MAP_LIFT to stand clear
+ * of the land around it. (Müller-Wiener, Die Häfen von Byzantion,
+ * Konstantinupolis, Istanbul; the Yenikapı excavation reports.)
  */
 
 const WATER = -2.2; // the water's surface, below the quays
 const WALL = { line: -10, height: 9.5, thickness: 3.5, tower: 7.5, towerHeight: 15 }; // as the map's sea walls, at its scale
 const SCALE = 4; // map exaggeration of every harbour
-const MAP_LIFT = 3.4; // on the map, how far the precinct is raised over the land so its water stands clear of the ground
+const MAP_LIFT = 0.8; // on the map, how far the precinct is raised over the land, so their surfaces never meet
 const SEA_DROP = LAND_HEIGHT / (SCALE * METERS_TO_MAP); // on the map, from the land's top down to the sea, in model metres
+const SEAWARD = 3; // how far out to sea the harbour's front of stone reaches on the map, past the shoreline
+const NOTCH_SEAWARD = 12; // and where the map's cut for it starts, clear of any bulge in the shore
 
-/** The water of the map's basins, matched to the map's own sea (its ripples are per model metre here). */
-const mapWater = Object.assign(createWaterMaterial({ scale: 0.9 * METERS_TO_MAP * SCALE, deep: 0x19587a, shallow: 0x3c8da3, sky: 0xb4d2dc }), {
-  // Drawn over the city's ground, which is itself pulled forward (polygonOffset -2 to -6) over the land.
-  polygonOffset: true,
-  polygonOffsetFactor: -8,
-  polygonOffsetUnits: -8,
-});
+/** The water's surface: in the diorama a little below the quays, on the map the map's own sea. */
+const waterLevel = (detail) => (detail ? WATER : -(SEA_DROP + MAP_LIFT));
 
 /**
  * Where each harbour stands on the map: its origin on the shore at a given
- * east coordinate, turned to the shore there, and the stretch of the shore it
- * takes up (half its length along x, in model metres) so the map's sea wall
- * can leave the harbour its own.
+ * east coordinate, turned to the shore there, and its precinct — the ground
+ * it builds itself, x along the shore and z from its back to the sea wall —
+ * which the map cuts out of the land for it.
  */
 export const HARBOURS = {
-  'theodosian-harbour': { shore: MARMARA_CITY, east: -23.66, seaward: 'south', halfLength: 78 },
-  'harbour-of-julian': { shore: MARMARA_CITY, east: -14.4, seaward: 'south', halfLength: 58 },
-  neorion: { shore: HORN_SOUTH_CITY, east: -1.2, seaward: 'north', halfLength: 32 },
+  'theodosian-harbour': { shore: MARMARA_CITY, east: -23.66, seaward: 'south', precinct: { x: [-78, 78], z: [-122, -11.5] } },
+  'harbour-of-julian': { shore: MARMARA_CITY, east: -14.4, seaward: 'south', precinct: { x: [-58, 58], z: [-104, -11.5] } },
+  neorion: { shore: HORN_SOUTH_CITY, east: -1.2, seaward: 'north', precinct: { x: [-32, 32], z: [-58, -11.5] } },
 };
 
 /** The map placement of a harbour (see landmarks.js). */
@@ -69,55 +68,21 @@ export function harbourPlacement(id) {
 }
 
 /**
- * The stretch of the map's sea-wall line each harbour builds itself, as
- * [from, to] in map units, for the map's sea walls to leave out.
+ * The ground each harbour takes from the map's land, as a rectangle
+ * [[east, north] × 4]: from out at sea, back along the precinct's sides to
+ * its rear and out again. terrain.js cuts these out of the land, so the
+ * map's sea shows in the basins.
  */
-export function harbourWallSpans() {
+export function harbourNotches() {
   return Object.keys(HARBOURS).map((id) => {
-    const { halfLength } = HARBOURS[id];
+    const { precinct: { x: [x0, x1], z: [z0] } } = HARBOURS[id];
     const { at, rotation } = harbourPlacement(id);
     const r = (rotation * Math.PI) / 180;
     const metre = SCALE * METERS_TO_MAP;
-    const point = (x) => [at[0] + (x * Math.cos(r) - WALL.line * Math.sin(r)) * metre, at[1] + (x * Math.sin(r) + WALL.line * Math.cos(r)) * metre];
-    return [point(-halfLength), point(halfLength)];
+    // The model's x runs along the shore and +z out to sea, turned by the landmark's rotation about y.
+    const point = (x, z) => [at[0] + (x * Math.cos(r) + z * Math.sin(r)) * metre, at[1] - (-x * Math.sin(r) + z * Math.cos(r)) * metre];
+    return [point(x0, NOTCH_SEAWARD), point(x0, z0), point(x1, z0), point(x1, NOTCH_SEAWARD)];
   });
-}
-
-/**
- * The map's sea-wall line (a polyline of [east, north], already set back from
- * the shore) with the stretches the harbours build themselves cut out: the
- * pieces that remain, for the map to draw its sea walls along.
- */
-export function withoutHarbours(line) {
-  const along = [0];
-  for (let i = 1; i < line.length; i++) along.push(along[i - 1] + Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]));
-  // How far along the line its nearest point to p lies.
-  const project = ([px, py]) => {
-    let best = [Infinity, 0];
-    for (let i = 1; i < line.length; i++) {
-      const [[ax, ay], [bx, by]] = [line[i - 1], line[i]];
-      const lengthSq = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
-      const t = Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / lengthSq));
-      const distance = Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay)));
-      if (distance < best[0]) best = [distance, along[i - 1] + t * (along[i] - along[i - 1])];
-    }
-    return best[1];
-  };
-  const pointAt = (s) => {
-    const i = Math.max(1, along.findIndex((value) => value >= s));
-    const t = (s - along[i - 1]) / (along[i] - along[i - 1] || 1);
-    return [line[i - 1][0] + t * (line[i][0] - line[i - 1][0]), line[i - 1][1] + t * (line[i][1] - line[i - 1][1])];
-  };
-  const slice = (s0, s1) => [pointAt(s0), ...line.filter((_, i) => along[i] > s0 && along[i] < s1), pointAt(s1)];
-  const cuts = harbourWallSpans().map((span) => span.map(project).sort((a, b) => a - b)).sort((a, b) => a[0] - b[0]);
-  const pieces = [];
-  let start = 0;
-  for (const [s0, s1] of cuts) {
-    if (s0 > start) pieces.push(slice(start, s0));
-    start = Math.max(start, s1);
-  }
-  if (start < along.at(-1)) pieces.push(slice(start, along.at(-1)));
-  return pieces;
 }
 
 /** The point of a shore polyline at a given east coordinate, and the shore's heading there (eastwards, radians). */
@@ -148,7 +113,7 @@ export function createTheodosianHarbour({ lod = 'detail' } = {}) {
   const harbour = harbourSite({
     detail,
     basin: { x: [-62, 62], z: [-88, -11.5] },
-    precinct: { x: [-78, 78], z: [-122, -11.5] },
+    precinct: HARBOURS['theodosian-harbour'].precinct,
     gate: { x: 0, width: 16 },
     towers: [-78, -40, -15, 15, 40, 78],
     channel: [-59, -51], // the Lycus
@@ -193,7 +158,7 @@ export function createHarbourOfJulian({ lod = 'detail' } = {}) {
   const harbour = harbourSite({
     detail,
     basin: { x: [-44, 44], z: [-70, -11.5] },
-    precinct: { x: [-58, 58], z: [-104, -11.5] },
+    precinct: HARBOURS['harbour-of-julian'].precinct,
     gate: { x: -6, width: 14, ironGates: true },
     towers: [-58, -30, -18, 6, 30, 58],
     extent: { x: [-80, 80], z: [-130, 60] },
@@ -230,7 +195,7 @@ export function createNeorion({ lod = 'detail' } = {}) {
   const harbour = harbourSite({
     detail,
     basin: { x: [-22, 22], z: [-46, -11.5] },
-    precinct: { x: [-32, 32], z: [-58, -11.5] },
+    precinct: HARBOURS.neorion.precinct,
     gate: { x: -4, width: 12 },
     towers: [-32, -14, 6, 32],
     landGate: 26,
@@ -259,11 +224,12 @@ export function createNeorion({ lod = 'detail' } = {}) {
 
   // The landing stage out in the Horn, west of the mouth.
   const stage = new THREE.Group();
-  stage.add(box(5, 0.5, 22, M.wood, -20, -0.9, 10));
+  const deck = waterLevel(detail) + 1.3;
+  stage.add(box(5, 0.5, 22, M.wood, -20, deck, 10));
   if (detail) {
     for (let k = 0; k < 4; k++) for (const side of [-1, 1]) stage.add(cylinder(0.25, 0.25, 4, M.wood, -20 + side * 2.2, WATER - 2.6, 2 + k * 5.5, 6));
   } else {
-    stage.add(box(4.6, SEA_DROP + MAP_LIFT - 1.4, 21.6, M.wood, -20, -(SEA_DROP + MAP_LIFT), 10)); // its piles, down to the map's sea
+    stage.add(box(4.6, 1.3, 21.6, M.wood, -20, waterLevel(detail), 10)); // its piles, down to the sea
   }
   harbour.add(stage);
 
@@ -283,7 +249,7 @@ export function createNeorion({ lod = 'detail' } = {}) {
  */
 function harbourSite({ detail, basin, precinct, gate, towers, landGate = null, channel = null, extent }) {
   const harbour = new THREE.Group();
-  const foot = detail ? -6 : -MAP_LIFT;
+  const foot = detail ? -6 : waterLevel(detail) - 1; // on the map the ground reaches down into the sea
   const land = detail ? extent : { x: precinct.x, z: [precinct.z[0], precinct.z[1]] };
   const [bx0, bx1] = basin.x;
   const [bz0, bz1] = basin.z;
@@ -306,22 +272,17 @@ function harbourSite({ detail, basin, precinct, gate, towers, landGate = null, c
     harbour.add(box(x1 - x0, 0.3, z1 - z0, M.stone, (x0 + x1) / 2, 0, (z0 + z1) / 2));
   }
 
-  // The water: on the map just the basin (the map has its sea); in the diorama the basin and the sea as one sheet.
-  if (detail) {
-    harbour.add(groundPlane(extent.x[1] - extent.x[0], extent.z[1] - lz0, M.water, 0, WATER, (extent.z[1] + lz0) / 2));
-  } else {
-    harbour.add(groundPlane(bx1 - bx0, bz1 + 0.5 - bz0, mapWater, (bx0 + bx1) / 2, WATER, (bz0 + bz1 + 0.5) / 2));
-    if (channel) harbour.add(groundPlane(channel[1] - channel[0], bz0 - lz0, mapWater, (channel[0] + channel[1]) / 2, WATER, (bz0 + lz0) / 2));
-  }
+  // The water: in the diorama the basin and the sea as one sheet; the map has its own sea, showing through its cut.
+  if (detail) harbour.add(groundPlane(extent.x[1] - extent.x[0], extent.z[1] - lz0, M.water, 0, WATER, (extent.z[1] + lz0) / 2));
 
-  // In the diorama, the strip of shore outside the wall, broken by the channel from the water gate.
-  if (detail) {
-    const half = gate.width / 2;
-    const shoreTop = -1;
-    const strip = (x0, x1) => harbour.add(box(x1 - x0, shoreTop + 6, -WALL.line - 1.7, M.stone, (x0 + x1) / 2, -6, (WALL.line + 1.7) / 2));
-    strip(extent.x[0], gate.x - half);
-    strip(gate.x + half, extent.x[1]);
-  }
+  // The strip of shore outside the wall, broken by the channel from the water gate out to the sea. On the
+  // map it runs out to the edge of the land's cut, standing in for the land there.
+  const half = gate.width / 2;
+  const [top, z0, z1, xs] = detail ? [-1, WALL.line + 1.7, 0, extent.x] : [0, bz1, SEAWARD, [lx0, lx1]];
+  const strip = (x0, x1) => harbour.add(box(x1 - x0, top - foot, z1 - z0, M.stone, (x0 + x1) / 2, foot, (z0 + z1) / 2));
+  const edge = detail ? half : half + 0.4; // on the map it runs under the wall: kept off the plane of the gate's jambs
+  strip(xs[0], gate.x - edge);
+  strip(gate.x + edge, xs[1]);
 
   seaWall(harbour, detail, { x: [lx0 + 0.3, lx1 - 0.3], foot, gate, towers, landGate }); // its ends a step inside the quay's
   return harbour;
@@ -336,7 +297,7 @@ function seaWall(harbour, detail, { x: [x0, x1], foot, gate, towers, landGate })
   const length = x1 - x0;
   const centre = (x0 + x1) / 2;
   const height = WALL.height - foot;
-  const spring = WATER - foot + 1.5; // the water gate's jambs stand 1.5 m above the water
+  const spring = waterLevel(detail) - foot + 1.5; // the water gate's jambs stand 1.5 m above the water
   const openings = [{ x: gate.x - centre, width: gate.width, bottom: 0, spring }];
   if (landGate !== null) openings.push({ x: landGate - centre, width: 4, bottom: -foot + 0.12, spring: -foot + 3.5 }); // a step up from the quay
   harbour.add(mesh(archedWallGeometry({ length, height, thickness: WALL.thickness, openings, curveSegments: detail ? 10 : 5 }), M.banded, centre, foot, WALL.line));
@@ -354,20 +315,11 @@ function seaWall(harbour, detail, { x: [x0, x1], foot, gate, towers, landGate })
     }
   }
 
-  // The water gate: on the map a dark passage (the land beyond it is not the harbour's water), in the diorama open water.
-  if (!detail) {
-    const passage = new THREE.ShapeGeometry(archShape(gate.width - 0.1, spring + gate.width / 2 - 0.1), 8);
-    for (const side of [-1, 1]) {
-      const plane = mesh(passage, M.opening, gate.x, foot, WALL.line + side * (WALL.thickness / 2 - 0.6));
-      plane.rotation.y = side > 0 ? 0 : Math.PI;
-      harbour.add(plane);
-    }
-  }
   if (gate.ironGates) {
     // Andronikos II's iron gates, swung open into the basin against the wall's inner face.
     const leaf = gate.width / 2 - 0.4;
     for (const side of [-1, 1]) {
-      harbour.add(box(leaf, 5.5, 0.3, M.iron, gate.x + side * (gate.width / 2 + leaf / 2 + 0.2), WATER, WALL.line - WALL.thickness / 2 - 0.4));
+      harbour.add(box(leaf, 5.5, 0.3, M.iron, gate.x + side * (gate.width / 2 + leaf / 2 + 0.2), waterLevel(detail), WALL.line - WALL.thickness / 2 - 0.4));
     }
   }
 }
@@ -375,8 +327,8 @@ function seaWall(harbour, detail, { x: [x0, x1], foot, gate, towers, landGate })
 /** A breakwater of big stones out in the sea: on the map it reaches down to the map's sea. */
 function mole(harbour, detail, { x: [x0, x1], z }) {
   const [z0, z1] = z;
-  const bottom = detail ? -6 : -(SEA_DROP + MAP_LIFT);
-  const top = -0.6;
+  const bottom = waterLevel(detail) - 4;
+  const top = waterLevel(detail) + 1.6;
   harbour.add(box(x1 - x0, top - bottom, z1 - z0, M.stoneDark, (x0 + x1) / 2, bottom, (z0 + z1) / 2));
   if (detail) {
     // Tumbled blocks along its foot, against the waves.
@@ -387,7 +339,7 @@ function mole(harbour, detail, { x: [x0, x1], z }) {
     for (const side of [-1, 1]) {
       for (let t = from + 1.5, k = 0; t < to - 1.5; t += 3.4, k++) {
         const edge = side < 0 ? (alongX ? z0 : x0) - 0.9 : (alongX ? z1 : x1) + 0.9;
-        const block = box(1.5 + rnd.next() * 0.6, 0.9 + (k % 5) * 0.12 + rnd.next() * 0.05, 1.4 + rnd.next() * 0.5, M.stoneDark, 0, WATER - 0.6, 0);
+        const block = box(1.5 + rnd.next() * 0.6, 0.9 + (k % 5) * 0.12 + rnd.next() * 0.05, 1.4 + rnd.next() * 0.5, M.stoneDark, 0, waterLevel(detail) - 0.6, 0);
         block.position.x = alongX ? t : edge;
         block.position.z = alongX ? edge : t;
         block.rotation.y = rnd.next() * Math.PI;
@@ -399,10 +351,11 @@ function mole(harbour, detail, { x: [x0, x1], z }) {
 
 /** A small round light-tower with a fire on its top. */
 function lighthouse(harbour, detail, x, z) {
-  harbour.add(cylinder(2.6, 3, 9, M.stone, x, -0.6, z, detail ? 16 : 8));
-  harbour.add(cylinder(3.1, 3.1, 0.6, M.stoneDark, x, 8.4, z, detail ? 16 : 8));
-  harbour.add(cylinder(1.4, 1.4, 1.2, M.fire, x, 9, z, 8));
-  labelAt(harbour, 'harbourLight', x, 12, z);
+  const base = waterLevel(detail) + 1.6; // the top of the mole it stands on
+  harbour.add(cylinder(2.6, 3, 9, M.stone, x, base, z, detail ? 16 : 8));
+  harbour.add(cylinder(3.1, 3.1, 0.6, M.stoneDark, x, base + 9, z, detail ? 16 : 8));
+  harbour.add(cylinder(1.4, 1.4, 1.2, M.fire, x, base + 9.6, z, 8));
+  labelAt(harbour, 'harbourLight', x, base + 12.6, z);
 }
 
 /**
@@ -465,7 +418,7 @@ function shipShed(harbour, detail, { x, back, front, water, width }) {
  */
 function slipway(detail, { x, z, length, width, toward }) {
   const group = new THREE.Group();
-  const drop = -WATER + 0.6;
+  const drop = -waterLevel(detail) + 0.6;
   const ramp = box(length, 0.4, width, M.wood, 0, -0.2, 0);
   ramp.rotation.z = -Math.atan2(drop, length);
   ramp.position.y = -drop / 2 + 0.05;
@@ -490,9 +443,7 @@ function ships(harbour, detail, list) {
   for (const { x, z, heading, banner, sail = false, scale = 1 } of list) {
     const ship = createMerchantShip({ lod: detail ? 'detail' : 'map', banner, sail });
     ship.scale.setScalar(scale);
-    // On the map a ship outside the wall floats on the map's sea, far below the raised basin.
-    const atSea = !detail && z > WALL.line;
-    ship.position.set(x, atSea ? -(SEA_DROP + MAP_LIFT) : WATER, z);
+    ship.position.set(x, waterLevel(detail), z);
     ship.rotation.y = heading;
     if (!detail) delete ship.userData.animate;
     const holder = new THREE.Group();
@@ -513,7 +464,7 @@ function galleys(harbour, detail, list) {
     });
     for (const object of drop) object.removeFromParent();
     galley.scale.setScalar(0.8);
-    galley.position.set(x, WATER, z);
+    galley.position.set(x, waterLevel(detail), z);
     galley.rotation.y = heading;
     harbour.add(galley);
   }
