@@ -9,29 +9,55 @@ export function toWorld([east, north], y = 0) {
   return new THREE.Vector3(east, y, -north);
 }
 
+const boxes = new WeakMap();
+
+/** [minX, minY, maxX, maxY] of a polygon, worked out once per polygon. */
+function boundsOf(polygon) {
+  let box = boxes.get(polygon);
+  if (!box) {
+    box = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const [x, y] of polygon) {
+      box = [Math.min(box[0], x), Math.min(box[1], y), Math.max(box[2], x), Math.max(box[3], y)];
+    }
+    boxes.set(polygon, box);
+  }
+  return box;
+}
+
 export function pointInPolygon([x, y], polygon) {
+  // The terrain asks this of a quarter of a million points, most of them far outside the polygon.
+  const [minX, minY, maxX, maxY] = boundsOf(polygon);
+  if (x < minX || x > maxX || y < minY || y > maxY) return false;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
+    const xi = polygon[i][0];
+    const yi = polygon[i][1];
+    const xj = polygon[j][0];
+    const yj = polygon[j][1];
     if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
 }
 
-function distanceToSegment([px, py], [ax, ay], [bx, by]) {
-  const dx = bx - ax;
-  const dy = by - ay;
+/** Squared distance from (px, py) to the segment a–b. */
+function distanceToSegmentSq(px, py, a, b) {
+  const ax = a[0];
+  const ay = a[1];
+  const dx = b[0] - ax;
+  const dy = b[1] - ay;
   const lengthSq = dx * dx + dy * dy;
   const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  const ex = px - (ax + t * dx);
+  const ey = py - (ay + t * dy);
+  return ex * ex + ey * ey;
 }
 
-export function distanceToPolyline(point, line, closed = false) {
+// Squared distances and plain indexing: the terrain measures a quarter of a million points against the coasts.
+export function distanceToPolyline([px, py], line, closed = false) {
   let best = Infinity;
   const count = closed ? line.length : line.length - 1;
-  for (let i = 0; i < count; i++) best = Math.min(best, distanceToSegment(point, line[i], line[(i + 1) % line.length]));
-  return best;
+  for (let i = 0; i < count; i++) best = Math.min(best, distanceToSegmentSq(px, py, line[i], line[(i + 1) % line.length]));
+  return Math.sqrt(best);
 }
 
 export function polylineLength(line) {
