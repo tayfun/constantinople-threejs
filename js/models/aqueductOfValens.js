@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { materials as M, tinted } from './lib/materials.js';
 import { archShape, box, cylinder, cypress, dome, faceToward, gableRoof, groundPlane, judasTree, mesh, roundTree } from './lib/primitives.js';
-import { createHouse } from './lib/buildings.js';
+import { createHouse, pickHouseVariant } from './lib/buildings.js';
 import { createRandom } from '../util/random.js';
 import { finalizeModel } from './lib/merge.js';
 
@@ -395,7 +395,7 @@ function houseOnSlope(rnd, { w, d, h, x, z, rotation, ground }) {
   const floor = Math.max(...corners) + 0.05;
   const foot = Math.min(...corners) - 0.6;
   holder.add(box(w + 0.4, floor - foot, d + 0.4, M.rubble, 0, foot - floor, 0));
-  holder.add(createHouse({ w, d, h, color: rnd.pick([0xf2e3c6, 0xe8cfa6, 0xf5eee0, 0xdcb98e, 0xe9d2b8, 0xd6a982]), roof: rnd.chance(0.5) ? 'hip' : 'gable' }));
+  holder.add(createHouse({ w, d, h, color: rnd.pick([0xf2e3c6, 0xe8cfa6, 0xf5eee0, 0xdcb98e, 0xe9d2b8, 0xd6a982]), variant: pickHouseVariant(rnd, w) }));
   holder.position.set(x, floor, z);
   holder.rotation.y = rotation;
   return holder;

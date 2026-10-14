@@ -90,11 +90,11 @@ function createColony() {
   // Tall, narrow Ligurian houses: three or four storeys under tiled gables.
   const avoid = [[-35, 6, 26], [46, 2, 30], [10, 23, 18], [10, 36, 8], [0, -65, 16], [-10, -25, 8]];
   labelled(colony, 'ligurianHouses', () => {
-    scatterHouses(colony, rnd, { count: 14, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 8, d: 7, h: 13 } });
+    scatterHouses(colony, rnd, { count: 14, area: [-95, -26, 95, 32], avoid, style: { style: 'genoese', w: 8, d: 7, h: 13 } });
   }, { near: [85, 20] });
-  scatterHouses(colony, rnd, { count: 10, area: [-95, -26, 95, 32], avoid, style: { roof: 'gable', w: 10, d: 7, h: 10 } });
-  scatterHouses(colony, rnd, { count: 12, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 8, d: 7, h: 12 } });
-  scatterHouses(colony, rnd, { count: 8, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { roof: 'gable', w: 9, d: 7, h: 9 } });
+  scatterHouses(colony, rnd, { count: 10, area: [-95, -26, 95, 32], avoid, style: { style: 'genoese', w: 10, d: 7, h: 10 } });
+  scatterHouses(colony, rnd, { count: 12, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { style: 'genoese', w: 8, d: 7, h: 12 } });
+  scatterHouses(colony, rnd, { count: 8, area: [-95, -62, 95, -36], avoid, groundAt: () => TERRACE, style: { style: 'genoese', w: 9, d: 7, h: 9 } });
 
   finalizeModel(colony);
   colony.add(placed(flag('genoa', { width: 4, height: 2.6, pole: 7 }), -35, 17.5, -2));

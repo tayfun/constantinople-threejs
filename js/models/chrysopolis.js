@@ -4,7 +4,7 @@ import {
   archGeometry, box, colonnade, crenelRingGeometry, crenellationGeometry, cylinder, cypress, dome, faceToward, flag,
   gableRoof, groundPlane, hipRoof, judasTree, landGeometry, mesh, pyramid, roundTree, windowRow,
 } from './lib/primitives.js';
-import { createHouse } from './lib/buildings.js';
+import { createHouse, pickHouseVariant } from './lib/buildings.js';
 import { createHull } from './lib/hull.js';
 import { createMerchantShip } from './merchantShip.js';
 import { finalizeModel } from './lib/merge.js';
@@ -433,7 +433,7 @@ function scatterTown(town, rnd, { count, avoid, elevation, detail }) {
     const tall = rnd.chance(0.3);
     const house = createHouse({
       w, d, h: tall ? rnd.range(7.5, 10) : rnd.range(4.5, 6.5), color: rnd.pick(PLASTER),
-      roof: rnd.chance(0.55) ? 'hip' : 'gable', windows: detail,
+      variant: pickHouseVariant(rnd, w),
     });
     house.position.set(x, elevation(x, z), z);
     house.rotation.y = rnd.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]) + rnd.range(-0.12, 0.12);

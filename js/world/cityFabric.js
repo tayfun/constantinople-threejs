@@ -3,13 +3,14 @@ import { materials as M } from '../models/lib/materials.js';
 import {
   box, boxGeometry, cylinder, cylinderGeometry, domeGeometry, mesh, crenelRingGeometry, pyramid,
 } from '../models/lib/primitives.js';
-import { mapStone, wallAlongGeometry } from '../models/lib/mapWalls.js';
+import { mapMasonry, mapStone, seaWallGeometry } from '../models/lib/mapWalls.js';
 import { crownGeometry, cypressGeometry, judasTreeGeometry } from '../models/lib/trees.js';
 import { createRandom } from '../util/random.js';
 import { QUALITY } from '../util/quality.js';
 import { distanceToPolyline, pointInPolygon } from '../util/geo.js';
 import { createChurches } from './churches.js';
 import { createHouses } from './houses.js';
+import { planPorticoes } from './mese.js';
 import { planTown } from './townPlanner.js';
 import { planCountryside } from './countryside.js';
 import {
@@ -19,8 +20,8 @@ import {
 
 /**
  * Everything that is not a landmark: the towns' blocks of houses, churches,
- * gardens and orchards, the woods, farms and hamlets of the countryside, and
- * the sea walls. Layout comes from townPlanner.js and countryside.js; here it
+ * great houses, markets, gardens and orchards, the porticoes of the Mese, the
+ * woods, farms and hamlets of the countryside, and the sea walls. Layout comes from townPlanner.js and countryside.js; here it
  * is drawn with a handful of instanced meshes in a restrained palette, each
  * piece standing on the hilly ground from ground.js.
  *
@@ -48,13 +49,18 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
       orientation: alignedTo([MESE, MESE_NORTH, SEA_WALLS, LAND_WALLS]),
       // Densely built in the east; gardens and orchards fill much of the land inside the western walls.
       builtChance: ([east]) => 0.35 + 0.58 * THREE.MathUtils.smoothstep(east, -44, -22),
+      mansionChance: 0.035,
+      markets: MARKETS,
     },
     {
+      // The Genoese colony: tall Ligurian houses, taller than the Byzantine town's.
       polygon: GALATA,
       accept: (p) => pointInPolygon(p, GALATA) && away(p, GALATA_WALLS, 0.4) && away(p, GALATA_SHORE, 0.35) && clear(p),
       orientation: alignedTo([GALATA_SHORE, GALATA_WALLS]),
       districtSpacing: 4,
       block: [1.7, 1.25],
+      style: 'genoese',
+      height: [0.3, 0.42],
     },
     ...[CHRYSOPOLIS, CHALCEDON_TOWN].map((polygon) => ({
       polygon,
@@ -71,6 +77,16 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
     for (const key of Object.keys(layers)) layers[key].push(...plan[key]);
   };
   for (const town of towns) merge(planTown(rnd, town));
+
+  // The Mese's porticoes, from the Milion to the Xerolophos and up the northern branch to the Holy
+  // Apostles, take the place of the houses and trees that stood where they run.
+  const { porticoes, occupied } = planPorticoes({
+    stretches: [MESE.slice(0, 5), MESE_NORTH.slice(0, 2)],
+    streets: [MESE, MESE_NORTH],
+    accept: (p) => pointInPolygon(p, CITY) && away(p, SEA_WALLS, 0.6) && away(p, LAND_WALLS, 1) && clear(p),
+  });
+  layers.houses = layers.houses.filter(({ point }) => !occupied(point, 0.5)).concat(porticoes);
+  layers.trees = layers.trees.filter(({ point }) => !occupied(point, 0.4));
 
   const outsideTowns = (p) => [CITY, GALATA, CHRYSOPOLIS, CHALCEDON_TOWN].every((town) => !pointInPolygon(p, town) && away(p, town.concat([town[0]]), 0.3));
   const countryside = planCountryside(rnd, {
@@ -97,7 +113,7 @@ export function createCityFabric({ ground, keepOut = [], erguvanSites = [] }) {
     createTrees(rnd, layers.trees),
     createErguvans(createRandom(1454), erguvans, ground),
   );
-  fabric.add(createSeaWalls(), createArkla());
+  fabric.add(createSeaWalls(keepOut), createArkla());
   return fabric;
 }
 
@@ -122,6 +138,9 @@ function alignedTo(lines) {
 }
 
 const COUNTRY_WOODS_KEPT = 1 / 8; // share of the countryside's trees left standing beyond the Pera ridge
+// Market squares a block back from the Mese, by the Forum of Theodosius (the Tauros) and the Forum of the Ox.
+// The sources place the city's markets along the Mese between its fora; these exact blocks are a guess.
+const MARKETS = [[-18.5, 1.5], [-26, -1]];
 const ERGUVAN_ROOM = 0.3; // map units kept clear around each Judas tree
 
 /** Spots for the Judas trees: for each site, a few points at random bearings just beyond the landmark's clearing. */
@@ -157,6 +176,8 @@ const FOUNDATION = 0.06; // how far buildings reach below their ground point
 const PLOT_TONES = {
   built: palette(0xdcc59a),
   churchyard: palette(0xe8dcc0),
+  mansion: palette(0xe2d6bc), // a paved court
+  market: palette(0xd6caae),
   garden: palette(0x8fb25a, 0x86aa55),
   orchard: palette(0x9cba5e),
   // Fields in the tawny greens and straw of a Thracian summer, not lawn.
@@ -251,13 +272,18 @@ function createPlots(rnd, plots, ground) {
   return plates;
 }
 
-/** Sea walls following both shores of the city, set just inside the coast. */
-function createSeaWalls() {
-  // The shoreline runs clockwise round the city, so the inside lies to the right.
-  const geometry = wallAlongGeometry(SEA_WALLS, {
-    height: 0.38, thickness: 0.14, y: LAND_HEIGHT, offset: -0.4, towerSpacing: 2.4, towerWidth: 0.3, towerHeight: 0.6,
+/** Sea walls following both shores of the city, set just inside the coast, with towers and battlements. */
+function createSeaWalls(keepOut) {
+  // The shoreline runs clockwise round the city, so the inside lies to the right and the water to the left.
+  // Landmarks on the shore (the Venetian quarter's waterfront, the palaces) bring their own walls there.
+  const { masonry, caps } = seaWallGeometry(SEA_WALLS, {
+    height: 0.38, thickness: 0.14, y: LAND_HEIGHT, offset: -0.4, towerSpacing: 2.4, towerWidth: 0.3, towerHeight: 0.62,
+    leaveOut: (point) => keepOut.some((occupies) => occupies(point)),
   });
-  return mesh(geometry, mapStone);
+  const walls = new THREE.Group();
+  walls.name = 'seaWalls';
+  walls.add(mesh(masonry, mapMasonry()), mesh(caps, mapStone));
+  return walls;
 }
 
 /**

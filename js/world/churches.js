@@ -31,6 +31,7 @@ export function createChurches(rnd, churches) {
     meshes[1].setColorAt(i, new THREE.Color(0xffffff).multiplyScalar(0.92 + rnd.next() * 0.08));
   });
   const group = new THREE.Group();
+  group.name = 'churches';
   for (const mesh of meshes) {
     mesh.count = churches.length;
     mesh.castShadow = mesh.receiveShadow = true;

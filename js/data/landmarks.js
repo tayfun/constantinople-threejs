@@ -7,6 +7,7 @@ import { createBlachernae } from '../models/blachernae.js';
 import { createTheodosianWalls } from '../models/theodosianWalls.js';
 import { createVenetianQuarter } from '../models/venetianQuarter.js';
 import { createHornChain } from '../models/hornChain.js';
+import { createHarbourOfJulian, createNeorion, createTheodosianHarbour, harbourPlacement } from '../models/harbours.js';
 import { createDromon } from '../models/dromon.js';
 import { createGalataTower } from '../models/galataTower.js';
 import { createGenoeseQuarter } from '../models/genoeseQuarter.js';
@@ -14,6 +15,11 @@ import { createChalcedon } from '../models/chalcedon.js';
 import { createChrysopolis } from '../models/chrysopolis.js';
 import { createForumOfConstantine } from '../models/forumOfConstantine.js';
 import { createJudasTree } from '../models/judasTree.js';
+import { createStIrene } from '../models/stIrene.js';
+import { createHolyApostles } from '../models/holyApostles.js';
+import { createPantokrator } from '../models/pantokrator.js';
+import { createChora } from '../models/chora.js';
+import { createSergiusBacchus } from '../models/sergiusBacchus.js';
 import { FORUM_OF_CONSTANTINE, GALATA_TOWER, HORN_PATROL, METERS_TO_MAP } from './geography.js';
 
 /**
@@ -85,6 +91,49 @@ export const LANDMARKS = [
     create: createHagiaSophia,
     map: { at: [3.5, 2.5], rotation: -32, scale: 6, erguvans: 6 },
     maps: 'Hagia Sophia, Istanbul',
+  },
+  // The great churches, each moved off its surveyed site just enough to clear its oversized neighbours:
+  // St Irene north of Hagia Sophia, the Holy Apostles and the Pantokrator either side of the aqueduct,
+  // the Chora below the Blachernae palace, Sts Sergius and Bacchus west of the Hippodrome's curved end.
+  {
+    id: 'st-irene',
+    region: 'constantinople',
+    period: { from: 548 },
+    create: createStIrene,
+    map: { at: [4.15, 8.3], rotation: -20, scale: 3.6, erguvans: 3 },
+    maps: 'Hagia Irene, Istanbul',
+  },
+  {
+    id: 'holy-apostles',
+    region: 'constantinople',
+    period: { from: 550, to: 1461, ending: 'demolished' },
+    create: createHolyApostles,
+    map: { at: [-29.6, 14.7], rotation: 0, scale: 3.8, erguvans: 4 },
+    maps: [41.01944, 28.94972], // the Fatih Mosque, built on its site
+  },
+  {
+    id: 'pantokrator',
+    region: 'constantinople',
+    period: { from: 1118 },
+    create: createPantokrator,
+    map: { at: [-19.6, 12.8], rotation: -8, scale: 4.5, erguvans: 3 },
+    maps: 'Zeyrek Mosque, Istanbul',
+  },
+  {
+    id: 'chora',
+    region: 'constantinople',
+    period: { from: 1081 },
+    create: createChora,
+    map: { at: [-33.4, 22.5], rotation: 0, scale: 6, erguvans: 3 },
+    maps: 'Chora Church, Istanbul',
+  },
+  {
+    id: 'sergius-bacchus',
+    region: 'constantinople',
+    period: { from: 536 },
+    create: createSergiusBacchus,
+    map: { at: [-14.6, -2.2], rotation: -20, scale: 5, erguvans: 3 },
+    maps: 'Little Hagia Sophia, Istanbul',
   },
   {
     id: 'hippodrome',
@@ -189,6 +238,30 @@ export const LANDMARKS = [
     create: createHornChain,
     map: { absolute: true },
     maps: [41.02246, 28.9767], // the Kastellion of Galata, its northern anchor, now the Yeraltı Mosque
+  },
+  {
+    id: 'theodosian-harbour',
+    region: 'constantinople',
+    period: { from: 390, fromApprox: true, to: 1100, toApprox: true, ending: 'ended' },
+    create: createTheodosianHarbour,
+    map: harbourPlacement('theodosian-harbour'),
+    maps: [41.00467, 28.95222], // the excavation at Yenikapı
+  },
+  {
+    id: 'harbour-of-julian',
+    region: 'constantinople',
+    period: { from: 362, to: 1750, toApprox: true, ending: 'ended' },
+    create: createHarbourOfJulian,
+    map: harbourPlacement('harbour-of-julian'),
+    maps: [41.0031, 28.9697], // Kadırga, where the basin lay
+  },
+  {
+    id: 'neorion',
+    region: 'constantinople',
+    period: { from: 330, fromApprox: true, to: 1800, toApprox: true, ending: 'ended' },
+    create: createNeorion,
+    map: harbourPlacement('neorion'),
+    maps: [41.016667, 28.975], // Bahçekapı, Eminönü
   },
   {
     id: 'dromon',

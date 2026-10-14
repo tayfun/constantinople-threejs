@@ -88,9 +88,9 @@ export function surface() {
 
 /** Texture coordinates of a point (s, t) in 0…1 within an atlas region, kept a pixel and a half inside it. */
 export function atlasUV([x, y, w, h], s, t) {
-  const size = HOUSE_ATLAS.size;
+  const { width, height } = HOUSE_ATLAS;
   const inset = 1.5;
-  return [(x + inset + s * (w - 2 * inset)) / size, 1 - (y + inset + (1 - t) * (h - 2 * inset)) / size];
+  return [(x + inset + s * (w - 2 * inset)) / width, 1 - (y + inset + (1 - t) * (h - 2 * inset)) / height];
 }
 
 /**

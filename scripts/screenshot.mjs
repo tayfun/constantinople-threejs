@@ -34,7 +34,8 @@ mkdirSync(outDir, { recursive: true });
 
 const ALL = ['hagia-sophia', 'hippodrome', 'obelisk-of-theodosius', 'serpent-column', 'walled-obelisk', 'great-palace', 'judas-tree',
   'basilica-cistern', 'forum-of-constantine', 'aqueduct-of-valens', 'blachernae', 'theodosian-walls', 'venetian-quarter', 'horn-chain',
-  'dromon', 'galata-tower', 'genoese-quarter', 'chrysopolis', 'chalcedon'];
+  'dromon', 'galata-tower', 'genoese-quarter', 'chrysopolis', 'chalcedon', 'theodosian-harbour', 'harbour-of-julian', 'neorion',
+  'st-irene', 'holy-apostles', 'pantokrator', 'chora', 'sergius-bacchus'];
 
 // --enable-automation sets navigator.webdriver, which keeps Sentry from reporting these runs.
 const chrome = spawn('google-chrome', [

@@ -38,6 +38,10 @@ export class App {
     // The sun never moves, so the shadow map is redrawn only when a view asks for it
     // (a landmark appearing on the timeline, a diorama with moving parts), not every frame.
     this.renderer.shadowMap.autoUpdate = false;
+    // Checking each shader for errors asks the driver for its logs the first time the shader draws, and
+    // on the first frame that held the main thread for a third of a second (with "Enter the City"
+    // waiting on it). Development builds keep the checks, where a broken shader needs its log.
+    this.renderer.debug.checkShaderErrors = import.meta.env.DEV;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     viewport.appendChild(this.renderer.domElement);

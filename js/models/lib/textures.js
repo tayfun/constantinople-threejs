@@ -362,11 +362,12 @@ export const hieroglyphs = () => {
 /**
  * The town houses' atlas: every face of the map's houses (see world/houses.js)
  * samples one region of this canvas. Pixel rectangles [x, y, width, height]
- * on a 1024 × 1024 sheet; façades run from a buried foundation at the bottom
+ * on a 1024 × 2048 sheet; façades run from a buried foundation at the bottom
  * (HOUSE_FOOT of the eaves height) to the eaves at the top.
  */
 export const HOUSE_ATLAS = {
-  size: 1024,
+  width: 1024,
+  height: 2048,
   gableFront2: [8, 8, 272, 224], // the gable end of the main block, two arched windows over a door
   gableFront1: [288, 8, 208, 224], // the same, narrower, one window
   eavesFront: [504, 8, 400, 224], // a long front: a door onto the balcony between two windows
@@ -389,6 +390,23 @@ export const HOUSE_ATLAS = {
   churchApse: [880, 584, 40, 200],
   churchBell: [928, 584, 40, 110],
   churchSide: [736, 792, 272, 200], // the long sides of the cross's arms, above the bays
+  // The Genoese houses of Galata: plastered fronts over a stone ground floor of shops.
+  genoeseFront2: [8, 1032, 200, 320],
+  genoeseFront3: [216, 1032, 288, 320],
+  genoeseSide: [512, 1032, 200, 320],
+  genoeseGable: [8, 1360, 200, 80],
+  // The shops under the porticoes of the Mese, and their columns.
+  shopFront: [720, 1032, 296, 160],
+  column: [720, 1200, 24, 152],
+  // Market stalls: a striped awning over a counter of goods.
+  awning: [752, 1200, 128, 64],
+  stall: [752, 1272, 128, 48],
+  // Flat roofs: a terrace of beaten lime behind a plastered parapet.
+  terrace: [888, 1200, 128, 128],
+  parapet: [216, 1360, 200, 32],
+  // The great houses: an arcaded hall facing the court, and the gate in the street wall.
+  mansionHall: [8, 1448, 192, 224],
+  gateWall: [216, 1448, 240, 112],
 };
 export const HOUSE_FOOT = 0.25;
 export const HOUSE_STOREY = 0.45; // the floor of the upper storey, as a share of the eaves height
@@ -412,11 +430,12 @@ export const CHURCH = {
  * with plank shutters, and a roof of Roman tiles.
  */
 export const townHouseAtlas = () => {
-  const { size } = HOUSE_ATLAS;
+  const { width, height } = HOUSE_ATLAS;
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = Math.round(size * QUALITY.textureScale);
+  canvas.width = Math.round(width * QUALITY.textureScale);
+  canvas.height = Math.round(height * QUALITY.textureScale);
   // Painted at full size so every stroke keeps its proportions, then copied down on a modest device.
-  const pad = QUALITY.textureScale < 1 ? Object.assign(document.createElement('canvas'), { width: size, height: size }) : canvas;
+  const pad = QUALITY.textureScale < 1 ? Object.assign(document.createElement('canvas'), { width, height }) : canvas;
   paintHouseAtlas(pad.getContext('2d'), createRandom(hashString('townHouses')));
   if (pad !== canvas) canvas.getContext('2d').drawImage(pad, 0, 0, canvas.width, canvas.height);
   const texture = new THREE.CanvasTexture(canvas);
@@ -437,7 +456,7 @@ const HOUSE = {
 
 function paintHouseAtlas(ctx, rnd) {
   const A = HOUSE_ATLAS;
-  fill(ctx, A.size, A.size, HOUSE.mortar);
+  fill(ctx, A.width, A.height, HOUSE.mortar);
   const lift = (rect) => {
     const [x, y, w, h] = rect;
     return { x, y, w, h, ground: y + h - h * (HOUSE_FOOT / (1 + HOUSE_FOOT)), storey: y + h - h * ((HOUSE_FOOT + HOUSE_STOREY) / (1 + HOUSE_FOOT)) };
@@ -493,6 +512,8 @@ function paintHouseAtlas(ctx, rnd) {
 
   romanTiles(ctx, rnd, ...A.roof);
   paintChurch(ctx, rnd);
+  paintGenoese(ctx, rnd);
+  paintTownExtras(ctx, rnd);
 }
 
 /**
@@ -897,6 +918,245 @@ function romanTiles(ctx, rnd, x, y, w, h) {
   }
   ctx.restore();
 }
+
+/**
+ * Galata's houses, after the tall, narrow houses of Genoa and the Ligurian
+ * coast: a ground floor of grey stone opening in an arched shop door, a
+ * string course, then three storeys of pale plaster (tinted ochre, cream or
+ * rose per house) with stone-framed windows and plank shutters, paired
+ * round-headed lights on the first floor, and a shadowed cornice under the
+ * eaves. The floors stand at GENOESE_FLOORS, in units of the eaves height.
+ */
+export const GENOESE_FLOORS = [0, 0.3, 0.53, 0.76, 1];
+
+const GENOA = {
+  plaster: [240, 230, 210],
+  stone: [168, 166, 158],
+  frame: [196, 192, 182],
+  shutter: [92, 116, 86],
+};
+
+function paintGenoese(ctx, rnd) {
+  const A = HOUSE_ATLAS;
+  genoeseFront(ctx, rnd, A.genoeseFront2, { windows: [0.3, 0.7], shops: [0.32], door: 0.76 });
+  genoeseFront(ctx, rnd, A.genoeseFront3, { windows: [0.2, 0.5, 0.8], shops: [0.2, 0.55], door: 0.85 });
+  genoeseFront(ctx, rnd, A.genoeseSide, { windows: [0.5], shops: [], door: null, side: true });
+  plasterWall(ctx, rnd, ...A.genoeseGable);
+}
+
+function plasterWall(ctx, rnd, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = rgb(GENOA.plaster);
+  ctx.fillRect(x, y, w, h);
+  ctx.translate(x, y);
+  blotches(ctx, w, h, rnd, { count: Math.round((w * h) / 2500), color: [214, 200, 176], radius: 22, alpha: 0.3 });
+  speckle(ctx, w, h, rnd, { count: (w * h) / 30, color: [150, 136, 116], size: 1.4, alpha: 0.14 });
+  ctx.restore();
+}
+
+function genoeseFront(ctx, rnd, [x, y, w, h], { windows, shops, door, side = false }) {
+  const level = (height) => y + h - ((height + HOUSE_FOOT) / (1 + HOUSE_FOOT)) * h;
+  const [ground, first, second, third, eaves] = GENOESE_FLOORS.map(level);
+  plasterWall(ctx, rnd, x, y, w, h);
+  // The ground floor in courses of grey ashlar, and the string course over it.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, first, w, y + h - first);
+  ctx.clip();
+  ctx.fillStyle = rgb([120, 116, 108]);
+  ctx.fillRect(x, first, w, y + h - first);
+  ctx.translate(x, 0);
+  courses(ctx, w, rnd, { top: first, bottom: y + h, courseHeight: 11, minLength: 18, maxLength: 34, mortar: 1.5, color: GENOA.stone, amount: 0.1 });
+  ctx.restore();
+  ctx.fillStyle = rgb(GENOA.frame);
+  ctx.fillRect(x, first - 3, w, 5);
+  const unit = ground - first; // the ground floor's height in pixels
+  for (const at of shops) {
+    // A shop's arched opening in a ring of voussoirs, its counter across the foot.
+    const cx = x + at * w;
+    const sw = unit * 0.62;
+    archedOpening(ctx, cx, first + unit * 0.1, ground, sw + 8, rgb([206, 202, 192]));
+    archedOpening(ctx, cx, first + unit * 0.1 + 4, ground, sw, rgb([40, 34, 30]));
+    ctx.fillStyle = rgb([110, 84, 60]);
+    ctx.fillRect(cx - sw / 2, ground - unit * 0.28, sw, unit * 0.28);
+  }
+  if (door !== null) {
+    const cx = x + door * w;
+    const dw = unit * 0.36;
+    ctx.fillStyle = rgb(GENOA.frame);
+    ctx.fillRect(cx - dw / 2 - 3, first + unit * 0.22 - 3, dw + 6, ground - first - unit * 0.22 + 3);
+    planks(ctx, rnd, cx - dw / 2, first + unit * 0.22, dw, ground - first - unit * 0.22, 4, true);
+  }
+  if (side) {
+    const cx = x + w / 2;
+    ctx.fillStyle = rgb(GENOA.frame);
+    ctx.fillRect(cx - 6, first + unit * 0.3, 12, 14);
+    ctx.fillStyle = rgb(HOUSE.void);
+    ctx.fillRect(cx - 4, first + unit * 0.3 + 2, 8, 10);
+  }
+  // The upper storeys: paired lights on the first floor, shuttered windows above.
+  [[first, second], [second, third], [third, eaves]].forEach(([floor, ceiling], k) => {
+    const height = floor - ceiling;
+    for (const at of windows) {
+      const cx = x + at * w;
+      const ww = side ? height * 0.24 : height * 0.3;
+      const top = ceiling + height * 0.22;
+      const bottom = floor - height * 0.2;
+      if (k === 0 && !side) {
+        archedOpening(ctx, cx, top - 4, bottom, ww * 1.5 + 8, rgb(GENOA.frame));
+        for (const dx of [-ww * 0.38, ww * 0.38]) archedOpening(ctx, cx + dx, top + 2, bottom, ww * 0.62, rgb([46, 44, 42]));
+        ctx.fillStyle = rgb(GENOA.frame);
+        ctx.fillRect(cx - 1.5, top + ww * 0.3, 3, bottom - top - ww * 0.3); // the colonnette
+      } else {
+        ctx.fillStyle = rgb(GENOA.frame);
+        ctx.fillRect(cx - ww / 2 - 3, top - 3, ww + 6, bottom - top + 6);
+        ctx.fillStyle = rgb([46, 44, 42]);
+        ctx.fillRect(cx - ww / 2, top, ww, bottom - top);
+        for (const sideSign of [-1, 1]) {
+          const left = sideSign < 0 ? cx - ww / 2 - 3 - ww / 2 : cx + ww / 2 + 3;
+          ctx.fillStyle = vary(rnd, GENOA.shutter, 0.15);
+          ctx.fillRect(left, top, ww / 2, bottom - top);
+          ctx.fillStyle = 'rgba(40, 50, 36, 0.45)';
+          for (let t = top + 3; t < bottom; t += 4) ctx.fillRect(left, t, ww / 2, 1);
+        }
+      }
+      ctx.fillStyle = rgb(GENOA.frame);
+      ctx.fillRect(cx - ww / 2 - 5, bottom + 2, ww + 10, 3); // the sill
+    }
+  });
+  ctx.fillStyle = 'rgba(70, 58, 46, 0.45)';
+  ctx.fillRect(x, eaves, w, 5); // the cornice's shadow under the eaves
+}
+
+/**
+ * The rest of the Byzantine town: shops and columns for the porticoes of the
+ * Mese, awnings and counters for the market stalls, flat roof terraces and
+ * their parapets, and a great house's arcaded hall and street gate.
+ */
+function paintTownExtras(ctx, rnd) {
+  const A = HOUSE_ATLAS;
+  const levels = ([, y, , h], top) => (height) => y + h - ((height + HOUSE_FOOT) / (top + HOUSE_FOOT)) * h;
+
+  // Shops: two wide openings with wares on their shelves, banded masonry above.
+  const [sx, sy, sw, sh] = A.shopFront;
+  churchWall(ctx, rnd, sx, sy, sw, sh, 0.12);
+  const shopAt = levels(A.shopFront, 1);
+  for (let k = 0; k < 2; k++) {
+    const cx = sx + ((k + 0.5) / 2) * sw;
+    const ow = (sw / 2) * 0.62;
+    const top = shopAt(0.72);
+    const bottom = shopAt(0);
+    ctx.fillStyle = rgb([200, 192, 176]);
+    ctx.fillRect(cx - ow / 2 - 5, top - 6, ow + 10, bottom - top + 6);
+    ctx.fillStyle = rgb([42, 36, 32]);
+    ctx.fillRect(cx - ow / 2, top, ow, bottom - top);
+    for (let shelf = 0; shelf < 2; shelf++) {
+      const ty = top + (bottom - top) * (0.22 + shelf * 0.28);
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = vary(rnd, rnd.pick([[150, 52, 40], [186, 140, 62], [70, 86, 120], [176, 120, 76], [120, 128, 70]]), 0.2);
+        ctx.fillRect(cx - ow / 2 + 3 + (i * (ow - 6)) / 6, ty, (ow - 6) / 6 - 2, 10);
+      }
+    }
+    ctx.fillStyle = rgb([118, 90, 64]);
+    ctx.fillRect(cx - ow / 2, bottom - (bottom - top) * 0.22, ow, (bottom - top) * 0.22); // the counter
+  }
+
+  // A column: a pale marble shaft between a capital and a moulded base.
+  const [cx0, cy0, cw, ch] = A.column;
+  const shaft = ctx.createLinearGradient(cx0, 0, cx0 + cw, 0);
+  shaft.addColorStop(0, rgb([196, 192, 182]));
+  shaft.addColorStop(0.45, rgb([238, 234, 226]));
+  shaft.addColorStop(1, rgb([188, 184, 174]));
+  ctx.fillStyle = shaft;
+  ctx.fillRect(cx0, cy0, cw, ch);
+  ctx.fillStyle = rgb([214, 208, 196]);
+  ctx.fillRect(cx0, cy0, cw, 14);
+  ctx.fillRect(cx0, cy0 + ch * 0.74, cw, 10);
+  ctx.fillStyle = 'rgba(90, 80, 70, 0.35)';
+  ctx.fillRect(cx0, cy0 + 14, cw, 2);
+
+  // Awning: broad stripes of undyed and darker cloth; each stall's tint dyes it.
+  const [ax, ay, aw, ah] = A.awning;
+  for (let x = ax, k = 0; x < ax + aw; x += 16, k++) {
+    ctx.fillStyle = k % 2 ? rgb([196, 180, 160]) : rgb([246, 240, 228]);
+    ctx.fillRect(x, ay, 16, ah);
+  }
+  ctx.fillStyle = 'rgba(80, 60, 40, 0.3)';
+  ctx.fillRect(ax, ay + ah - 6, aw, 6);
+  // Counter: boards, with fruit, pots and baskets along the top.
+  const [kx, ky, kw, kh] = A.stall;
+  planks(ctx, rnd, kx, ky, kw, kh, 8);
+  for (let x = kx + 4; x < kx + kw - 10; x += 14) {
+    ctx.fillStyle = vary(rnd, rnd.pick([[196, 120, 50], [170, 60, 46], [128, 140, 60], [184, 150, 90]]), 0.2);
+    ctx.beginPath();
+    ctx.arc(x + 6, ky + 9, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Terrace: beaten lime laid in squares.
+  const [tx, ty, tw, th] = A.terrace;
+  ctx.fillStyle = rgb([214, 204, 184]);
+  ctx.fillRect(tx, ty, tw, th);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(tx, ty, tw, th);
+  ctx.clip();
+  ctx.translate(tx, ty);
+  blotches(ctx, tw, th, rnd, { count: 8, color: [190, 178, 156], radius: 20, alpha: 0.35 });
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(140, 126, 104, 0.35)';
+  ctx.lineWidth = 1;
+  for (let k = 1; k < 4; k++) {
+    ctx.beginPath();
+    ctx.moveTo(tx + (k * tw) / 4, ty);
+    ctx.lineTo(tx + (k * tw) / 4, ty + th);
+    ctx.moveTo(tx, ty + (k * th) / 4);
+    ctx.lineTo(tx + tw, ty + (k * th) / 4);
+    ctx.stroke();
+  }
+  // Parapet: plastered, under a coping of stone slabs (the top quarter of the region).
+  const [px, py, pw, ph] = A.parapet;
+  ctx.fillStyle = rgb(HOUSE.plaster);
+  ctx.fillRect(px, py, pw, ph);
+  ctx.fillStyle = rgb([190, 184, 170]);
+  ctx.fillRect(px, py, pw, 9);
+  ctx.fillStyle = 'rgba(80, 70, 60, 0.4)';
+  for (let x = px; x < px + pw; x += 24) ctx.fillRect(x, py, 1, 9);
+  ctx.fillRect(px, py + 9, pw, 1.5);
+
+  // A great house's hall from its court: one bay of the arcade below, a two-light window above.
+  const [hx, hy, hw, hh] = A.mansionHall;
+  churchWall(ctx, rnd, hx, hy, hw, hh, 0.14);
+  const hallAt = levels(A.mansionHall, 1);
+  archedOpening(ctx, hx + hw / 2, hallAt(0.44) - 6, hallAt(0), hw * 0.66 + 12, rgb([200, 192, 176]));
+  archedOpening(ctx, hx + hw / 2, hallAt(0.44), hallAt(0), hw * 0.66, rgb([40, 34, 30]));
+  ctx.fillStyle = rgb([200, 192, 176]);
+  ctx.fillRect(hx, hallAt(0.5) - 2, hw, 4); // a string course at the upper floor
+  for (const dx of [-0.17, 0.17]) lancet(ctx, rnd, hx + hw * (0.5 + dx), hallAt(0.86), hallAt(0.6), hw * 0.14);
+
+  // The gate in a great house's street wall (GATE_WALL high): a timber door under a stone arch.
+  const [gx, gy, gw, gh] = A.gateWall;
+  stoneCourses(ctx, rnd, gx, gy, gw, gh, { course: 10, plaster: 0.12 });
+  const gateAt = levels(A.gateWall, GATE_WALL);
+  const door = gw * 0.26;
+  const crown = gateAt(GATE_WALL * 0.85);
+  archedOpening(ctx, gx + gw / 2, crown - 6, gateAt(0), door + 12, rgb([204, 196, 180]));
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(gx + gw / 2, crown + door / 2, door / 2, Math.PI, 0);
+  ctx.lineTo(gx + gw / 2 + door / 2, gateAt(0));
+  ctx.lineTo(gx + gw / 2 - door / 2, gateAt(0));
+  ctx.clip();
+  planks(ctx, rnd, gx + gw / 2 - door / 2, crown, door, gateAt(0) - crown, 5, true);
+  ctx.restore();
+  ctx.fillStyle = rgb([170, 86, 60]);
+  ctx.fillRect(gx, gy, gw, 6); // the tiled coping
+}
+
+export const GATE_WALL = 0.4; // height of a great house's street wall, in units of its eaves height
 
 /** Banner designs, painted once per kind. */
 export const flag = (kind) =>
